@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"	
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	
+	<!-- DF DP modules -->	
+	
+	<bean id="amsRep" class="com.radware.controlapps.dp.DPRep">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		<property name="dpBasedDetector" ref="dpBasedDetector" />
+		<property name="rsyslogDFPipe" value="/var/tmp/rsyslog-df-pipe" />
+	</bean>
+	
+	<bean id="dpBasedDetector" class="com.radware.controlapps.dp.DPBasedDetector">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+	<!--  	<property name="dpRep" ref="dpRep" />  -->
+		<property name="detectorInfoStr" value="dp_based_detector:VERY_HIGH" />
+		<property name="durationOfDetection" value="300" />
+	</bean>
+	
+</beans>

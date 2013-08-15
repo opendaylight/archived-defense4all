@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	id="WebApp_ID" version="2.5">
+	
+	<display-name>Defense4all</display-name>	
+	
+	<servlet>
+		<servlet-name>App Jersey REST Service</servlet-name>
+		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+		<init-param>
+			<param-name>com.sun.jersey.config.property.packages</param-name>
+			<param-value>org.opendaylight.controlapps.defense4all.restservice</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.spi.container.ContainerRequestFilters</param-name>
+			<param-value>com.sun.jersey.api.container.filter.LoggingFilter org.opendaylight.controlapps.framework.restservice.Text2JsonContainerFilter</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
+			<param-value>com.sun.jersey.api.container.filter.LoggingFilter</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+			<param-value>true</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>App Jersey REST Service</servlet-name>
+		<url-pattern>/rest/app/*</url-pattern>
+	</servlet-mapping>
+	
+	<servlet>
+		<servlet-name>General Jersey REST Service</servlet-name>
+		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+		<init-param>
+			<param-name>com.sun.jersey.config.property.packages</param-name>
+			<param-value>org.opendaylight.controlapps.framework.restservice</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.spi.container.ContainerRequestFilters</param-name>
+			<param-value>com.sun.jersey.api.container.filter.LoggingFilter org.opendaylight.controlapps.framework.restservice.Text2JsonContainerFilter</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
+			<param-value>com.sun.jersey.api.container.filter.LoggingFilter</param-value>
+		</init-param>
+		<init-param>
+			<param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+			<param-value>true</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>General Jersey REST Service</servlet-name>
+		<url-pattern>/rest/general/*</url-pattern>
+	</servlet-mapping>
+	
+</web-app> 

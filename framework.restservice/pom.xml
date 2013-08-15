@@ -1,0 +1,61 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>framework.restservice</artifactId>
+  <name>framework.restservice</name>
+  <packaging>jar</packaging>
+  <url>http://maven.apache.org</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	<jersey.version>1.12</jersey.version>
+  </properties>
+
+  <parent>
+    <groupId>controlapps</groupId>
+    <artifactId>dfapp</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <relativePath>../dfapp/pom.xml</relativePath>
+  </parent>
+  
+  <dependencies>
+  	<dependency>
+  		<groupId>controlapps</groupId>
+  		<artifactId>framework.core</artifactId>
+  		<version>0.0.1-SNAPSHOT</version>
+  	</dependency>
+	<dependency>
+		<groupId>com.sun.jersey</groupId>
+		<artifactId>jersey-server</artifactId>
+		<version>${jersey.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>com.sun.jersey</groupId>
+		<artifactId>jersey-json</artifactId>
+		<version>${jersey.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>com.sun.jersey</groupId>
+		<artifactId>jersey-server-linking</artifactId>
+		<version>${jersey.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>com.sun.jersey.contribs</groupId>
+		<artifactId>jersey-spring</artifactId>
+		<version>${jersey.version}</version>
+	</dependency>
+	<dependency>
+		<groupId>org.aspectj</groupId>
+		<artifactId>aspectjrt</artifactId>
+		<version>1.5.4</version>
+		<scope>compile</scope>
+	</dependency>
+	<dependency>
+		<groupId>javax.servlet</groupId>
+		<artifactId>servlet-api</artifactId>
+		<version>2.5</version>
+		<scope>provided</scope>
+	</dependency>
+  </dependencies>
+</project>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"	
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	
+	<import resource="classpath*:defense4all_odl_context.xml"/>
+	<import resource="classpath*:defenseflow_dp_context.xml"/>
+	<import resource="classpath*:defense4all_mitigationdriverlocal_context.xml"/>
+	
+	<bean id="appRoot" class="org.opendaylight.controlapps.defense4all.core.impl.DFAppRootFullImpl" >
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="attackDecisionPoint" ref="attackDecisionPoint" />
+		<property name="amsRep" ref="amsRep" />
+		<property name="statsCollectorImpl" ref="statsCollectorImpl" />
+		<property name="mitigationMgrImpl" ref="mitigationMgrImpl" />
+		<property name="detectorMgrImpl" ref="detectorMgrImpl" />
+		<property name="mgmtPointImpl" ref="mgmtPointImpl" />	
+		<property name="statsCollectionRep" ref="statsCollectionRep" />
+		<property name="dvsnRep" ref="dvsnRep" />
+		<property name="classPaths" value="org.opendaylight.controlapps.defense4all.core.impl" />
+		<property name="mitigationDriver0" ref="mitigationDriver0" />
+		
+		<!-- Uncomment when adding mitigators -->
+<!-- 		<property name="mitigationDriver1" ref="mitigationDriver1" /> -->
+<!-- 		<property name="mitigationDriver2" ref="mitigationDriver2" /> -->
+<!-- 		<property name="mitigationDriver3" ref="mitigationDriver3" /> -->
+<!-- 		<property name="mitigationDriver4" ref="mitigationDriver4" /> -->
+<!-- 		<property name="mitigationDriver5" ref="mitigationDriver5" /> -->
+	</bean>	
+	
+	<!-- DF core impl modules -->
+	
+	<bean id="attackDecisionPoint" class="org.opendaylight.controlapps.defense4all.core.impl.AttackDecisionPointImpl" >	
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		<property name="processAttacksPeriod" value="20" />
+	</bean>	
+	<bean id="statsCollectorImpl" class="org.opendaylight.controlapps.defense4all.core.impl.StatsCollectorImpl">
+		<constructor-arg index="0" name="collectStatsIntervalInSecs" value="3" /> <!-- debug time interval -->
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+	</bean>	
+	<bean id="mitigationMgrImpl" class="org.opendaylight.controlapps.defense4all.core.impl.MitigationMgrImpl" >
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+	</bean>	
+	<bean id="detectorMgrImpl" class="org.opendaylight.controlapps.defense4all.core.impl.DetectorMgrImpl" >
+		<property name="frameworkMain" ref="frameworkMain" /> 
+		<property name="dfAppRoot" ref="appRoot" />
+		<property name="detector1" ref="detector1" />
+ 	</bean>	
+	<bean id="detector1" class="org.opendaylight.controlapps.defense4all.core.impl.RateBasedDetectorImpl">
+		<constructor-arg index="0" name="statsQueueCapacity" value="10000" />
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		<property name="label" value="of_rate_based_detector" />		
+	</bean>	 	
+	<bean id="mgmtPointImpl" class="org.opendaylight.controlapps.defense4all.core.impl.DFMgmtPointImpl" >	
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		
+		<!-- default OFS settings -->
+		<property name="ofcHostname" value="webapi" />	
+		<property name="ofcPort" value="8080" />	
+		<property name="ofcUsername" value="pfcpfc" />	
+		<property name="ofcPassword" value="pfcpfc" />
+		<property name="ofcForStatsCollection" value="true" />
+		<property name="ofcForDvsn" value="true" />
+		<property name="ofcSetInSpring" value="true" />
+		
+		<!-- default AMS settings -->
+		<property name="amsLabel" value="dp1" />
+		<property name="amsForStatsCollection" value="false" />
+		<property name="amsForDvsn" value="true" />
+		<property name="amsSetInSpring" value="true" />
+		
+	</bean>
+	
+</beans>

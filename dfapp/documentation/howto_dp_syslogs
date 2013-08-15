@@ -1,0 +1,21 @@
+
+1) DP configuration - programatically configure DP to send syslogs to the DF machines 
+	(for every DP, for every interested DF instance):
+
+	how?
+
+2) Rsyslogd configuraion - in each DF machine configure the syslog daemon to receive the syslogs from DP and put them in a pipe:
+
+	In /etc/rsyslogconf uncomment UDP syslog reception:
+	
+	# provides UDP syslog reception
+	$ModLoad imudp
+	$UDPServerRun 514
+	
+	In /etc/rsyslog.d/50-default.conf append the following line at the end:
+	
+	Local6.* |/var/tmp/rsyslog-pipe
+	
+3) DPRep code to yank logs from /var/tmp/rsyslog-pipe
+
+	Get the next log entry and act upon the ones relevant for DF 

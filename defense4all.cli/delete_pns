@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+use strict;
+use Getopt::Long;
+use JSON ;
+use LWP::UserAgent;
+#use Data::Dumper;
+#use feature 'say';
+
+
+# setup my defaults
+my $uri    = '/rest/app/df/pns';
+my $rport      = 8086;
+my $host = 'localhost';
+my $help     = 0;
+my $verbose;
+my $json_out;
+my $label;
+
+sub usage {
+   my $command = $0;
+   $command =~ s#^.*/##;
+
+   print STDERR (
+      "usage: $command  [-p port] [-h hostname] [-u resource uri] [-v verbose mode] [-l pn label ]\n"
+   );
+
+   die("\n")
+}
+sub VERBOSE_OUT
+{
+    if ( defined $verbose ) {
+	print @_;
+	print "\n";
+    }
+}
+
+
+GetOptions(
+    'port=i'  => \$rport,
+    'host=s'  => \$host,
+    'uri=s'   => \$uri, 
+    'verbose' => \$verbose,
+    'label=s'  => \$label
+) or usage;
+
+# Set up the connectio
+my $ua = LWP::UserAgent->new;
+
+# Configurables  
+my $endpoint = $host.':'.$rport;  
+my $url = "http://".$endpoint.$uri;
+
+if ( defined $label ) {
+    $url =  $url."/".$label;
+} else {
+    die usage; 
+}
+
+VERBOSE_OUT "URL : ".$url;
+
+my $req = HTTP::Request->new(DELETE => $url);
+#$req->content_type('application/json');
+#$req->content($json);
+
+# Perform a HTTP DELETE on this URI 
+my $res = $ua->request( $req) ;
+
+if ($res->is_success) {
+       VERBOSE_OUT "Respose : ".$res->content;
+} else {
+        die $res->status_line."\n" ;
+}
+

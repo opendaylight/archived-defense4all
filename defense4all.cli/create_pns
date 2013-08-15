@@ -1,0 +1,162 @@
+#!/usr/bin/perl
+#  Limited to one PN creation per running !
+use strict;
+use Getopt::Long;
+use JSON ;
+use LWP::UserAgent;
+
+#use Data::Dumper;
+#use feature 'say';
+
+# Parameters for POST
+my %params = {};
+my @params_names = ( "label", "ip_version", "dest_addr", "dest_addr_prefix_len", "protocol_port", "ams_config_props", "protection_SLA", "mitigation_confirmation", "detector_label", "thresholds", "mitigation_scope", "props", "of_based_detection" );
+my @hash_params = ( "ams_config_props", "props" );
+# create empty hash
+@params{@params_names} = undef;
+	
+# setup my defaults
+my $uri    = '/rest/app/df/pns';
+my $rport      = 8086;
+my $host = 'localhost';
+my $help     = 0;
+my $verbose;
+my $props_file;
+my ( $json_str, $json, $json_obj);
+
+sub usage {
+   my $command = $0;
+   $command =~ s#^.*/##;
+
+   print STDERR (
+      "usage: $command  [-p port] [-h hostname] [-u resource uri]  [-v verbose mode] [-json json arguments string | configuration arguments | -file properties file]\n" .
+      "       configuration arguments are : @params_names \n"
+       
+   );
+
+   die("\n")
+}
+sub VERBOSE_OUT
+{
+    if ( defined $verbose ) {
+	print @_;
+	print "\n";
+    }
+}
+
+Getopt::Long::Configure("pass_through");
+GetOptions(
+    'port=i'     => \$rport,
+    'host=s'     => \$host,
+    'uri=s'      => \$uri, 
+    'verbose'  => \$verbose,
+    'json=s'     => \$json_str,
+    'file=s'   => \$props_file
+) or usage;
+
+# Set up the connection
+my $ua = LWP::UserAgent->new;
+
+# Configurables  
+my $endpoint = $host.':'.$rport;  
+my $url = "http://".$endpoint.$uri;
+
+VERBOSE_OUT "URL : ".$url;
+VERBOSE_OUT "Input STR :".$json_str;
+
+# parse input JSON string 
+if ( defined $json_str ) {
+    $json_obj = decode_json ( $json_str );
+    if ( ! defined $json_obj ) {
+	die "Invalid JSON input : ".$json_str;
+    }
+} elsif ( defined $props_file ) {
+    open PROPSFILE, $props_file or die("Could not open textprops file '" . $props_file . "': $!");
+    foreach my $line (<PROPSFILE>) {
+	chomp($line);              # remove the newline from $line.
+	my @tokens = split(/=/, $line);
+	# do line-by-line processing.
+	if(@tokens == 2 ) { # if this is a key value pair, save it to the hash
+	    # suppose name of parameter is lust suffix in dot notation
+	    my @param_tokens =  split(/\./,@tokens[0]); 
+	    my $param_name = @param_tokens[@param_tokens -1 ];
+	    $json_obj->{$param_name}=@tokens[1];	
+	}
+    }
+} else  {
+#parse optional arguments
+    while (@ARGV) {
+	my $arg_name = shift;
+	my $arg_value = shift;
+	$arg_name =~ s/^\-*//;
+	$json_obj->{$arg_name} = $arg_value;
+    }
+    # special handling of hash parameters
+    foreach my $hash_name ( @hash_params ) {
+	my $string_hash = $json_obj->{$hash_name};
+	my %hash_value = split ( /[;:]/, $string_hash );
+	$json_obj->{$hash_name} = \%hash_value;
+    }
+}
+   
+# check if all command line parameters are defined as input parameters on server side
+foreach my $key( keys ( % $json_obj )) {
+    if ( ! exists  $params{$key}) {
+	print "Ignoring $key parameter \n"; 
+	delete  $json_obj->{$key};
+    }
+}
+VERBOSE_OUT "INPUT OBJ : ";
+if ( defined $verbose ) {
+    HashOut( $json_obj );
+}
+
+# encode JSON input
+if ( defined $json_obj ) {
+     $json = encode_json (  $json_obj );
+}
+
+if ( ! defined $json ) {
+    die "Invalid JSON input : ".$json_str;
+}
+VERBOSE_OUT "JSON IN : ".$json;
+
+my $req = HTTP::Request->new(POST => $url);
+$req->content_type('application/json');
+$req->content($json);
+
+# Perform a HTTP POST on this URI 
+my $res = $ua->request( $req) ;
+
+if ($res->is_success) {
+       VERBOSE_OUT "Respose : ".$res->content;
+       print "PN created.\n" ;
+} else {
+        die $res->status_line."\n" ;
+}
+
+sub HashOut () {
+    my $hash_ref= shift;
+    my $offset= shift;
+    my $offset_step=shift;
+
+    my %hash = %$hash_ref;
+    foreach my $line (keys %hash ) {
+      	if ( ref ( $hash{$line} ) eq 'HASH' ) {
+	    print $offset."$line :\n";
+	    HashOut( $hash{$line} , $offset.$offset_step, $offset_step );
+	} else {
+	    print $offset."$line : $hash{$line} \n";
+	}
+   }
+}
+
+sub JsonOut () {
+    my $hash_ref= shift;
+
+    my %hash = %$hash_ref;
+    foreach my $line (keys %hash ) {
+	my $json_str = encode_json (  $hash{$line} );
+	print "$json_str\n";
+    }
+}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"	
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	
+	<import resource="classpath*:defense4all_context.xml"/>
+	
+	<!-- Framework main -->
+	<bean id="frameworkMain" class="org.opendaylight.controlapps.framework.core.impl.FrameworkMainImpl" >
+		<constructor-arg index="0" name="configProperties"> <null/> </constructor-arg>
+		<property name="repoFactoryImpl" ref="repoFactoryImpl" />
+		<property name="clusterMgrImpl" ref="clusterMgrImpl" />
+		<property name="peerCommunicatorImpl" ref="peerCommunicatorImpl" />
+		<property name="frameworkMgmtPointImpl" ref="frameworkMgmtPointImpl" />
+		<!-- classpath to framework core state classes -->
+		<property name="stateClassPaths" value="org.opendaylight.controlapps.framework.core.impl" />
+		<property name="port" value="8086" />
+		<!-- next value is for eclipse running. should be different for single jar -->
+		<property name="restWarPath" value="../../../restservice/target/restservice-0.0.1-SNAPSHOT.war" />
+		<property name="restPath" value="/" />
+		<property name="appRoot" ref="appRoot" /> 	<!--	The actual integrated application -->
+		<property name="logFileName" value="/var/tmp/df_log" />
+		
+	</bean>
+	
+	<!-- Framework core modules  -->
+	
+	<bean id="repoFactoryImpl" class="org.opendaylight.controlapps.framework.core.impl.RepoFactoryImpl">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="clusterName" value="df_cluster" /> 	<!-- Set in /etc/cassandra/yaml -->
+		<property name="dbName" value="DF" /> 	<!-- must contain only alpha-numeric characters -->
+		<property name="cassandraServerPort" value="9160" />
+		<property name="ctrlAppsKSReplLevel" value="1" />
+	</bean>
+	
+	<bean id="clusterMgrImpl" class="org.opendaylight.controlapps.framework.core.impl.ClusterMgrImpl">
+		<property name="frameworkMain" ref="frameworkMain" />
+	</bean>
+	
+	<bean id="peerCommunicatorImpl" class="org.opendaylight.controlapps.framework.core.impl.PeerCommunicatorImpl">
+		<property name="frameworkMain" ref="frameworkMain" />
+	</bean>
+	
+	<bean id="frameworkMgmtPointImpl" class="org.opendaylight.controlapps.framework.core.impl.FrameworkMgmtPointImpl">
+		<property name="frameworkMain" ref="frameworkMain" />
+	</bean>
+	
+</beans>

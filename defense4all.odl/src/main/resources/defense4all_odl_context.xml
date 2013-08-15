@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"	
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	
+	<!-- Defense4All ODL modules -->
+	
+	<bean id="odl" class="org.opendaylight.controlapps.defense4all.odl.Odl">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="constFlowUrlPrefix" value="/controller/nb/v2/flow" />	
+		<property name="constStatsUrlPrefix" value="/controller/nb/v2/statistics" />	
+	</bean>
+	
+	<bean id="statsCollectionRep" class="org.opendaylight.controlapps.defense4all.odl.OdlStatsCollectionRep">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		<property name="odl" ref="odl" />
+	</bean>
+	
+	<bean id="dvsnRep" class="org.opendaylight.controlapps.defense4all.odl.OdlDvsnRep">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		<property name="odl" ref="odl" />
+	</bean>
+	
+</beans>
