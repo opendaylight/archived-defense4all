@@ -282,16 +282,16 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 		if(s == null) return;
 		if(StatsCollectionStatus.valueOf(s) != StatsCollectionStatus.ACTIVE) return;
 
-		StatReport statReport; String trafficFloorKey; Map.Entry<String,Object> cell;
+		StatReport statReport; String trafficFloorKey; Map.Entry<String,Object> pncell;
 		Iterator<Map.Entry<String,Object>> iter = pnRow.entrySet().iterator();
 		StatsCollectionRep statsCollectionRep = dfAppRoot.getStatsCollectionRep();
 
 		while(iter.hasNext()) {
 
-			cell = iter.next();			
-			if(! cell.getKey().startsWith(PN.TRAFFIC_FLOOR_KEY_PREFIX)) continue; // Not a location column
+			pncell = iter.next();			
+			if(! pncell.getKey().startsWith(PN.TRAFFIC_FLOOR_KEY_PREFIX)) continue; // Not a location column
 
-			trafficFloorKey = (String) cell.getValue();
+			trafficFloorKey = (String) pncell.getValue();
 			statReport = statsCollectionRep.getStatsReport(pnKey, trafficFloorKey);
 			if(statReport == null || statReport.stats == null) continue; // Occasionally may fail to obtain stats
 

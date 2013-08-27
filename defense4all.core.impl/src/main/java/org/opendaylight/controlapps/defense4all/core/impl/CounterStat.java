@@ -4,6 +4,7 @@
  * This program and the accompanying materials are made available under the terms of the Eclipse Public License
  * v1.0 which accompanies this distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  * @author Gera Goft 
+ * @author Konstantin Pozdeev
  * @version 0.1
  */
 
@@ -23,11 +24,6 @@ import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.LongSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
-/**
- * 	
- * @author gerag
- *
- */
 public class CounterStat {
 	
 	/* CounterStat statuses */
@@ -35,7 +31,7 @@ public class CounterStat {
 		INVALID,
 		WARMUP_PERIOD, 			// Warm-up time - averages are not updated, neither attacks are suspected
 		GRACE_PERIOD, 			// Averages are updated, but attacks are not suspected
-		ACTIVE,					// Attacks may be suspected
+		ACTIVE					// Attacks may be suspected
 	}
 	
 	/* CounterStat column names */
@@ -60,7 +56,7 @@ public class CounterStat {
 	public Status status;
 	public int 	  numofAttackSuspicions;
 	public boolean attacked; 		// Flag indicating whether at the PN level attack has been detected
-	public boolean dvsnStat;
+//	public boolean dvsnStat;  - Konsta 
 	
 	protected static ArrayList<RepoCD> mCounterStatRepoCDs = null;
 	
@@ -80,8 +76,8 @@ public class CounterStat {
 
 		System.out.println("Counter    for " + location + ":\tlatest=" + (int)Math.ceil(latestTcpbytes) + "/" + 
 			(int)Math.ceil(latestTcppackets) + ",\t" + "averages=" + (int)Math.ceil(averageTcpbytes) + "/" + 
-			(int)Math.ceil(averageTcppackets) + ";\t"  + "suspicions=" + numofAttackSuspicions + ";\t" + status +
-			";\tdiversion stat=" + dvsnStat);
+			(int)Math.ceil(averageTcppackets) + ";\t"  + "suspicions=" + numofAttackSuspicions + ";\t" + status /* Konsta +
+			 ";\tdiversion stat=" + dvsnStat */);
 	}
 
 	/** ### Description ###
@@ -91,18 +87,18 @@ public class CounterStat {
 		key = null; location = null; pnKey = null; movingAverageStr = null; movingAverage = null; 
 		lastReadingStr = null; lastReading = null; latestRateStr = null; latestRate = null; 
 		lastReadTime = 0; firstReadTime = 0; status = Status.INVALID; 
-		numofAttackSuspicions = 0; attacked = false; dvsnStat = false;
+		numofAttackSuspicions = 0; attacked = false; /* Konsta dvsnStat = false */;
 	}
 	
 	/** ### Description ###
 	 * @param param_name 
 	 * @throws
 	 */
-	public CounterStat(String location, String pnKey, boolean dvsnStat) {
+	public CounterStat(String location, String pnKey/* Konsta , boolean dvsnStat*/) {
 		this();
 		this.location = location;
 		this.pnKey = pnKey;
-		this.dvsnStat = dvsnStat;
+		/* Konsta this.dvsnStat = dvsnStat;*/
 		key = generateKey(location, pnKey);
 	}
 
@@ -117,7 +113,7 @@ public class CounterStat {
 		lastReadTime = (Long) counterStatRow.get(LAST_READING_TIME);
 		numofAttackSuspicions = (Integer) counterStatRow.get(NUMOF_ATTACK_SUSPICIONS);
 		status = Status.valueOf((String) counterStatRow.get(STATUS));
-		dvsnStat = (Boolean) counterStatRow.get(DVSN_STAT);
+		/*Konsta dvsnStat = (Boolean) counterStatRow.get(DVSN_STAT);*/
 	}
 
 	public Hashtable<String, Object> toRow() {
@@ -138,7 +134,7 @@ public class CounterStat {
 		row.put(LAST_READING_TIME, lastReadTime);
 		row.put(STATUS, status.name());
 		row.put(NUMOF_ATTACK_SUSPICIONS, numofAttackSuspicions);
-		row.put(DVSN_STAT, dvsnStat);
+		/* Konsta row.put(DVSN_STAT, dvsnStat);*/
 		return row;
 	}
 	

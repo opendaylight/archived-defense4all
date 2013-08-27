@@ -19,10 +19,6 @@ import me.prettyprint.cassandra.serializers.StringSerializer;
 
 import org.opendaylight.controlapps.framework.core.RepoCD;
 
-/**
- * @author gerag
- *
- */
 public class TrafficFloor {
 
 	/* TrafficFloor Repo common columns */	
@@ -66,7 +62,7 @@ public class TrafficFloor {
 		StringBuilder sb = new StringBuilder();
 		sb.append(node); sb.append(":");
 		sb.append(pnKey); sb.append(":");
-		sb.append(floor);
+		sb.append(floor);	
 		return sb.toString();
 	}
 

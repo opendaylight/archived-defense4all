@@ -4,6 +4,7 @@
  * This program and the accompanying materials are made available under the terms of the Eclipse Public License
  * v1.0 which accompanies this distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  * @author Gera Goft 
+ * @author Konstantin Pozdeev
  * @version 0.1
  */
 
@@ -14,15 +15,6 @@ import org.opendaylight.controlapps.defense4all.core.TrafficTuple;
 import org.opendaylight.controlapps.defense4all.core.impl.CounterStat;
 import org.opendaylight.controlapps.defense4all.core.impl.CounterStat.Status;
 
-
-/**
- * 
- */
-
-/**
- * @author gerag
- *
- */
 
 public class PNStatSum {
 
@@ -50,7 +42,8 @@ public class PNStatSum {
 		if(warmupPeriod) return;			
 
 		latestRate.add(counterStat.latestRate);
-		if(counterStat.dvsnStat) return; // No adding of diversion stat averages or consideration for active
+		// Konsta if(counterStat.dvsnStat) return; // No adding of diversion stat averages or consideration for active
+		if(counterStat.attacked) return;
 
 		activePeriod = activePeriod && counterStat.status == Status.ACTIVE;
 		average.add(counterStat.movingAverage);

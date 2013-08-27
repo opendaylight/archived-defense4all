@@ -4,6 +4,7 @@
  * This program and the accompanying materials are made available under the terms of the Eclipse Public License
  * v1.0 which accompanies this distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  * @author Gera Goft 
+ * @author Pozdeev Konstantin
  * @version 0.1
  */
 package org.opendaylight.controlapps.defense4all.core;
@@ -15,13 +16,10 @@ import java.util.List;
 import me.prettyprint.cassandra.serializers.ShortSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
+import org.opendaylight.controlapps.defense4all.core.PN.MitigationScope;
 import org.opendaylight.controlapps.framework.core.RepoCD;
 import org.opendaylight.controlapps.framework.core.Utils;
 
-/**
- * @author gerag
- *
- */
 public class FlowConfigInfo {
 
 	/* FlowConfigInfo Repo columns */
@@ -112,13 +110,13 @@ public class FlowConfigInfo {
 		this();
 		
 		key = (String) row.get(NAME);
-		node = (String) row.get(NODE);
-		floor = (Short) row.get(FLOOR);
-		direction = Direction.valueOf((String) row.get(DIRECTION));
+		node = (String) row.get(NODE);	
+		floor = (Integer) row.get(FLOOR);
+		direction = Direction.valueOf((String)row.get(DIRECTION));
 		trafficFloorKey = (String) row.get(TRAFFIC_FLOOR_KEY);
-		
-		etherType = (Short) row.get(ETHER_TYPE);
-		protocol = (Short) row.get(PROTOCOL);
+
+		etherType = (Integer) row.get(ETHER_TYPE);
+		protocol = (Integer) row.get(PROTOCOL);
 		dlSrc = (String) row.get(DL_SRC);
 		dlDst = (String) row.get(DL_DST);
 		nwSrc = (String) row.get(NW_SRC);
@@ -153,7 +151,7 @@ public class FlowConfigInfo {
 		row.put(NAME, key);
 		row.put(NODE, node);
 		row.put(FLOOR, floor);
-		row.put(DIRECTION, direction);
+		row.put(DIRECTION, direction.name());
 		row.put(TRAFFIC_FLOOR_KEY, trafficFloorKey);
 		
 		row.put(ETHER_TYPE, etherType);

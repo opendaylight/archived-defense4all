@@ -153,6 +153,8 @@ public class TrafficTuple {
 	 * @return
 	 */
 	public String serialize() {
+		
+		if ( tuple == null || tuple.isEmpty()) return "";
 
 		StringBuilder sb = new StringBuilder(); TrafficData trafficData;
 		Iterator<Map.Entry<Integer,TrafficData>> iter = tuple.entrySet().iterator();
@@ -189,9 +191,9 @@ public class TrafficTuple {
 
 			// port, protocol and flag are same as source
 			// bytes and packets should be calculated in terms of rates
-			trafficDelta = new TrafficData(iter.next().getValue());
-			trafficDelta.bytes = trafficData.bytes - lowerTrafficData.bytes / timePeriod;
-			trafficDelta.packets = trafficData.packets - lowerTrafficData.packets / timePeriod;
+			trafficDelta = new TrafficData(trafficData);
+			trafficDelta.bytes = ( trafficData.bytes - lowerTrafficData.bytes ) / timePeriod;
+			trafficDelta.packets = ( trafficData.packets - lowerTrafficData.packets ) / timePeriod;
 
 			tt.tuple.put(generateTrafficDataKey(trafficDelta.protocol, trafficDelta.port), trafficDelta);
 		}
@@ -229,7 +231,7 @@ public class TrafficTuple {
 	public void add(TrafficTuple other) {
 
 		if(other == null) return;
-
+		
 		// Update movingAverage for received protocol/port data
 		Iterator<Map.Entry<Integer,TrafficData>> iter = other.tuple.entrySet().iterator();
 		TrafficData otherTrafficData;
@@ -255,10 +257,10 @@ public class TrafficTuple {
 		
 		Iterator<Map.Entry<Integer,TrafficData>> iter = tuple.entrySet().iterator();
 		TrafficData trafficData; int trafficKey; ProtocolPort protocolPort;
-
+		
 		while(iter.hasNext()) {
-			trafficData = iter.next().getValue();
 			trafficKey  = iter.next().getKey();
+			trafficData = tuple.get(trafficKey);
 			float fromBytes = nonZeroFrom.tuple.get(trafficKey).bytes;
 			float fromPackets = nonZeroFrom.tuple.get(trafficKey).packets;
 		

@@ -10,7 +10,6 @@
 package org.opendaylight.controlapps.defense4all.core;
 
 public class StatReport {
-	
 	public TrafficTuple stats;
 	public long   readingTime;
 	public String pnKey;

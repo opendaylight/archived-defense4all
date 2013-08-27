@@ -287,9 +287,8 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			if(zeroStat) return; // No need to create new counterStats for stat omissions.
 			
 			// TODO: check if the counter is in repo first before creating. Can be the case in a distributed DF
-			cStat = new CounterStat();  // Konsta
-//			cStat = new CounterStat(statReport.trafficFloorKey, statReport.pnKey, statReport.dvsnStat);
-			cStat.status = Status.INVALID;	// Konsta
+			cStat = new CounterStat(statReport.trafficFloorKey, statReport.pnKey ); 
+			cStat.status =  Status.WARMUP_PERIOD; // Konsta
 //			cStat.status = statReport.dvsnStat ? Status.ACTIVE : Status.WARMUP_PERIOD;
 			counterStats.put(counterStatKey, cStat);
 		}
@@ -316,8 +315,8 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			float averagePeriod = cStat.status == Status.ACTIVE ? movingAveragePeriod : gracePeriod;
 			cStat.updateStats(statReport, averagePeriod, updateAverages);
 
-//			if(statReport.dvsnStat) return;
-			// Konsta
+			// if(statReport.dvsnStat) return;
+			if (cStat.attacked) return;
 			
 			/* If grace - check for end of grace */
 			if(cStat.status == Status.GRACE_PERIOD && cStat.lastReadTime - cStat.firstReadTime > gracePeriod) {
@@ -463,7 +462,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		CounterStat counterStat; Iterator<Map.Entry<String,CounterStat>> iter = counterStats.entrySet().iterator();
 		while(iter.hasNext()) {
 			counterStat = iter.next().getValue();
-			if(counterStat.pnKey.equals(pnKey) && !counterStat.dvsnStat)	
+			if(counterStat.pnKey.equals(pnKey) /* Konsta && !counterStat.dvsnStat*/)	
 				counterStat.attacked = attacked;
 		}
 	}
