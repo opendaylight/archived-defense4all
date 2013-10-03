@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<bean id="mgmtPointImpl" 
+		class="org.opendaylight.defense4all.core.impl.DFMgmtPointImpl">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		
+		<!-- default OFC settings -->
+
+		<property name="ofcHostname" value="odl_controller" />
+		<property name="ofcUsername" value="admin" />
+		<property name="ofcPassword" value="admin" />
+
+		<property name="ofcPort" value="8080" />
+		<property name="ofcForStatsCollection" value="true" />
+		<property name="ofcForDvsn" value="true" />
+		<property name="ofcSetInSpring" value="true" />
+
+		<!-- default OFS settings -->
+
+		<property name="ofsLabel" value="ovs" />
+		<property name="ofsId" value="00:00:00:50:56:a3:1b:80" />
+		<property name="ofsType" value="OF" />
+		<property name="ofsMgmtAddr" value="10.206.102.78" />
+		<property name="ofsMgmtPort" value="0" />
+		<property name="ofsSdnNodeMode" value="SDN_ENABLED_NATIVE" />
+		<property name="ofsHealthFrequency" value="120" />
+
+		<property name="ofsAmsConnAmsLabel" value="dp1" />
+		<property name="ofsAmsConnToAmsInPort" value="2" />
+		<property name="ofsAmsConnToAmsOutPort" value="4" />
+		<property name="ofsAmsConnInAmsPort" value="1" />
+		<property name="ofsAmsConnOutAmsPort" value="2" />
+
+		<property name="ofsTrafficPortLabel" value="client_side" />
+		<property name="ofsTrafficPort" value="1" />
+		<property name="ofsTrafficPortVlan" value="0" />
+		<property name="ofsTrafficPortDirection" value="INBOUND" />
+
+		<property name="ofsProtectedLinkLabel" value="1_to_3" />
+		<property name="ofsProtectedLinkInPort" value="1" />
+		<property name="ofsProtectedLinkOutPort" value="3" />
+
+		<property name="ofsSetInSpring" value="true" />
+		
+		<!-- default AMS settings -->
+		<property name="amsLabel" value="dp1" />
+		<property name="amsForStatsCollection" value="false" />
+		<property name="amsForDvsn" value="true" />
+		<property name="amsSetInSpring" value="true" />
+	</bean>
+</beans>	

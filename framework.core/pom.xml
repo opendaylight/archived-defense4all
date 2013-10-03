@@ -12,12 +12,13 @@
   </properties>
 
   <parent>
-    <groupId>controlapps</groupId>
+    <groupId>org.opendaylight.defense4all</groupId>
     <artifactId>dfapp</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>../dfapp/pom.xml</relativePath>
   </parent>
 
   <dependencies>
+  	
   </dependencies>
 </project>

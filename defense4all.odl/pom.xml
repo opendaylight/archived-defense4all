@@ -1,55 +1,47 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-  <artifactId>defense4all.odl</artifactId>
-  <packaging>jar</packaging>
-  <name>defense4all.odl</name>
-  <url>http://maven.apache.org</url>
+	<artifactId>defense4all.odl</artifactId>
+	<packaging>jar</packaging>
+	<name>defense4all.odl</name>
+	<url>http://maven.apache.org</url>
 
-  <parent> 
-    <groupId>controlapps</groupId>
-    <artifactId>dfapp</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <relativePath>../dfapp/pom.xml</relativePath>
-  </parent>
-  
-  <dependencies>
-  	<dependency>
-  		<groupId>controlapps</groupId>
-  		<artifactId>defense4all.core</artifactId>
-  		<version>0.0.1-SNAPSHOT</version>
-  	</dependency>
-<!--   	<dependency> -->
-<!-- 		<groupId>org.opendaylight.controller</groupId> -->
-<!-- 		<artifactId>forwardingrulesmanager</artifactId> -->
-<!-- 		<version>0.4.0-SNAPSHOT</version> -->
-<!--     </dependency> -->
-<!--   	<dependency> -->
-<!-- 		<groupId>org.opendaylight.controller</groupId> -->
-<!-- 		<artifactId>flowprogrammer.northbound</artifactId> -->
-<!-- 		<version>0.4.0-SNAPSHOT</version> -->
-<!--     </dependency> -->
-<!--   	<dependency> -->
-<!-- 		<groupId>org.opendaylight.controller</groupId> -->
-<!-- 		<artifactId>statisticsmanager</artifactId> -->
-<!-- 		<version>0.4.0-SNAPSHOT</version> -->
-<!--     </dependency>  -->
-<!--   	<dependency> -->
-<!-- 		<groupId>org.opendaylight.controller</groupId> -->
-<!-- 		<artifactId>sal</artifactId> -->
-<!-- 		<version>0.5.0-SNAPSHOT</version> -->
-<!--     </dependency>  -->
-  	<dependency>
-		<groupId>org.springframework</groupId>
-		<artifactId>spring-web</artifactId>
-		<version>3.1.2.RELEASE</version>
-    </dependency> 
-	<dependency>
-		<groupId>org.apache.httpcomponents</groupId>
-		<artifactId>httpclient</artifactId>
-		<version>4.1.3</version>
-	</dependency>          
-  </dependencies>
-  
+	<parent>
+		<groupId>org.opendaylight.defense4all</groupId>
+		<artifactId>dfapp</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>../dfapp/pom.xml</relativePath>
+	</parent>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.opendaylight.defense4all</groupId>
+			<artifactId>defense4all.core</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>3.1.2.RELEASE</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.1.3</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+
 </project>

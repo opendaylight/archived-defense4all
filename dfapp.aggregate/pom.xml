@@ -2,7 +2,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>controlapps</groupId>
+	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>df.aggregate</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
@@ -15,17 +15,17 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>framework.aggregate</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.aggregate</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>restservice</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 			<type>war</type>
@@ -41,7 +41,7 @@
 					<appendAssemblyId>false</appendAssemblyId>
 					<archive>
 						<manifest>
-							<mainClass>org.opendaylight.controlapps.framework.core.impl.FrameworkMainImpl</mainClass>
+							<mainClass>org.opendaylight.defense4all.framework.core.impl.FrameworkMainImpl</mainClass>
 						</manifest>
 					</archive>
 					<descriptors>

@@ -11,9 +11,9 @@
 		<dependencySet>
 			<unpack>false</unpack>
 			<includes>
-				<include>controlapps:framework.aggregate</include>
-				<include>controlapps:defense4all.aggregate</include>
-				<include>controlapps:restservice</include>
+				<include>org.opendaylight.defense4all:framework.aggregate</include>
+				<include>org.opendaylight.defense4all:defense4all.aggregate</include>
+				<include>org.opendaylight.defense4all:restservice</include>
 			</includes>
 		</dependencySet>
 	</dependencySets>

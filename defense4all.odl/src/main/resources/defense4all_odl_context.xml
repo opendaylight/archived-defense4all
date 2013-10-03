@@ -6,19 +6,26 @@
 	
 	<!-- Defense4All ODL modules -->
 	
-	<bean id="odl" class="org.opendaylight.controlapps.defense4all.odl.Odl">
-		<property name="frameworkMain" ref="frameworkMain" />
-		<property name="constFlowUrlPrefix" value="/controller/nb/v2/flow" />	
-		<property name="constStatsUrlPrefix" value="/controller/nb/v2/statistics" />	
+	<bean id="flowEntryMgr" class="org.opendaylight.defense4all.odl.controller.FlowEntryMgr">
+		<property name="odl" ref="odl" />
 	</bean>
 	
-	<bean id="statsCollectionRep" class="org.opendaylight.controlapps.defense4all.odl.OdlStatsCollectionRep">
+	<bean id="odl" class="org.opendaylight.defense4all.odl.Odl">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		<property name="flowEntryMgr" ref="flowEntryMgr" />
+		<property name="constFlowUrlPrefix" value="/controller/nb/v2/flowprogrammer" />	
+		<property name="constStatsUrlPrefix" value="/controller/nb/v2/statistics" />
+		<property name="constSwitchUrlPrefix" value="/controller/nb/v2/switchmanager" />
+	</bean>
+	
+	<bean id="statsCollectionRep" class="org.opendaylight.defense4all.odl.OdlStatsCollectionRep">
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="dfAppRoot" ref="appRoot" />
 		<property name="odl" ref="odl" />
 	</bean>
 	
-	<bean id="dvsnRep" class="org.opendaylight.controlapps.defense4all.odl.OdlDvsnRep">
+	<bean id="dvsnRep" class="org.opendaylight.defense4all.odl.OdlDvsnRep">
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="dfAppRoot" ref="appRoot" />
 		<property name="odl" ref="odl" />

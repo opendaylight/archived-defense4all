@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	   
+	<bean id="detector1" class="org.opendaylight.defense4all.core.impl.RateBasedDetectorImpl">
+		<constructor-arg index="0" name="statsQueueCapacity" value="10000" />
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="dfAppRoot" ref="appRoot" />
+		<property name="label" value="of_rate_based_detector" />		
+	</bean>	 
+</beans>	

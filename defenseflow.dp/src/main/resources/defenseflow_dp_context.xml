@@ -6,14 +6,14 @@
 	
 	<!-- DF DP modules -->	
 	
-	<bean id="amsRep" class="com.radware.controlapps.dp.DPRep">
+	<bean id="amsRep" class="com.radware.defenseflow.dp.DPRep">
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="dfAppRoot" ref="appRoot" />
 		<property name="dpBasedDetector" ref="dpBasedDetector" />
 		<property name="rsyslogDFPipe" value="/var/tmp/rsyslog-df-pipe" />
 	</bean>
 	
-	<bean id="dpBasedDetector" class="com.radware.controlapps.dp.DPBasedDetector">
+	<bean id="dpBasedDetector" class="com.radware.defenseflow.dp.DPBasedDetector">
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="dfAppRoot" ref="appRoot" />
 	<!--  	<property name="dpRep" ref="dpRep" />  -->

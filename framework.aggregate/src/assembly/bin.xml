@@ -11,8 +11,8 @@
 		<dependencySet>
 		<unpack>false</unpack>
 			<includes>
-				<include>controlapps:framework.core</include>
-				<include>controlapps:framework.core.impl</include>
+				<include>org.opendaylight.defense4all:framework.core</include>
+				<include>org.opendaylight.defense4all:framework.core.impl</include>
 			</includes>
 		</dependencySet>
 	</dependencySets>

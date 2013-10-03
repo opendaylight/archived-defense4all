@@ -12,7 +12,7 @@
 	</properties>
 
 	<parent>
-		<groupId>controlapps</groupId>
+		<groupId>org.opendaylight.defense4all</groupId>
 		<artifactId>dfapp</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 		<relativePath>../dfapp/pom.xml</relativePath>
@@ -20,27 +20,27 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.core</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.core.impl</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.odl</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defenseflow.dp</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.mitigationdriver.local</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>

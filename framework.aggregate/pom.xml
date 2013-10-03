@@ -9,7 +9,7 @@
 	<url>http://maven.apache.org</url>
 
 	<parent>
-		<groupId>controlapps</groupId>
+		<groupId>org.opendaylight.defense4all</groupId>
 		<artifactId>dfapp</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 		<relativePath>../dfapp/pom.xml</relativePath>
@@ -21,12 +21,12 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>framework.core</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
-			<groupId>controlapps</groupId>
+			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>framework.core.impl</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>

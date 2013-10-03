@@ -12,7 +12,7 @@
   </properties>
 
   <parent>
-    <groupId>controlapps</groupId>
+    <groupId>org.opendaylight.defense4all</groupId>
     <artifactId>dfapp</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <relativePath>../dfapp/pom.xml</relativePath>
@@ -20,12 +20,12 @@
 
   <dependencies>
   	<dependency>
-  		<groupId>controlapps</groupId>
+  		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>framework.core</artifactId>
   		<version>0.0.1-SNAPSHOT</version>
   	</dependency>
   	<dependency>
-  		<groupId>controlapps</groupId>
+  		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>defense4all.core.impl</artifactId>
   		<version>0.0.1-SNAPSHOT</version>
   		<scope>runtime</scope>  		
@@ -44,11 +44,6 @@
 	  <groupId>org.eclipse.jetty</groupId>
 	  <artifactId>jetty-webapp</artifactId>
 	  <version>${jetty.version}</version>
-	</dependency>
-	<dependency>
-	  <groupId>org.codehaus.jackson</groupId>
-	  <artifactId>jackson-mapper-asl</artifactId>
-	  <version>1.9.7</version>
 	</dependency>
   </dependencies>
 </project>

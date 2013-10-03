@@ -11,11 +11,11 @@
 		<dependencySet>
 			<unpack>false</unpack>
 			<includes>
-				<include>controlapps:defense4all.core</include>
-				<include>controlapps:defense4all.core.impl</include>
-				<include>controlapps:defense4all.odl</include>
-				<include>controlapps:defenseflow.dp</include>
-				<include>controlapps:defense4all.mitigationdriver.local</include>
+				<include>org.opendaylight.defense4all:defense4all.core</include>
+				<include>org.opendaylight.defense4all:defense4all.core.impl</include>
+				<include>org.opendaylight.defense4all:defense4all.odl</include>
+				<include>org.opendaylight.defense4all:defenseflow.dp</include>
+				<include>org.opendaylight.defense4all:defense4all.mitigationdriver.local</include>
 			</includes>
 		</dependencySet>
 	</dependencySets>

@@ -6,7 +6,7 @@
 	
 	<!-- DF DP modules -->	
 	
-	<bean id="mitigationDriver0" class="org.opendaylight.controlapps.defense4all.mitigationdriver.local.MitigationDriverLocal">
+	<bean id="mitigationDriver0" class="org.opendaylight.defense4all.mitigationdriver.local.MitigationDriverLocal">
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="dfAppRoot" ref="appRoot" />
 		<property name="label" value="mitigation_driver_local" />

@@ -13,7 +13,7 @@
 			<param name="ConversionPattern" value="%-4r [%t] %-5p %l - %m%n" />
 		</layout>
 	</appender>
-	<logger name="org.opendaylight.controlapp" additivity="false">
+	<logger name="org.opendaylight.defense4all" additivity="false">
 		<level value="debug" />
 		<appender-ref ref="CA" />
 	</logger>
@@ -23,3 +23,18 @@
 		<appender-ref ref="CA" />
 	</root>
 </log4j:configuration>
+
+<!-- Spring logeers Loggers -->
+<!-- 
+	<logger name="org.springframework.core">
+		<level value="info" />
+	</logger>
+
+	<logger name="org.springframework.beans">
+		<level value="info" />
+	</logger>
+	
+	<logger name="org.springframework.context">
+		<level value="info" />
+	</logger>
+ -->
