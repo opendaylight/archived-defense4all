@@ -22,7 +22,6 @@
 		<property name="appRoot" ref="appRoot" /> 	<!--	The actual integrated application -->
 		<property name="flightRecorderImpl" ref="flightRecorderImpl" />
 		<property name="healthTrackerImpl" ref="healthTrackerImpl" />
-		<property name="hostAddr" value="10.206.167.31" />
 	</bean>
 	
 	<!-- Framework core modules  -->

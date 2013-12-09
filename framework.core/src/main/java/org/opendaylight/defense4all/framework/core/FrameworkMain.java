@@ -31,6 +31,28 @@ public interface FrameworkMain {
 			return returnValue;
 		}
 	}
+	
+	/**
+	 * Name space allocation of Framework REPO Major IDs
+	 */
+
+	public enum RepoMajor {	
+		FWORK_INVALID,
+		FWORK_GLOBAL,
+		FWORK_REPO_FACTORY,
+		FWORK_COMMUNICATOR,
+		FWORK_CLUSTER_MGR,
+		FWORK_MGMT_POINT,
+		FWORK_FLIGHT_RECORDER
+	}
+
+	/**
+	 * Name space allocation of Framework REPO global minor IDs
+	 */
+	public enum RepoMinor {	
+		INVALID,
+		CORE_STATE
+	}
 
 	/* Framework flight recorder event types */
 	public static final String FR_FRAMEWORK_CONFIG = "Framework_config";

@@ -16,21 +16,24 @@ import java.util.Properties;
 
 import javax.persistence.EntityManager;
 
+import me.prettyprint.cassandra.serializers.StringSerializer;
+
 import org.opendaylight.defense4all.framework.core.AppRoot;
 import org.opendaylight.defense4all.framework.core.ClusterInfo;
 import org.opendaylight.defense4all.framework.core.ClusterMgr;
+import org.opendaylight.defense4all.framework.core.CoreState;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.FR;
 import org.opendaylight.defense4all.framework.core.FrameworkMain;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.PropertiesSerializer;
+import org.opendaylight.defense4all.framework.core.Repo;
 import org.opendaylight.defense4all.framework.core.RepoFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
@@ -48,6 +51,7 @@ public class FrameworkMainImpl implements FrameworkMain {
 	protected FrameworkMgmtPointImpl frameworkMgmtPointImpl;
 
 	protected EntityManager frameworkEM;
+	public Repo<String> coreStateRepo = null;
 	protected String stateClassPaths;
 	protected String restWarPath; // Path to the WAR containing the service
 	protected String restPath; 	// REST Path (in HTTP URL) to service requests
@@ -60,28 +64,6 @@ public class FrameworkMainImpl implements FrameworkMain {
 	public String hostAddr;
 
 	static Logger log = LoggerFactory.getLogger(FrameworkMainImpl.class);
-
-	/**
-	 * Name space allocation of Framework REPO Major IDs
-	 */
-
-	public enum RepoMajor {	
-		FWORK_INVALID,
-		FWORK_GLOBAL,
-		FWORK_REPO_FACTORY,
-		FWORK_COMMUNICATOR,
-		FWORK_CLUSTER_MGR,
-		FWORK_MGMT_POINT,
-		FWORK_FLIGHT_RECORDER
-	}
-
-	/**
-	 * Name space allocation of Framework REPO global minor IDs
-	 */
-
-	public enum RepoMinor {	
-		INVALID
-	}
 
 	/**
 	 * Framework core entity manager id
@@ -109,7 +91,6 @@ public class FrameworkMainImpl implements FrameworkMain {
 	public void setRestPath(String restPath) { this.restPath = restPath; }
 	public void setFlightRecorderImpl(FRImpl flightRecorderImpl) { this.frImpl = flightRecorderImpl; }
 	public void setHealthTrackerImpl(HealthTrackerImpl healthTrackerImpl) {this.healthTrackerImpl = healthTrackerImpl;}
-	public void setHostAddr(String hostAddr) {this.hostAddr = hostAddr;}
 	
 	/**
 	 * #### method description ####
@@ -223,6 +204,15 @@ public class FrameworkMainImpl implements FrameworkMain {
 		/* This part of frameworkMain init can only be done after RepoFactoryImpl init. */
 		frameworkEmFinitNeeded = true;
 		frameworkEM = repoFactoryImpl.createFrameworkMainEM(FRAMEWORK_CORE_EM_ID, stateClassPaths);
+		try {
+			coreStateRepo = (Repo<String>) repoFactoryImpl.getOrCreateRepo(RepoMajor.FWORK_GLOBAL.name(), 
+					RepoMinor.CORE_STATE.name(), StringSerializer.get(), true, CoreState.getRCDs());
+			hostAddr = (String)coreStateRepo.getCellValue(CoreState.FWORK_CORE_STATE_ROW_KEY, CoreState.HOST_ADDRESS);
+		} catch (Throwable e1) {
+			String msg = "Excepted trying to retrieve/construct the framework coreStateRepo";
+			log.error(msg, e1);
+			throw new ExceptionControlApp(msg);
+		}
 
 		/* init framework FlightLogger */
 		flightRecorderFinitNeeded = true;

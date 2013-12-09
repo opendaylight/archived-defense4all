@@ -33,7 +33,7 @@ import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.FR.EventRecord;
 import org.opendaylight.defense4all.framework.core.FR.FilterRecord;
 
-@Path("/log")
+@Path("/fr")
 public class FlightRecorderRestService {
 
 	static Logger log = LoggerFactory.getLogger(FlightRecorderRestService.class);

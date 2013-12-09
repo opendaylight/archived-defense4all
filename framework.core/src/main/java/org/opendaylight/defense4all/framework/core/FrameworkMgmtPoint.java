@@ -10,11 +10,8 @@
 
 package org.opendaylight.defense4all.framework.core;
 
-import java.util.Properties;
-
 public interface FrameworkMgmtPoint {
 
-	public ClusterInfo getClusterInfo();	
-
-	public Properties getDirections();
+	public ClusterInfo getClusterInfo();
+	public void setHostAddr(String hostAddress) throws ExceptionControlApp;
 }

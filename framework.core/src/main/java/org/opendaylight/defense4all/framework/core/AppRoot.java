@@ -18,6 +18,7 @@ import java.util.Properties;
 
 
 
+
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,4 +94,6 @@ public class AppRoot {
 	public void test(Properties props) {
 		// perform test of choice
 	}
+
+	public void setHostAddr(String hostAddr) {}
 }

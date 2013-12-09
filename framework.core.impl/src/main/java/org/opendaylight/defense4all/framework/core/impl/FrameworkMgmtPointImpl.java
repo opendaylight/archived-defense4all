@@ -13,13 +13,12 @@ package org.opendaylight.defense4all.framework.core.impl;
 /** 
  *	TODO: description - org.opendaylight.ctlapps.framework focal point. orchestrates start, stop. 
  */
-
-import java.util.Properties;
-
 import org.opendaylight.defense4all.framework.core.ClusterInfo;
+import org.opendaylight.defense4all.framework.core.CoreState;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FrameworkMain;
 import org.opendaylight.defense4all.framework.core.FrameworkMgmtPoint;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
 public class FrameworkMgmtPointImpl extends FrameworkModule implements FrameworkMgmtPoint {
@@ -54,20 +53,23 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public ClusterInfo getClusterInfo() {
-		return null;
+	public ClusterInfo getClusterInfo() {return null;}	
+	
+	public void setHostAddr(String hostAddr) throws ExceptionControlApp {
+		
+		fr.logRecord(FrameworkMain.FR_FRAMEWORK_CONFIG, "Framework is setting hostaddress to " + hostAddr);		
+		try {
+			fMainImpl.coreStateRepo.setCell(CoreState.FWORK_CORE_STATE_ROW_KEY, CoreState.HOST_ADDRESS, hostAddr);
+		} catch (Exception e) {
+			log.error("Framework failed to set hostaddress " + hostAddr, e );
+			fr.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Framework failed to set hostaddress " + hostAddr);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Framework failed to set hostaddress " + hostAddr + ", " + e.getMessage());
+		}
+		fMainImpl.hostAddr = hostAddr;
+		fMainImpl.appRoot.setHostAddr(hostAddr); // Notify the application. 
 	}
 
 	@Override
-	protected void actionSwitcher(int actionCode, Object param) {
-		// TODO: check if decoupled execution is needed		
-	}
-	
-	// TODO: cleanup at the end. This is just for trying REST...
-	
-	DirectionsImpl directionsImpl = DirectionsImpl.getInstance();
-	
-	public Properties getDirections() {
-		return directionsImpl.getDirections();
-	}
+	protected void actionSwitcher(int actionCode, Object param) {}
 }
