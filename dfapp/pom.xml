@@ -73,7 +73,24 @@
 			</plugin> -->
 		</plugins>
 	</build>
-
+	
+<distributionManagement>
+    <!-- OpenDayLight Released artifact -->
+    <repository>
+      <id>opendaylight-release</id>
+      <url>${nexusdeploy}/repositories/opendaylight.release/</url>
+    </repository>
+    <!-- OpenDayLight Snapshot artifact -->
+    <snapshotRepository>
+      <id>opendaylight-snapshot</id>
+      <url>${nexusdeploy}/repositories/opendaylight.snapshot/</url>
+    </snapshotRepository>
+    <!-- Site deployment -->
+    <site>
+      <id>website</id>
+      <url>${sitedeploy}</url>
+    </site>
+  </distributionManagement>
 
 
 
