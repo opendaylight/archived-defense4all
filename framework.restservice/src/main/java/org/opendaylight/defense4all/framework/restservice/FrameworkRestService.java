@@ -27,17 +27,17 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.opendaylight.defense4all.framework.core.Direction;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 
 
-@Path("/directions")
+@Path("/")
 public class FrameworkRestService {
 
-	private static Log log = LogFactory.getLog(FrameworkRestService.class);
-	
+	private static Logger log = LoggerFactory.getLogger(FrameworkRestService.class);
+
 	@Context
 	UriInfo uriInfo;
 	@Context

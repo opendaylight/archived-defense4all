@@ -22,6 +22,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.odl.controller.Connector;
 import org.opendaylight.defense4all.odl.controller.FlowEntryMgr;
 import org.opendaylight.defense4all.odl.pojos.FlowStat;
@@ -40,10 +41,7 @@ public class AppTest extends TestCase {
 	FlowEntryMgr flowEntryMgr;
 	String nodeId;
 	
-	Logger rootLogger;
-	
-
-	
+	Logger rootLogger;	
     /**
      * Create the test case
      *
@@ -60,7 +58,11 @@ public class AppTest extends TestCase {
 		odlOFC.username = "admin"; odlOFC.password = "admin";
 		
 		Connector connector = new Connector(odlOFC);
-		connector.init();		
+		try {
+			connector.init();
+		} catch (ExceptionControlApp e) {
+			assertFalse(true);
+		}		
 		
 		Odl odl = new Odl();
 		odl.constFlowUrlPrefix =  "/controller/nb/v2/flowprogrammer";

@@ -18,6 +18,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /** 
@@ -27,6 +32,8 @@ import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
  * @author gerag
  */
 public class DPSecEvent extends DPEvent {
+
+	private static Logger log = LoggerFactory.getLogger(DPSecEvent.class);
 	
 	public enum DPProtocol {
 		TCP,
@@ -129,36 +136,41 @@ public class DPSecEvent extends DPEvent {
 								// drop-and-quarantine – dropped packet and replied with the defined quarantine action.
 	public String eventGuid;	//
 	
-	public DPSecEvent(Matcher matcher) throws Exception {
+	public DPSecEvent(Matcher matcher) throws IllegalArgumentException {
 
-		DateFormat formatter = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
-		dateTime = formatter.parse(matcher.group(1) + " " + matcher.group(2));
-		severity  = matcher.group(3);
-		timeInSecs = dateTime.getTime()/1000;
-		rdwrEventTypeId = Integer.parseInt(matcher.group(4));
-		category = matcher.group(5);
-		attackName = matcher.group(6);
-		proto = matcher.group(7);
-		dpProtocol = DPProtocol.valueOf(proto);
-		srcAddress = InetAddress.getByName(matcher.group(8));
-		srcPort = Integer.parseInt(matcher.group(9));
-		dstAddress = InetAddress.getByName(matcher.group(10));
-		dstPort = Integer.parseInt(matcher.group(11));
-		attackDPPort = Integer.parseInt(matcher.group(12));
-		context = matcher.group(13);
-		policyName = matcher.group(14);
-		attackStatus = matcher.group(15);
-		packetCount = Long.parseLong(matcher.group(16));
-		attackBandwidth = Long.parseLong(matcher.group(17));
-		if(matcher.group(18).equals("N/A"))
-			vlan = 0;
-		else 
-			vlan = Integer.parseInt(matcher.group(18));
-		mplsRd = Integer.parseInt(matcher.group(19));
-		mplsTag = matcher.group(20);
-		risk = matcher.group(21);
-		action = matcher.group(22);
-		eventGuid = matcher.group(23);
+		try {
+			DateFormat formatter = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+			dateTime = formatter.parse(matcher.group(1) + " " + matcher.group(2));
+			severity  = matcher.group(3);
+			timeInSecs = dateTime.getTime()/1000;
+			rdwrEventTypeId = Integer.parseInt(matcher.group(4));
+			category = matcher.group(5);
+			attackName = matcher.group(6);
+			proto = matcher.group(7);
+			dpProtocol = DPProtocol.valueOf(proto);
+			srcAddress = InetAddress.getByName(matcher.group(8));
+			srcPort = Integer.parseInt(matcher.group(9));
+			dstAddress = InetAddress.getByName(matcher.group(10));
+			dstPort = Integer.parseInt(matcher.group(11));
+			attackDPPort = Integer.parseInt(matcher.group(12));
+			context = matcher.group(13);
+			policyName = matcher.group(14);
+			attackStatus = matcher.group(15);
+			packetCount = Long.parseLong(matcher.group(16));
+			attackBandwidth = Long.parseLong(matcher.group(17));
+			if(matcher.group(18).equals("N/A"))
+				vlan = 0;
+			else 
+				vlan = Integer.parseInt(matcher.group(18));
+			mplsRd = Integer.parseInt(matcher.group(19));
+			mplsTag = matcher.group(20);
+			risk = matcher.group(21);
+			action = matcher.group(22);
+			eventGuid = matcher.group(23);
+		} catch (Throwable e) {
+			log.error("Failed to construct the dpSecEvent from " + matcher, e);
+			throw new IllegalArgumentException("Failed to construct the dpSecEvent from " + matcher, e);
+		}
 	}
 	
 	@Override
@@ -173,10 +185,17 @@ public class DPSecEvent extends DPEvent {
 		return s;
 	}
 
-	public static DPSecEvent fromString(String s) {
+	public static DPSecEvent fromString(String s) throws ExceptionControlApp {
 
-		if(dpSecEventRegex == null) // First time usage
-			dpSecEventRegex = Pattern.compile(DP_SECEVT_REGEX);
+		if(dpSecEventRegex == null) { // First time usage
+			try {
+				dpSecEventRegex = Pattern.compile(DP_SECEVT_REGEX);
+			} catch (Throwable e1) {
+				log.error("Failed to construct the dpSecEventRegex from " + DP_SECEVT_REGEX, e1);
+				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
+				throw new ExceptionControlApp("Failed to construct the syslogPfxRegex from " + SYSLOG_PREFIX_REGEX, e1);
+			}
+		}
 
 		Matcher matcher = dpSecEventRegex.matcher(s);
 		if(!matcher.find()) return null;

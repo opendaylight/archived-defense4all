@@ -9,7 +9,6 @@
 
 package org.opendaylight.defense4all.framework.core;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Properties;
 
@@ -17,16 +16,16 @@ import me.prettyprint.cassandra.serializers.AbstractSerializer;
 import me.prettyprint.hom.PropertyMappingDefinition;
 import me.prettyprint.hom.converters.Converter;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PropertiesSerializer extends AbstractSerializer<Properties> implements Converter<Properties> {
 	
 	private static PropertiesSerializer instance = new PropertiesSerializer();
 	private static ObjectMapper objMapper = new ObjectMapper();
-
+	Logger log = LoggerFactory.getLogger(this.getClass());
+	
 	public static PropertiesSerializer get() {
 		return instance;
 	}
@@ -39,11 +38,8 @@ public class PropertiesSerializer extends AbstractSerializer<Properties> impleme
 		String propsJson;
 		try {
 			propsJson = objMapper.writeValueAsString(props);
-		} catch (JsonGenerationException e) {
-			return null;
-		} catch (JsonMappingException e) {
-			return null;
-		} catch (IOException e) {
+		} catch (Throwable e) {
+			log.error("Failed to writeValueAsString." + e.getLocalizedMessage());
 			return null;
 		}		
 		ByteBuffer byteBuffer = ByteBuffer.wrap(propsJson.getBytes());
@@ -56,11 +52,8 @@ public class PropertiesSerializer extends AbstractSerializer<Properties> impleme
 		Properties props;
 		try {
 			props = objMapper.readValue(new String(byteBuffer.array()), Properties.class);
-		} catch (JsonParseException e1) {
-			return null;
-		} catch (JsonMappingException e1) {
-			return null;
-		} catch (IOException e1) {
+		} catch (Throwable e) {
+			log.error("Failed to read by objectMapper." + e.getLocalizedMessage());
 			return null;
 		}
 	    return props;
@@ -73,11 +66,8 @@ public class PropertiesSerializer extends AbstractSerializer<Properties> impleme
 		String propsJson;
 		try {
 			propsJson = objMapper.writeValueAsString(props);
-		} catch (JsonGenerationException e) {
-			return null;
-		} catch (JsonMappingException e) {
-			return null;
-		} catch (IOException e) {
+		} catch (Throwable e) {
+			log.error("Failed to writeValueAsString." + e.getLocalizedMessage());
 			return null;
 		}		
 		byte[] bytes = propsJson.getBytes();
@@ -89,11 +79,8 @@ public class PropertiesSerializer extends AbstractSerializer<Properties> impleme
 		Properties props;
 		try {
 			props = objMapper.readValue(new String(bytes), Properties.class);
-		} catch (JsonParseException e1) {
-			return null;
-		} catch (JsonMappingException e1) {
-			return null;
-		} catch (IOException e1) {
+		} catch (Throwable e) {
+			log.error("Failed to read by objectMapper." + e.getLocalizedMessage());
 			return null;
 		}
 	    return props;
@@ -106,11 +93,8 @@ public class PropertiesSerializer extends AbstractSerializer<Properties> impleme
 		String propsJson;
 		try {
 			propsJson = objMapper.writeValueAsString(props);
-		} catch (JsonGenerationException e) {
-			return null;
-		} catch (JsonMappingException e) {
-			return null;
-		} catch (IOException e) {
+		} catch (Throwable e) {
+			log.error("Failed to writeValueAsString." + e.getLocalizedMessage());
 			return null;
 		}
 		return propsJson;
@@ -121,11 +105,8 @@ public class PropertiesSerializer extends AbstractSerializer<Properties> impleme
 		Properties props;
 		try {
 			props = objMapper.readValue(propsJson, Properties.class);
-		} catch (JsonParseException e1) {
-			return null;
-		} catch (JsonMappingException e1) {
-			return null;
-		} catch (IOException e1) {
+		} catch (Throwable e) {
+			log.error("Failed to read by objectMapper." + e.getLocalizedMessage());
 			return null;
 		}
 	    return props;

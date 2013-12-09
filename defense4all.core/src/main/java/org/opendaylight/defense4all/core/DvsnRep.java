@@ -10,12 +10,13 @@
 
 package org.opendaylight.defense4all.core;
 
-import java.util.List;
+import java.net.UnknownHostException;
 import java.util.Properties;
 
+import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
-
 
 public abstract class DvsnRep extends DFAppModule {
 
@@ -24,27 +25,13 @@ public abstract class DvsnRep extends DFAppModule {
 	 */
 	protected static final int ACTION_INVALID = -1;	// Already defined in Module. Brought here for brevity
 	protected static final int ACTION_RESERVED = 0; // Already defined in Module. Brought here for brevity
-	protected static final int ACTION_CHECK_TOPO = 1;
 	protected static final int ACTION_NOTIFY_TOPOLOGY_CHANGED = 2;
-	
-	/**
-	 * ### Description ### 
-	 */
-	public enum TrafficDirection {
-		INVALID(-1),
-		ANY(0),
-		IN(1),
-		OUT(2);
-		
-		int mValue;
-		private TrafficDirection(int value) {mValue = value;}
-	}
-	
+
 	/* Constructor for Spring */
 	public DvsnRep() {
 		super();
 	}
-	
+
 	/** Post-constructor initialization	 
 	 * @throws ExceptionControlApp */
 	public void init() throws ExceptionControlApp {	
@@ -56,67 +43,32 @@ public abstract class DvsnRep extends DFAppModule {
 		super.finit();
 	}
 
-	/** Reset */
-	public void reset(ResetLevel resetLevel) {
+	/** Reset 
+	 * @throws ExceptionControlApp */
+	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 		super.reset(resetLevel);
 	}
-	
+
 	public void test(Properties props) {
 	}
-	
+
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addOFC(String ofcKey) {		
+	public void addOFC(String ofcKey) throws ExceptionControlApp {
 		initConnectionToOFC(ofcKey);
 	}
 
 	/**
 	 * Establish connection with the OFC
 	 * @param ofcKey
+	 * @throws ExceptionControlApp 
 	 */
-	protected abstract void initConnectionToOFC(String ofcKey);
-	
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public void addAMS(String amsKey) {
-
-		; // set any additional information in topo repo for this DP
-				
-		registerDP(amsKey);
-		
-		; // Set in repo that DP is ready (otherwise Mitigation driver may attempt to divert to it before OFC knows about it).
-			
-	}
-	
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public void removeOFC(String ofcKey) {			
-		// TODO:
-	}
-	
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public void removeAMS(String amsKey) {
-
-		dfAppRoot.getAMSRep().removeAMS(amsKey);			
-		// TODO here	
-	}
+	protected abstract void initConnectionToOFC(String ofcKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
@@ -124,7 +76,7 @@ public abstract class DvsnRep extends DFAppModule {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void addNetNode(String netNodeKey);
+	public void addAMS(String amsKey) {}
 
 	/**
 	 * #### method description ####
@@ -132,7 +84,33 @@ public abstract class DvsnRep extends DFAppModule {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void removeNetNode(String netNodeLabel);
+	public void removeOFC(String ofcKey) {}
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws exception_type circumstances description 
+	 */
+	public void removeAMS(String amsKey) {}
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	public abstract void addNetNode(String netNodeKey) throws ExceptionControlApp;
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	public abstract void removeNetNode(String netNodeLabel) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
@@ -146,72 +124,81 @@ public abstract class DvsnRep extends DFAppModule {
 		// traffics.
 		return new Properties();
 	}
-	
+
 	protected void notifyTopologyChanged() {
-		invokeDecoupledSerially(ACTION_NOTIFY_TOPOLOGY_CHANGED, null);
+		try {
+			invokeDecoupledSerially(ACTION_NOTIFY_TOPOLOGY_CHANGED, null);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerially.", e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+		}
 	}
-	
+
 	protected void decoupledNotifyTopologyChanged() {
 		dfAppRoot.getMitigationMgr().topologyChanged();
 	}
-
-	/**
-	 * Retrieve topology changes and set in repo. if retrieving changes is not supported retrieve entire topology. 
-	 * This operation is synchronous. If topology has changed, child class implementation should invoke
-	 * notifyTopologyChanged(), unless more refined topology changes are identified, in which case StatsCollector
-	 * and Mitigation driver should be invoked individually.
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	protected abstract void retrieveTopologyChanges(String ofcKey); 
-	
-	// TODO: need also a method to replace OFC?	
 
 	/**
 	 * Set diversion in the OF network for the passed in protected object
 	 * @param dvsnInfo 
 	 * @param param_name param description
 	 * @return return true if succeeded to divert traffic
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract String divert(String mitigationKey, NetNodeDvsnInfo dvsnInfo);
+	public abstract String divert(String mitigationKey, String dvsnInfokey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
+	 * @param trafficFloorKey 
 	 * @param param_name param description
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract List<String> endDvsn(String dvsnKey);
+	public abstract void endDvsn(String dvsnKey, String trafficFloorKey);
 
 	/**
-	 * Register DP physical connectivity in OFC
-	 * (for NEC - 2 vExt points for DP (VTN, VLAN) in properties)
+	 * ####
 	 * @param param_name param description
-	 * @return return description
+	 * @return return description 
+	 * @throws ExceptionControlApp 
+	 * @throws UnknownHostException 
+	 * @throws Exception 
 	 * @throws exception_type circumstances description 
 	 */
-	protected abstract void registerDP(String amsKey);
+	protected short getAvailableDvsnFloor(String node, String pnKey, DFProtocol dfProtocol) throws ExceptionControlApp {
 
-	/**
-	 * Unregister DP physical connectivity in OFC
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public abstract void unregisterDP(String amsKey);
+		/* For "other" attacks we allocate a dedicated floor with priority lower than any other attack floor, but higher 
+		 * than peace time. This is because the way to divert "other" traffic only is to put higher priority flows to send
+		 * TCP, UDP ICMP traffic straight and another lower priority flow to divert all (remaining) traffic. Had this floor
+		 * been higher than other attack floors, the "straight" flow of this entry would cancel diversion of such a flow in
+		 * a lower floor. */
+		if(dfProtocol == DFProtocol.IP)
+			return TrafficFloor.FLOOR_OTHER_ATTACK_START;
+
+		short floor = TrafficFloor.FLOOR_ATTACK_START;
+		while ( true ) {
+			String key = TrafficFloor.generateAndSetKey( node,  pnKey,  floor);
+			String existing = null;
+			try {
+				existing = (String) dfAppRoot.trafficFloorsRepo.getCellValue(key, TrafficFloor.KEY);
+			} catch (ExceptionControlApp e) {
+				log.error("Could not get available diversion floor because excepted checking floor existence in repo.");
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
+				throw new ExceptionControlApp("Could not get available diversion floor.", e);
+			}
+			if (existing == null ) 
+				return floor;
+			else 
+				floor+=TrafficFloor.FLOOR_STEP;
+		}
+	}
 
 	@Override
 	protected void actionSwitcher(int actionCode, Object param) {
 
 		switch(actionCode) {
 		case ACTION_RESERVED:
-			break;
-		case ACTION_CHECK_TOPO:
-			retrieveTopologyChanges((String) param);
-			dfAppRoot.getAMSRep().check();
-			; // Scan through the topo repo for changes and health degradations. found changes invoke:
 			break;
 		case ACTION_NOTIFY_TOPOLOGY_CHANGED:
 			decoupledNotifyTopologyChanged();

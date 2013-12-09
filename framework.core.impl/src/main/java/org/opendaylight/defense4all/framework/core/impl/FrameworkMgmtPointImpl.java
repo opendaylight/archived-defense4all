@@ -17,20 +17,23 @@ package org.opendaylight.defense4all.framework.core.impl;
 import java.util.Properties;
 
 import org.opendaylight.defense4all.framework.core.ClusterInfo;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FrameworkMain;
 import org.opendaylight.defense4all.framework.core.FrameworkMgmtPoint;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
-
 public class FrameworkMgmtPointImpl extends FrameworkModule implements FrameworkMgmtPoint {
-
+	
 	/**
 	 * Request application to perform factory reset - i.e., return to factory settings
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void requestFactoryReset(ResetLevel resetLevel) {
-		frameworkMainImpl.reset(resetLevel);
+	public void requestReset(ResetLevel resetLevel) throws ExceptionControlApp {
+		fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_CONFIG, "User requested reset " + resetLevel);
+		fMainImpl.reset(resetLevel);
 	}
 
 	/**
@@ -41,7 +44,8 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	 * @throws exception_type circumstances description 
 	 */
 	public void setClusterInfo(ClusterInfo clusterInfo) {
-		frameworkMainImpl.clusterMgrImpl.setClusterInfo(clusterInfo);
+		fMain.getFR().logRecord(FrameworkMain.FR_FRAMEWORK_OPERATIONAL, "User requested to set cluster info" + clusterInfo.toString());
+		fMainImpl.clusterMgrImpl.setClusterInfo(clusterInfo);
 	}
 
 	/**

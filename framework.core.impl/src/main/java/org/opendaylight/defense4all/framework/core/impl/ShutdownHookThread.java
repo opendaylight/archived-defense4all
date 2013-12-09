@@ -7,13 +7,15 @@
  * @version 0.1
  */
 
-
 package org.opendaylight.defense4all.framework.core.impl;
 
 import org.opendaylight.defense4all.framework.core.AppRoot;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ShutdownHookThread extends Thread {
+
+	Logger log = LoggerFactory.getLogger(this.getClass());
 	
 	FrameworkMainImpl frameworkMainImpl;
 	AppRoot appRoot;	
@@ -45,7 +47,7 @@ public class ShutdownHookThread extends Thread {
 		try {
 			this.frameworkMainImpl.finit();
 		} catch (Throwable e) {
-			e.printStackTrace();
+			log.error("Failed to finit frameworkMainImpl." + e.getLocalizedMessage());
 		}
 	}
 }

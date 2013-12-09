@@ -29,9 +29,10 @@ public interface Detector {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removePN(String pnKey);
+	public void removePN(String pnKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
@@ -52,7 +53,7 @@ public interface Detector {
 
 	/** Factory reset
 	 */
-	public void reset(ResetLevel level); 
+	public void reset(ResetLevel level) throws ExceptionControlApp ; 
 	
 	/** Store detector attributes in the repository
 	 */

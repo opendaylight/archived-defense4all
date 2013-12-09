@@ -24,39 +24,43 @@ public interface MitigationDriver {
 
 	/** Factory reset
 	 */
-	public void reset(ResetLevel level);
+	public void reset(ResetLevel level) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addPN(String pnKey);
+	public void addPN(String pnKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removePN(String pnKey);
+	public void removePN(String pnKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void mitigate(String mitigationKey);
+	public void mitigate(String mitigationKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void endMitigation(String mitigationKey);
+	public void endMitigation(String mitigationKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
@@ -70,9 +74,10 @@ public interface MitigationDriver {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void topologyChanged();
+	public void topologyChanged() throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####

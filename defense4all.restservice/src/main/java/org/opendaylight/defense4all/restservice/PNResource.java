@@ -10,7 +10,6 @@
 
 package org.opendaylight.defense4all.restservice;
 
-import java.net.UnknownHostException;
 import java.util.Hashtable;
 
 import javax.ws.rs.Consumes;
@@ -29,13 +28,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.opendaylight.defense4all.core.DFHolder;
 import org.opendaylight.defense4all.core.PN;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.Repo;
 
 
 public class PNResource {
 
 	private static Log log = LogFactory.getLog(PNResource.class);
-	
+
 	@Context
 	UriInfo uriInfo;
 	@Context
@@ -48,15 +48,15 @@ public class PNResource {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public PN getPN() {		
-		log.debug("In getPN. PN label is " + pnLabel);
+	public PN getPN() {
 
-		Repo<String> pNsRepo = DFHolder.get().pNsRepo;
-		Hashtable<String,Object> pnRow = pNsRepo.getRow(pnLabel);
 		try {
+			log.debug("In getPN. PN label is " + pnLabel);
+			Repo<String> pNsRepo = DFHolder.get().pNsRepo;
+			Hashtable<String,Object> pnRow = pNsRepo.getRow(pnLabel);
 			return new PN(pnRow);
-		} catch (UnknownHostException e) {
-			log.debug("Failed to retrieve pn " + pnLabel, e);
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to retrieve pn " + pnLabel, e);
 			return null;
 		}
 	}
@@ -64,21 +64,29 @@ public class PNResource {
 	@PUT
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Response putPN(JAXBElement<PN> jaxbPN) {
-		Response res;
-		PN pn = jaxbPN.getValue();
-		Repo<String> pNsRepo = DFHolder.get().pNsRepo;
-		if (pNsRepo.getRow(pnLabel) != null) {
-			res = Response.noContent().build();
-		} else {
-			res = Response.created(uriInfo.getAbsolutePath()).build();
-			DFHolder.get().getMgmtPoint().changePN(pn);
+		
+		try {
+			Response res;
+			PN pn = jaxbPN.getValue();
+			Repo<String> pNsRepo = DFHolder.get().pNsRepo;
+			if (pNsRepo.getRow(pnLabel) != null) {
+				res = Response.noContent().build();
+			} else {
+				res = Response.created(uriInfo.getAbsolutePath()).build();
+				DFHolder.get().getMgmtPoint().changePN(pn);
+			}
+			return res;
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to retrieve pn " + pnLabel, e);
+			return Response.serverError().build();
 		}
-		return res;
 	}
 
 	@DELETE
 	public void deletePN() {		
-		log.debug("DeletePN: invoked");
-		DFHolder.get().getMgmtPoint().removePN(pnLabel);
+		try {
+			log.debug("DeletePN: invoked");
+			DFHolder.get().getMgmtPoint().removePN(pnLabel);
+		} catch (ExceptionControlApp e) {/* Ignore. Already logged in DFMgmtPoint. */}
 	}
 }

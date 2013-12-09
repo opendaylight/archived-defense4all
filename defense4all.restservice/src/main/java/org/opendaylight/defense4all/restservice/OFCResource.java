@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.opendaylight.defense4all.core.DFHolder;
 import org.opendaylight.defense4all.core.OFC;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.Repo;
 
 
@@ -43,17 +44,25 @@ public class OFCResource {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public OFC getOFC() {		
-		log.debug("In getOFC. OFC label is " + ofcLabel);
-
-		Repo<String> oFCsRepo = DFHolder.get().oFCsRepo;
-		Hashtable<String,Object> ofcRow = oFCsRepo.getRow(ofcLabel);
-		return new OFC(ofcRow);
+	public OFC getOFC() {
+		
+		try {
+			log.debug("In getOFC. OFC label is " + ofcLabel);
+			Repo<String> oFCsRepo = DFHolder.get().oFCsRepo;
+			Hashtable<String,Object> ofcRow = oFCsRepo.getRow(ofcLabel);
+			return new OFC(ofcRow);
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to retrieve ofc " + ofcLabel, e);
+			return null;
+		}
 	}
 
 	@DELETE
-	public void deleteOFC() {		
-		log.debug("DeleteOFC: invoked");
-		DFHolder.get().getMgmtPoint().removeOFC(ofcLabel);
+	public void deleteOFC() {
+		
+		try {
+			log.debug("DeleteOFC: invoked");
+			DFHolder.get().getMgmtPoint().removeOFC(ofcLabel);
+		} catch (ExceptionControlApp e) {{/* Ignore. Already logged in DFMgmtPoint. */}}
 	}
 }

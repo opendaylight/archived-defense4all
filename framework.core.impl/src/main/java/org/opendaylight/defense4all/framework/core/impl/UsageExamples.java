@@ -17,8 +17,8 @@ import java.util.Map.Entry;
 
 import org.opendaylight.defense4all.framework.core.AppRoot;
 import org.opendaylight.defense4all.framework.core.EM;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.ExceptionEntityExists;
-import org.opendaylight.defense4all.framework.core.ExceptionRepoFactoryInternalError;
 import org.opendaylight.defense4all.framework.core.FrameworkMain;
 import org.opendaylight.defense4all.framework.core.Repo;
 import org.opendaylight.defense4all.framework.core.RepoCD;
@@ -29,11 +29,10 @@ import org.opendaylight.defense4all.framework.core.RepoCD;
  */
 public class UsageExamples {
 
-
-	public void annotationsTest1(FrameworkMain fMain) {
+	public void annotationsTest1(FrameworkMain fMain) throws IllegalArgumentException, ExceptionControlApp{
 
 		String DF_CORE_EM_ID = "df.core";
-		String stateClassPaths = "org.opendaylight.framework.core.impl";
+		String stateClassPaths = "org.opendaylight.defense4all.framework.core.impl";
 		EM dfEM = fMain.getRepoFactory().getOrCreateEM(DF_CORE_EM_ID, stateClassPaths);
 		
 		AnnotatedState as0;
@@ -81,7 +80,7 @@ public class UsageExamples {
 		as0 = dfEM.find(AnnotatedState.class, "zero"); as0.printObject();
 	}
 	
-	public void repoTest1(FrameworkMain fMain) {
+	public void repoTest1(FrameworkMain fMain) throws ExceptionControlApp {
 		
 		AppRoot appRoot = fMain.getAppRoot();
 		
@@ -97,7 +96,7 @@ public class UsageExamples {
 			System.out.println(e); return;
 		} catch (ExceptionEntityExists e) {
 			System.out.println(e); return;
-		} catch (ExceptionRepoFactoryInternalError e) {
+		} catch (ExceptionControlApp e) {
 			System.out.println(e); return;
 		}
 

@@ -1,0 +1,138 @@
+#!/usr/bin/perl
+# libjson-perl
+# libwww-perl
+use strict;
+use Getopt::Long;
+use JSON ;
+use LWP::UserAgent;
+use Date::Format;
+
+
+#use Data::Dumper;
+#use feature 'say';
+
+
+# setup my defaults
+my $uri    = '/rest/general/log/events';
+my $rport      = 8086;
+my $host = 'localhost';
+my $help     = 0;
+my $verbose; my $json_out;
+my $filter;
+my $interval; my $cont;
+
+sub usage {
+   my $command = $0;
+   $command =~ s#^.*/##;
+
+   print STDERR (
+      "usage: $command  [-p port] [-h hostname] [-u resource uri] [-f filter ] [-i interval ] [-c continuously ] [-v verbose mode] \n"
+   );
+
+   die("\n")
+}
+sub VERBOSE_OUT
+{
+    if ( defined $verbose ) {
+	print @_;
+	print "\n";
+    }
+}
+
+GetOptions(
+    'port=i'  => \$rport,
+    'host=s'  => \$host,
+    'uri=s'   => \$uri, 
+    'json'    => \$json_out,
+    'verbose' => \$verbose,
+    'filter=s' => \$filter,
+    'interval=i' => \$interval,
+    'cont'    => \$cont
+) or usage;
+
+if ( !defined $interval ) {
+	$interval=10;
+}
+
+# Set up the connectio
+my $ua = LWP::UserAgent->new;
+
+# Configurables  
+my $endpoint = $host.':'.$rport;  
+my $url = "http://".$endpoint.$uri;
+
+# create parameters
+while ( 1 ) {
+	my $fromDate = time2str ("%m/%d/%Y_%H:%M:%S", time-$interval);
+	my $toDate = time2str ("%m/%d/%Y_%H:%M:%S", time); 
+
+	my $argstr="?fromDate=$fromDate&toDate=$toDate";
+	if ( defined $filter ) {
+		$argstr=$argstr."&filter=$filter";
+	}
+	my $url=$url.$argstr;
+
+	VERBOSE_OUT "From date ".$fromDate;
+	VERBOSE_OUT "To date ".$toDate;
+	VERBOSE_OUT "URL : ".$url;
+
+	# Perform a HTTP GET on this URI 
+	my $req = HTTP::Request->new(GET => $url);
+	my $res = $ua->request( $req) ;
+
+	if ($res->is_success) {
+     	  VERBOSE_OUT "Respose : ".$res->content;
+	} else {
+		  VERBOSE_OUT "Can't get response";
+		  if (defined $cont ) {
+		  	 sleep $interval;
+		  	 next;
+		  } 
+    	  die $res->status_line."\n" ;
+	}
+
+	# Process the response
+	my $response = decode_json( $res->content );
+	if ( ! defined $response )  {
+   		 die "Invalid respose format";
+	}
+
+
+	if ( defined $json_out ) {
+    	JsonOut ( $response );
+	} else {
+    	ArrayOut (  $response );
+	}
+	
+	if ( defined $cont ) {
+	   sleep $interval;
+	} else {
+	   exit 0;
+	}
+}
+
+sub ArrayOut () {
+  my $json_in= shift;
+
+  my @array_in = @$json_in;
+  # one event per line
+  foreach my $line (@array_in ) {
+	
+	my $eventTime = time2str ("%m/%d/%Y_%H:%M:%S", $line->{eventTime}/1000);
+	my $eventType = $line->{eventType};
+	my $eventData = $line->{eventData};
+	printf ("%s %s %s\n", $eventTime, $eventType, $eventData ) ;
+  }
+}
+
+
+sub JsonOut () {
+  my $json_in= shift;
+
+  my @array_in = @$json_in;
+  # one event per line
+  foreach my $line (@array_in ) {
+	 my $json_str = encode_json (  $line );
+	 print "$json_str\n";
+  }
+}

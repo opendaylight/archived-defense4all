@@ -18,8 +18,9 @@ public class FMHolder {
 	}
 	
 	public static void set(FrameworkMain fm) throws ExceptionControlApp {
-		if(frameworkMain != null)
+		if(frameworkMain != null) {
 			throw new ExceptionControlApp("Multiple sets of FrameworkMain singleton in FMFactory.");
+		}
 		frameworkMain = fm;
 	}
 }

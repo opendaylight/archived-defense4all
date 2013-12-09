@@ -18,13 +18,6 @@ import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
 
 public abstract class StatsCollectionRep extends DFAppModule {
-
-	/**
-	 * Decoupled actions for ActionSwitcher
-	 */
-	protected static final int ACTION_INVALID = -1;	// Already defined in Module. Brought here for brevity
-	protected static final int ACTION_RESERVED = 0; // Already defined in Module. Brought here for brevity
-	protected static final int ACTION_CHECK_TOPO = 1;
 	
 	/* Constructor for Spring */
 	public StatsCollectionRep() {
@@ -42,8 +35,9 @@ public abstract class StatsCollectionRep extends DFAppModule {
 		super.finit();
 	}
 
-	/** Reset */
-	public void reset(ResetLevel resetLevel) {
+	/** Reset 
+	 * @throws ExceptionControlApp */
+	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 		super.reset(resetLevel);
 	}
 	
@@ -54,9 +48,10 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addOFC(String ofcKey) {		
+	public void addOFC(String ofcKey) throws ExceptionControlApp {		
 		initConnectionToOFC(ofcKey);
 	}
 
@@ -68,24 +63,27 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	/**
 	 * Establish connection with the OFC
 	 * @param ofcKey
+	 * @throws ExceptionControlApp 
 	 */
-	protected abstract void initConnectionToOFC(String ofcKey);
+	protected abstract void initConnectionToOFC(String ofcKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void addNetNode(String netNodeKey);
+	public abstract void addNetNode(String netNodeKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void removeNetNode(String netNodeLabel);
+	public abstract void removeNetNode(String netNodeLabel) throws ExceptionControlApp;
 
 	/**
 	 * Offer all possible placements of stats counters that monitor the traffic to protected object denoted by the passed in pNKey param. 
@@ -105,17 +103,6 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	protected void notifyTopologyChanged() {
 		dfAppRoot.getStatsCollector().statsCollectionTopologyChanged();
 	}
-
-	/**
-	 * Retrieve topology changes and set in repo. if retrieving changes is not supported retrieve entire topology. 
-	 * This operation is synchronous. If topology has changed, child class implementation should invoke
-	 * notifyTopologyChanged(), unless more refined topology changes are identified, in which case StatsCollector
-	 * and Mitigation driver should be invoked individually.
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	protected abstract void retrieveTopologyChanges(String ofcKey); 
 	
 	// TODO: need also a method to replace OFC?	
 
@@ -126,7 +113,7 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @throws Exception 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract String addPeacetimeCounterTrafficFloor(String pnKey, String newTrafficFloorLoc) throws Exception;
+	public abstract String addPeacetimeCounterTrafficFloor(String pnKey, String newTrafficFloorLoc) throws ExceptionControlApp;
 
 	/**
 	 * Remove counter from OFSs.
@@ -134,7 +121,7 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void removeTrafficFloor(String trafficFloorKey);
+	public abstract void removeTrafficFloor(String trafficFloorKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
@@ -143,7 +130,7 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public StatReport getStatsReport(String pnKey, String trafficFloorKey) {
+	public StatReport getStatsReport(String pnKey, String trafficFloorKey) throws ExceptionControlApp {
 		
 		TrafficTuple stats = getStats(trafficFloorKey); // Controller specific implementation obtains stats
 		if(stats == null) stats = new TrafficTuple();
@@ -164,26 +151,15 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract TrafficTuple getStats(String trafficFloorKey);
+	public abstract TrafficTuple getStats(String trafficFloorKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
+	 * @throws ExceptionControlApp 
 	 */
-	public abstract String getTrafficFloorLocation(String trafficFloorKey);
+	public abstract String getTrafficFloorLocation(String trafficFloorKey) throws ExceptionControlApp;
 
 	@Override
 	protected void actionSwitcher(int actionCode, Object param) {
-
-		switch(actionCode) {
-		case ACTION_RESERVED:
-			break;
-		case ACTION_CHECK_TOPO:
-			retrieveTopologyChanges((String) param);
-			dfAppRoot.getAMSRep().check();
-			; // Scan through the topo repo for changes and health degradations. found changes invoke:
-			dfAppRoot.getStatsCollector().statsCollectionTopologyChanged();
-			break;
-		default:
-		}
 	}
 }

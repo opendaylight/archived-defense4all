@@ -7,9 +7,6 @@
  * @version 0.1
  */
 
-/**
- * 
- */
 package org.opendaylight.defense4all.core.impl;
 
 import java.util.Hashtable;
@@ -17,12 +14,9 @@ import java.util.Hashtable;
 import org.opendaylight.defense4all.core.DFHolder;
 import org.opendaylight.defense4all.core.Detector;
 import org.opendaylight.defense4all.core.DetectorInfo;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
-/**
- * @author gerag
- *
- */
 public class ExternalDetector implements Detector {
 	
 	protected DetectorInfo detectorInfo = null;
@@ -34,7 +28,7 @@ public class ExternalDetector implements Detector {
 	}
 	public ExternalDetector(DetectorInfo detectorInfo) {this.detectorInfo = detectorInfo;}
 	
-	public void init() {
+	public void init() throws ExceptionControlApp {
 		DFHolder.get().getDetectorMgr().addDetector(this); // Register to support PNs with external detection
 	}
 	

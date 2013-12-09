@@ -10,39 +10,15 @@
 
 package com.radware.defenseflow.dp;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.UnknownHostException;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-
-import me.prettyprint.cassandra.serializers.StringSerializer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.opendaylight.defense4all.core.AMSRep;
 import org.opendaylight.defense4all.core.DFAppModule;
-import org.opendaylight.defense4all.core.DFHolder;
-import org.opendaylight.defense4all.core.Mitigation;
-import org.opendaylight.defense4all.core.PN;
-import org.opendaylight.defense4all.core.Traffic;
-import org.opendaylight.defense4all.core.TrafficTuple;
-import org.opendaylight.defense4all.core.DFAppRoot.RepoMajor;
-import org.opendaylight.defense4all.core.Traffic.TrafficMatch;
+import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
-import org.opendaylight.defense4all.framework.core.ExceptionEntityExists;
-import org.opendaylight.defense4all.framework.core.ExceptionRepoFactoryInternalError;
-import org.opendaylight.defense4all.framework.core.Repo;
-import org.opendaylight.defense4all.framework.core.RepoFactory;
+import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
-
+import org.opendaylight.defense4all.framework.core.Utils;
 
 public class DPRep extends DFAppModule implements AMSRep {
 
@@ -51,170 +27,175 @@ public class DPRep extends DFAppModule implements AMSRep {
 	 */
 	protected static final int ACTION_INVALID = -1;	// Already defined in Module. Brought here for brevity
 	protected static final int ACTION_RESERVED = 0; // Already defined in Module. Brought here for brevity
-	protected static final int ACTION_PROCESS_SYSLOGS = 1;
-	
+	private static final int   ACTION_ADD_AMS = 1;
+	private static final int   ACTION_REMOVE_AMS = 2;
+	private static final int   ACTION_ADD_PN = 3;
+	private static final int   ACTION_REMOVE_PN = 4;
+	private static final int   ACTION_ADD_SECURITY_CONFIGURATION = 5;
+	private static final int   ACTION_REMOVE_SECURITY_CONFIGURATION = 6;
+	private static final int   ACTION_START_MONITORING = 7;
+	private static final int   ACTION_STOP_MONITORING = 8;
+
 	/**
 	 * Radware DefensePro brand to be put in AMS.brand
 	 */
 	public static final String DP = "DefensePro";
-	
+
+	/** Names of application networks start with this prefix. */
+	private static final String NETWORK_APPLICATION_PREFIX = "NAP";
+
 	/**
 	 * Name space allocation of DP Detector Repo minor IDs
 	 */
 	public enum RepoMinor {	
 		INVALID,
-		MONITORED_TRAFFIC
+		MONITORED_TRAFFIC,
+		CONFIGURED_NETWORKS,
+		SECURITY_CONFIGURATIONS
 	}
 
 	protected Logger log = LoggerFactory.getLogger(this.getClass());
-	protected boolean initialized = false;
-
-	/* Rep and cache of all monitored traffics. */
-	public Repo<String> monitoredTrafficRepo = null;
-	protected ConcurrentHashMap<String,MonitoredTraffic> monitoredTraffics = null;
-
-	String rsyslogDFPipe;
-	File f;
-	protected DPBasedDetector dpBasedDetector = null;
+	protected DPEventMgr  dpEventMgr;
+	protected DPConfigMgr dpConfigMgr;
+	protected DPHealthMgr dpHealthMgr;
+	protected DPBasedDetector dpBasedDetector;
 
 	/* Constructor for Spring */
 	public DPRep() {
 		super();
-		monitoredTraffics = new ConcurrentHashMap<String,MonitoredTraffic>();
 	}
 
 	/* Setters for Spring */
+	public void setDpEventMgr(DPEventMgr dpEventMgr) {this.dpEventMgr = dpEventMgr;}
+	public void setDpConfigMgr(DPConfigMgr dpConfigMgr) {this.dpConfigMgr = dpConfigMgr;}
+	public void setDpHealthMgr(DPHealthMgr dpHealthMgr) {this.dpHealthMgr = dpHealthMgr;}
 	public void setDpBasedDetector(DPBasedDetector detector) {this.dpBasedDetector = detector;}
-	public void setRsyslogDFPipe(String rsyslogDFPipe) {this.rsyslogDFPipe = rsyslogDFPipe;}
 
 	/** Post-constructor initialization	 
 	 * @throws ExceptionControlApp */
+	@Override
 	public void init() throws ExceptionControlApp {
 
-		super.init(); 
+		super.init();
 		
-		// Register detector in the repo
-		dpBasedDetector.init();
-
-		/* DP Repos */
-		RepoFactory rf = frameworkMain.getRepoFactory();
-		String rMajor = RepoMajor.DF_AMS_REP.name();
-		try {
-			monitoredTrafficRepo = (Repo<String>) rf.getOrCreateRepo(rMajor, RepoMinor.MONITORED_TRAFFIC.name(), 
-					StringSerializer.get(), true, MonitoredTraffic.getMonitoredTrafficRCDs());
-		} catch (ExceptionRepoFactoryInternalError e) {
-			throw new ExceptionControlApp("Internal framework error. ", e);
-		} catch (IllegalArgumentException e) {
-			throw new ExceptionControlApp("Internal framework error. ", e);
-		} catch (ExceptionEntityExists e) {
-			throw new ExceptionControlApp("Internal framework error. ", e);
-		}
-
-		/* Load monitored traffics */
-		Hashtable<String,Hashtable<String,Object>> monitoredTrafficTable = monitoredTrafficRepo.getTable();
-		Iterator<Map.Entry<String,Hashtable<String,Object>>> iter = monitoredTrafficTable.entrySet().iterator();
-		Map.Entry<String,Hashtable<String,Object>> entry; MonitoredTraffic monitoredTraffic;
-		while(iter.hasNext()) {
-			entry = iter.next();
-			try {
-				monitoredTraffic = new MonitoredTraffic(entry.getValue());
-			} catch (UnknownHostException e) {continue;}
-			monitoredTraffics.put(monitoredTraffic.key, monitoredTraffic);
-		}
-
-		/* Initialize Linux pipe file from which to draw DP syslogs deposited by rsyslogd. */
-		try {
-			Runtime runtime = Runtime.getRuntime();
-			runtime.exec("mkfifo " + rsyslogDFPipe);
-			runtime.exec("sudo service rsyslog restart"); // Make sure rsyslogd picks up the latest creation of DF syslog pipe
-			f = new File(rsyslogDFPipe);
-			addBackgroundTask(ACTION_PROCESS_SYSLOGS, null);
-		} catch (Exception e) {
-			log.error("Failed to open file input string " + rsyslogDFPipe, e);
-			f = null;
-		}
-
-		initialized = true;
+		dpEventMgr.init();
+		dpConfigMgr.init();
+		dpHealthMgr.init();		
+		dpBasedDetector.init(); // Register detector in the repo
 	}
 
 	/** Pre-shutdown cleanup */
+	@Override
 	public void finit() {
 
+		dpEventMgr.finit();
+		dpConfigMgr.finit();
+		dpHealthMgr.finit();
+		
 		super.finit();
-
-		Iterator<Map.Entry<String,MonitoredTraffic>> iter = monitoredTraffics.entrySet().iterator();
-		Map.Entry<String,MonitoredTraffic> entry;
-		while(iter.hasNext()) {
-			entry = iter.next();
-			monitoredTrafficRepo.setRow(entry.getKey(), entry.getValue().toRow());
-		}
 	}
 
-	/** Reset */
-	public void reset(ResetLevel resetLevel) {
-
+	/** Reset 
+	 * @throws ExceptionControlApp */
+	@Override
+	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
+		
 		super.reset(resetLevel);
 
-		monitoredTrafficRepo.truncate();
-		monitoredTraffics.clear();
+		dpEventMgr.reset(resetLevel);
+		dpConfigMgr.reset(resetLevel);
+		dpHealthMgr.reset(resetLevel);
 	}
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addAMS(String amsKey) {
+	@Override
+	public void addAMS(String amsKey) throws ExceptionControlApp {
 
-		; // Establish connection with the DP? what else?
-	}
-
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public void removeAMS(String amsKey) {
-		; // terminate connection with DP? what else?		
-	}
-
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public void addMitigation(String mitigationKey) {
-		
-		Hashtable<String,Object> mitigationRow = dfAppRoot.mitigationsRepo.getRow(mitigationKey);
-		Mitigation mitigation = null;
 		try {
-			mitigation = new Mitigation(mitigationRow);
-		} catch (Exception e1) {
-			log.error("Failed both to register initial DP detection and set attack monitoring in DP", e1);
+			invokeDecoupledSerially(ACTION_ADD_AMS, amsKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_ADD_AMS + " " + amsKey, e);
+			throw e;
+		}
+	}
+
+	protected void decoupledAddAMS (String amsKey) {
+		FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_CONFIG, "DPRep is adding DP " + amsKey);
+		try {
+			dpConfigMgr.addAMS(amsKey);
+			dpHealthMgr.addAMS(amsKey);
+		} catch (Throwable e) {
+			log.error("Excepted adding AMS to either dpConfigMgr or dpHealthMgr" + e.getMessage());
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep has failed to add DP " + amsKey);
 			return;
 		}
+	}
 
-		/* Construct monitoredTraffic and register it in monitoredTraffics and monitoredTrafficsRepo */
-		int dstAddrPrefixLen = (Integer) DFHolder.get().pNsRepo.getCellValue(mitigation.pnKey, PN.DST_ADDR_PREFIX_LEN);
-		Traffic traffic = new Traffic(mitigation.dstAddr, dstAddrPrefixLen);
-		traffic.addProtocolPort(mitigation.protocolPort.protocol, mitigation.protocolPort.port);
-		String key = MonitoredTraffic.generateKey(mitigation.dstAddr.getHostName());	
-		MonitoredTraffic monitoredTraffic = new MonitoredTraffic(key, mitigation.pnKey, mitigationKey, traffic);
-		monitoredTraffics.put(key, monitoredTraffic);
-		monitoredTrafficRepo.setRow(key, monitoredTraffic.toRow());
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws exception_type circumstances description 
+	 */
+	@Override
+	public void removeAMS(String amsKey) throws ExceptionControlApp {
 
-		/* Remember the key of the monitoredTraffic (to be used in removal of this monitoredTraffic) */
-		mitigation.monitoredTrafficKey = key;
-		dfAppRoot.mitigationsRepo.setRow(mitigationKey, mitigation.toRow());
-		
-		/* Now notify DPBasedDetector (which will add preliminary attackDetection, until getting syslog
-		 * Triggered attack notifications and triggering attackDetection refresh. */		
 		try {
-			dpBasedDetector.addMonitoredAttack(mitigationKey);
-		} catch (UnknownHostException e) {/* TODO: handle */}
+			invokeDecoupledSerially(ACTION_REMOVE_AMS, amsKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_REMOVE_AMS + " " + amsKey, e);
+			throw e;
+		}
+	}
+
+	protected void decoupledRemoveAMS (String amsKey) {
+		try {
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_CONFIG, "DPRep is removing DP " + amsKey);
+			dpConfigMgr.removeAMS(amsKey);
+		} catch (ExceptionControlApp e) {
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep has failed to properly remove DP " + amsKey);
+		}
+		dpHealthMgr.removeAMS(amsKey);	
+	}
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	@Override
+	public void addPN(String pnKey) throws ExceptionControlApp {
+
+		try {
+			invokeDecoupledSerially(ACTION_ADD_PN, pnKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_ADD_PN + " " + pnKey, e);
+			throw e;
+		}
+	}
+
+	protected void decoupledAddPN (String pnKey) {
+		try {
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_CONFIG, "DPRep is adding PN " + pnKey);
+			dpConfigMgr.addPN(pnKey);
+		} catch (ExceptionControlApp e) {
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep has failed to add PN" + pnKey);
+			return;
+		}
+		dpEventMgr.addPN(pnKey);
+	}
+
+	protected static String generateNetworkName(String s) {
+		String res = (s.length() <= 7) ? s : NETWORK_APPLICATION_PREFIX + Utils.shortHash(s);
+		return res;
 	}
 
 	/**
@@ -223,13 +204,20 @@ public class DPRep extends DFAppModule implements AMSRep {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public void removeMitigation(String mitigationKey) {
-		
-		String key = (String) dfAppRoot.mitigationsRepo.getCellValue(mitigationKey,Mitigation.MONITORED_TRAFFIC_KEY);		
-		monitoredTraffics.remove(key);
-		monitoredTrafficRepo.deleteRow(key);
-		
-		dpBasedDetector.removeMonitoredAttack(mitigationKey);	
+	@Override
+	public void removePN(String pnKey) throws ExceptionControlApp {
+
+		try {
+			invokeDecoupledSerially(ACTION_REMOVE_PN, pnKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_REMOVE_PN + " " + pnKey, e);
+			throw e;
+		}
+	}
+
+	protected void decoupledRemovePN (String pnKey) {
+		dpConfigMgr.removePN(pnKey);
+		dpEventMgr.removePN(pnKey);
 	}
 
 	/**
@@ -238,90 +226,108 @@ public class DPRep extends DFAppModule implements AMSRep {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
+	@Override
+	public void addSecurityConfiguration(String dvsnInfoKey) throws ExceptionControlApp {
+
+		try {
+			invokeDecoupledSerially(ACTION_ADD_SECURITY_CONFIGURATION, dvsnInfoKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_ADD_SECURITY_CONFIGURATION + " " + dvsnInfoKey, e);
+			throw e;
+		}
+	}
+
+	protected void decoupledAddSecurityConfiguration (String dvsnInfoKey) {
+		try {
+			dpConfigMgr.addSecurityConfiguration(dvsnInfoKey);
+		} catch (ExceptionControlApp e) { /* Ignore */}
+	}
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws exception_type circumstances description 
+	 */
+	@Override
+	public void removeSecurityConfiguration(String dvsnInfoKey) throws ExceptionControlApp {
+
+		try {
+			invokeDecoupledSerially(ACTION_REMOVE_SECURITY_CONFIGURATION, dvsnInfoKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy "+ACTION_REMOVE_SECURITY_CONFIGURATION+" "+dvsnInfoKey,e);
+			throw e;
+		}
+	}
+
+	protected void decoupledRemoveSecurityConfiguration(String dvsnInfoKey) {
+		dpConfigMgr.removeSecurityConfiguration(dvsnInfoKey);
+	}
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	@Override
+	public void startMonitoring(String mitigationKey) throws ExceptionControlApp {
+		
+		try {
+			invokeDecoupledSerially(ACTION_START_MONITORING, mitigationKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy "+ACTION_START_MONITORING+" "+mitigationKey,e);
+			throw e;
+		}
+	}
+
+	/* Notify DPBasedDetector to assume a DP based detector role for the mitigated traffic. DPBasedDetector
+	 * will translate dpEventMgr notifications into DP originated "attack detections". Notify DPEventMgr to
+	 * start monitoring for security events related to this mitigation and notify dpBasedDetector. */
+	protected void decoupledStartMonitoring(String mitigationKey) {
+		FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Starting to monitor through DPs traffic for mitigation "
+				+ mitigationKey);
+		dpBasedDetector.addMonitoredAttack(mitigationKey);
+		dpEventMgr.startMonitoring(mitigationKey);
+	}
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	@Override
+	public void stopMonitoring(String mitigationKey) throws ExceptionControlApp {
+		
+		try {
+			invokeDecoupledSerially(ACTION_STOP_MONITORING, mitigationKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy "+ACTION_STOP_MONITORING+" "+mitigationKey,e);
+			throw e;
+		}
+	}
+
+	/* Notify DPEventMgr to stop monitoring for security events related to this mitigation, dpBasedDetector
+	 * to stop acting as DP based detector for this mitigated traffic. */
+	protected void decoupledStopMonitoring(String mitigationKey) {
+		FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Stopping to monitor through DPs traffic for mitigation "
+				+ mitigationKey);
+		dpEventMgr.stopMonitoring(mitigationKey);
+		dpBasedDetector.removeMonitoredAttack(mitigationKey);
+	}
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws exception_type circumstances description 
+	 */
+	@Override
 	public boolean check() {
 		return true;
-	}
-
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public void configureAMS(String amsKey, Properties configProps) {		
-		// TODO Auto-generated method stub
-	}
-
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public void setAMSBaselines(String amsKey, TrafficTuple baselines) {		
-		// TODO Auto-generated method stub
-	}
-
-	/* #### method description ####
-	 * 
-	 * @param s
-	 * @return
-	 */
-	protected void backgroundProcessSyslogs() {
-
-		BufferedReader bufferedReader = null;
-		String syslogMsg;
-
-		while(true) {
-
-			try {
-				bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(rsyslogDFPipe)));
-			} catch (FileNotFoundException e) {
-				log.error("Failed to read from rsyslog pipe.", e);
-				return;
-			}
-			try {
-				syslogMsg = bufferedReader.readLine();
-				bufferedReader.close();
-			} catch (IOException e) {continue;}
-			if (syslogMsg == null || syslogMsg.length() == 0) continue;
-			DPEvent dpEvent = DPEvent.fromString(syslogMsg);
-			if (dpEvent == null) continue; // Not a DP message
-
-			System.out.println("DP event - " + dpEvent.toString());
-
-			/* Check if it is a security event */
-			DPSecEvent dpSecurityEvent = DPSecEvent.fromString(dpEvent.msg);
-			if (dpSecurityEvent != null) { // Process security event
-				processSecEvent(dpSecurityEvent); 
-			}
-
-			/* Check if it is a liveness event */
-			; // TODO
-		}
-	}
-
-	protected void processSecEvent(DPSecEvent secEvent) {
-
-		System.out.println("DP security event - " + secEvent.toString());
-
-		Iterator<Map.Entry<String,MonitoredTraffic>> iter = monitoredTraffics.entrySet().iterator();
-		TrafficMatch trafficMatch; MonitoredTraffic monitoredTraffic;
-
-		while(iter.hasNext()) {
-
-			monitoredTraffic = iter.next().getValue();
-
-			/* Check if this is a monitored security event - dst_addr, protocol, dst_port */
-			trafficMatch = monitoredTraffic.traffic.match(secEvent.dstAddress, secEvent.dpProtocol.toDFProtocol(), secEvent.dstPort);
-			if(trafficMatch == TrafficMatch.NO) continue;
-
-			/* Construct AttackReport and deliver to the DPBasedDetector. */
-			/* TODO: Refine attack reporting when TrafficMatch.CONTAIN, so as to allow diversion refinements accordingly */
-			long currentTime = System.currentTimeMillis() / 1000;
-			AttackReport attackReport = new AttackReport(currentTime, monitoredTraffic, secEvent);
-			dpBasedDetector.handleAttackReport(attackReport);
-		}
 	}
 
 	@Override
@@ -330,8 +336,29 @@ public class DPRep extends DFAppModule implements AMSRep {
 		switch(actionCode) {
 		case ACTION_RESERVED:
 			break;
-		case ACTION_PROCESS_SYSLOGS:
-			backgroundProcessSyslogs();
+		case ACTION_ADD_AMS:
+			decoupledAddAMS((String) param); 
+			break;
+		case ACTION_REMOVE_AMS:
+			decoupledRemoveAMS((String) param); 
+			break;
+		case ACTION_ADD_PN:
+			decoupledAddPN((String) param); 
+			break;
+		case ACTION_REMOVE_PN:
+			decoupledRemovePN((String) param); 
+			break;
+		case ACTION_ADD_SECURITY_CONFIGURATION:
+			decoupledAddSecurityConfiguration((String) param); 
+			break;
+		case ACTION_REMOVE_SECURITY_CONFIGURATION:
+			decoupledRemoveSecurityConfiguration((String) param); 
+			break;
+		case ACTION_START_MONITORING:
+			decoupledStartMonitoring((String) param); 
+			break;
+		case ACTION_STOP_MONITORING:
+			decoupledStopMonitoring((String) param); 
 			break;
 		default:
 		}

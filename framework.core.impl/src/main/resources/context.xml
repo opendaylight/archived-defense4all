@@ -17,11 +17,12 @@
 		<property name="stateClassPaths" value="org.opendaylight.defense4all.framework.core.impl" />
 		<property name="port" value="8086" />
 		<!-- next value is for eclipse running. should be different for single jar -->
-		<property name="restWarPath" value="../../../restservice/target/restservice-0.0.1-SNAPSHOT.war" />
+		<property name="restWarPath" value="../../../restservice/target/restservice-1.0.0.war" />
 		<property name="restPath" value="/" />
 		<property name="appRoot" ref="appRoot" /> 	<!--	The actual integrated application -->
-		<property name="logFileName" value="/var/tmp/df_log" />
-		
+		<property name="flightRecorderImpl" ref="flightRecorderImpl" />
+		<property name="healthTrackerImpl" ref="healthTrackerImpl" />
+		<property name="hostAddr" value="10.206.167.31" />
 	</bean>
 	
 	<!-- Framework core modules  -->
@@ -44,6 +45,16 @@
 	
 	<bean id="frameworkMgmtPointImpl" class="org.opendaylight.defense4all.framework.core.impl.FrameworkMgmtPointImpl">
 		<property name="frameworkMain" ref="frameworkMain" />
+	</bean>
+	
+	<bean id="flightRecorderImpl" class="org.opendaylight.defense4all.framework.core.impl.FRImpl">
+		<property name="repoFactoryImpl" ref="repoFactoryImpl" />
+		<property name="flightRecorderSliceDays" value="1" />	
+	</bean>
+	
+	<bean id="healthTrackerImpl" class="org.opendaylight.defense4all.framework.core.impl.HealthTrackerImpl">
+		<property name="frameworkMain" ref="frameworkMain" />
+		<property name="minimalHealthThreshold" value="50" />
 	</bean>
 	
 </beans>

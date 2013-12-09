@@ -10,7 +10,7 @@
 
 package org.opendaylight.defense4all.core;
 
-import java.util.Properties;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 
 public interface DFMgmtPoint {
 
@@ -22,7 +22,7 @@ public interface DFMgmtPoint {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public void addOFC(OFC ofc);
+	public void addOFC(OFC ofc) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
@@ -30,7 +30,7 @@ public interface DFMgmtPoint {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public void removeOFC(String ofcLabel);
+	public void removeOFC(String ofcLabel) throws ExceptionControlApp;
 
 	/**
 	 * Set the OFC address. If this overrides the previously set OFC address, then it is considered a different OFC. 
@@ -38,9 +38,10 @@ public interface DFMgmtPoint {
 	 * set through it, prior to setting them through the new OFC.
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addNetNode(NetNode netNode);
+	public void addNetNode(NetNode netNode) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
@@ -48,7 +49,7 @@ public interface DFMgmtPoint {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public void removeNetNode(String netNodeLabel);
+	public void removeNetNode(String netNodeLabel) throws ExceptionControlApp;
 
 	/**
 	 * Set the OFC address. If this overrides the previously set OFC address, then it is considered a different OFC. 
@@ -56,33 +57,28 @@ public interface DFMgmtPoint {
 	 * set through it, prior to setting them through the new OFC.
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addAMS(AMS ams);
+	public void addAMS(AMS ams) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removeAMS(String dpLabel);
+	public void removeAMS(String dpLabel) throws ExceptionControlApp;
 
 	/**
 	 * Add an external detector.
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addDetector(DetectorInfo detector);
-
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
-	 * @throws exception_type circumstances description 
-	 */
-	public void configureAMS(String amsLabel, Properties configProperties);
+	public void addDetector(DetectorInfo detector) throws ExceptionControlApp;
 
 	/**
 	 * Add protected object and notify the specified detector to start monitoring this PN. 
@@ -103,7 +99,8 @@ public interface DFMgmtPoint {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removePN(String pnLabel);
+	public void removePN(String pnLabel) throws ExceptionControlApp;
 }

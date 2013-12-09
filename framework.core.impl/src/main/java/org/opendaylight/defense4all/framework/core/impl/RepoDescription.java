@@ -7,7 +7,6 @@
  * @version 0.1
  */
 
-
 package org.opendaylight.defense4all.framework.core.impl;
 
 import java.util.ArrayList;
@@ -16,24 +15,13 @@ import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
-
-
-
-
 import org.opendaylight.defense4all.framework.core.RepoCD;
 import org.opendaylight.defense4all.framework.core.SerializersSerializer;
+import org.slf4j.Logger;
 
 import me.prettyprint.hom.annotations.Column;
 import me.prettyprint.hom.annotations.Id;
 
-//Repo name corresponds to FrameworkMain.RepoMajor.REPO_FACTORY + "_" + RepoFactoryImpl.RepoMinor.REPO_DESCRIPTIONS
-
-/**
- * 
- * @author gerag
- *
- * @param <K> - The type of the Repo key column
- */
 @Entity
 @Table(name="FWORK_REPO_FACTORY_RepoDescriptions")
 public class RepoDescription {
@@ -48,7 +36,7 @@ public class RepoDescription {
 	public boolean immediateFlush = false;
 	
 	@Column(name="DescribedColumns")
-	public List<RepoCD> describedColumnSet = null;
+	public List<RepoCD> describedColumnSet = null;	
 
 	/** Empty constructor to be used by Hector EntityManager when inflating and populating fields from Cassandra.
 	 * Need to then invoke init() to complete common initialization.
@@ -80,17 +68,21 @@ public class RepoDescription {
 	public boolean getImmediateFlush() {return immediateFlush;}
 	public List<RepoCD> getDescribedColumnSet() {return describedColumnSet;}
 
-	public void printObject() {
-		SerializersSerializer sSerializer = SerializersSerializer.getInstance();
-        System.out.print("rowKey = " + repoName + "; ");
-        System.out.println("KeySerializerClassName = " + keySerializerClassName + "; ");
-        System.out.println("ImmediateFlush = " + immediateFlush + "; ");;
-        System.out.println("DescribedColumns are: ");
-        for (RepoCD colDesc : describedColumnSet) {
-        	System.out.print("Column name = " + colDesc.columnName + "; ");
-        	System.out.print("Value serializer class name = " + sSerializer.toString(colDesc.columnValueSerializer) + "; ");
-        	System.out.print("Column properties = " + colDesc.columnProperties + "; ");
-        }
-        System.out.println();
+	public void printObject(Logger log) {
+		try {
+			SerializersSerializer sSerializer = SerializersSerializer.getInstance();
+			System.out.print("rowKey = " + repoName + "; ");
+			System.out.println("KeySerializerClassName = " + keySerializerClassName + "; ");
+			System.out.println("ImmediateFlush = " + immediateFlush + "; ");;
+			System.out.println("DescribedColumns are: ");
+			for (RepoCD colDesc : describedColumnSet) {
+				System.out.print("Column name = " + colDesc.columnName + "; ");
+				System.out.print("Value serializer class name = " + sSerializer.toString(colDesc.columnValueSerializer) + "; ");
+				System.out.print("Column properties = " + colDesc.columnProperties + "; ");
+			}
+			System.out.println();
+		} catch (Exception e) {
+			log.error("Failed to print object." + e.getLocalizedMessage());
+		}
 	}
 }

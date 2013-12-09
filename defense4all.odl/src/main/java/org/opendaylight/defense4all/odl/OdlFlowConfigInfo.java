@@ -11,26 +11,33 @@ package org.opendaylight.defense4all.odl;
 import java.util.Hashtable;
 
 import org.opendaylight.defense4all.core.FlowConfigInfo;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author gerag
  *
  */
-public class OdlFlowConfigInfo extends FlowConfigInfo {
+public class OdlFlowConfigInfo extends FlowConfigInfo {	
+
+	static Logger log = LoggerFactory.getLogger(OdlFlowConfigInfo.class);
 
 	/* OdlFlowConfigInfo Repo additional columns */	
 	public static final String ID = "id";	// Cookie
 	public static final String VLAN_ID = "vlan_id";	
 	public static final String IDLE_TIMEOUT = "idle_timeout";
 	public static final String HARD_TIMEOUT = "hard_timeout";
-	
+
 	/* ODL cookies range */
-	public static final short ODL_COOKIE_MIN = 1;
-	public static final short ODL_COOKIE_MAX = (short) 65000; // A bit less than 65535
-	
+	public static final int ODL_COOKIE_MIN = 1;
+	public static final int ODL_COOKIE_MAX = 65000; // A bit less than 65535
+
 	/* ODL Floors: 0-10: flows common to all PNs, 10-20: peace time flows, >20: attack flows */
-	
-	public short  id;
+
+	public int    id;
 	public short  vlanId;
 	public short  idleTimeout;
 	public short  hardTimeout;	
@@ -42,15 +49,20 @@ public class OdlFlowConfigInfo extends FlowConfigInfo {
 		super();
 		id = 0; vlanId = 0; idleTimeout = 0; hardTimeout = 0;
 	}
-	
-	public OdlFlowConfigInfo(Hashtable<String, Object> row) {
-		
+
+	public OdlFlowConfigInfo(Hashtable<String, Object> row) throws ExceptionControlApp {
+
 		super(row);
-		
-		id = (Short) row.get(ID);
-		vlanId = (Short) row.get(VLAN_ID);
-		idleTimeout = (Short) row.get(IDLE_TIMEOUT);
-		hardTimeout = (Short) row.get(HARD_TIMEOUT);
+		try {
+			id = (Integer) row.get(ID);
+			vlanId = (Short) row.get(VLAN_ID);
+			idleTimeout = (Short) row.get(IDLE_TIMEOUT);
+			hardTimeout = (Short) row.get(HARD_TIMEOUT);
+		} catch(Throwable e) {
+			log.error("Excepted trying to inflate OdlFlowConfigInfo from row. " + e.getLocalizedMessage());
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Excepted trying to inflate OdlFlowConfigInfo from row. ", e);
+		}
 	}
 
 	public OdlFlowConfigInfo(OdlFlowConfigInfo other) {		
@@ -60,14 +72,14 @@ public class OdlFlowConfigInfo extends FlowConfigInfo {
 	}
 
 	public Hashtable<String, Object> toRow() {
-		
+
 		Hashtable<String, Object> row = super.toRow();		
 
 		row.put(ID, id);
 		row.put(VLAN_ID, vlanId);
 		row.put(IDLE_TIMEOUT, idleTimeout);
 		row.put(HARD_TIMEOUT, hardTimeout);
-		
+
 		return row;
 	}
 

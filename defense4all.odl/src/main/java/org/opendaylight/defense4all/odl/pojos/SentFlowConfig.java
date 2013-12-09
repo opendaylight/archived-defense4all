@@ -12,6 +12,7 @@ package org.opendaylight.defense4all.odl.pojos;
 import java.util.List;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.odl.OdlFlowConfigInfo;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -21,7 +22,7 @@ public class SentFlowConfig extends FlowConfig {
 
     public SentFlowConfig() {}
     
-    public SentFlowConfig(OdlFlowConfigInfo flowInfo) {    	
+    public SentFlowConfig(OdlFlowConfigInfo flowInfo) throws ExceptionControlApp {    	
     	super(flowInfo);
     	actions = flowInfo.actions;
     }

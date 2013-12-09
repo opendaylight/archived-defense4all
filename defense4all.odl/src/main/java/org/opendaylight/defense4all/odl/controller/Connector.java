@@ -9,19 +9,17 @@
  */
 package org.opendaylight.defense4all.odl.controller;
 
-import java.io.IOException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.type.TypeReference;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.odl.OdlOFC;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -31,7 +29,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 public class Connector {
-	
+
 	public interface JsonPreprocessor {
 		public String preProcess(String jsonStr);
 	}
@@ -39,116 +37,132 @@ public class Connector {
 	private static Log log = LogFactory.getLog(Connector.class);
 
 	public OdlOFC odlOFC;
-	protected String restPrefix;;
+	protected String restPrefix;
 	protected ObjectMapper objMapper;
 	protected RestTemplate restTemplate;
 
 	public Connector(OdlOFC odlOFC) {
+
+		if(odlOFC == null) {
+			log.error("Failed to create connector - null odlOFC passed");
+			throw new IllegalArgumentException("Null odlOFC");
+		}
 		objMapper  = new ObjectMapper();
 		objMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Ignore unknown fields
 		this.odlOFC = odlOFC;
 	}
 
-	public void init() {
+	public void init() throws ExceptionControlApp {
 
-		restPrefix = "http://" + odlOFC.hostname + ":" + Integer.toString(odlOFC.port);
+		try {
+			restPrefix = "http://" + odlOFC.hostname + ":" + Integer.toString(odlOFC.port);
 
-		// set authentication for rest template
-		AuthScope authScope = new AuthScope(odlOFC.hostname, odlOFC.port, AuthScope.ANY_REALM);
-		UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(odlOFC.username,odlOFC.password);
-		DefaultHttpClient client = new DefaultHttpClient();
-		client.getCredentialsProvider().setCredentials(authScope, credentials);
+			// set authentication for rest template
+			AuthScope authScope = new AuthScope(odlOFC.hostname, odlOFC.port, AuthScope.ANY_REALM);
+			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(odlOFC.username,odlOFC.password);
+			DefaultHttpClient client = new DefaultHttpClient();
+			client.getCredentialsProvider().setCredentials(authScope, credentials);
 
-		HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(client);
-		restTemplate = new RestTemplate(factory);		
+			HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(client);
+			restTemplate = new RestTemplate(factory);
+			if(restTemplate == null) throw new Exception("Failed to create restTemplate");
+		} catch (Throwable e) {
+			log.error("Failed to init connector to " + odlOFC.hostname, e);
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp ("Failed to init connector to " + odlOFC.hostname, e);
+		}
 	}
 
 	protected synchronized <T> T getFromController(String urlPrefix, TypeReference<?> typeRef, JsonPreprocessor preProcessor) 
-			throws RestClientException, ExceptionInvalidState {
+			throws RestClientException {
 
-		String url = mkUrl(urlPrefix);
-		assertRestTemplateNotNull();
-		String result = null;
+		T t;
 		try {
-			result = restTemplate.getForObject(url, String.class);
-		} catch (Exception e1) { return null;}
-		if(result == null) return null;
-		log.debug("Caller: "+getMethodName(2)+" Class:"+typeRef.getType().toString()+" URL: "+url+" JSON: "+result);
-		T t = null;
-		if(preProcessor != null) 
-			result = preProcessor.preProcess(result);
-		
-		try {
+			String url = mkUrl(urlPrefix);
+			String result = restTemplate.getForObject(url, String.class);
+			if(result == null) return null;
+			log.debug("Caller: "+getMethodName(2)+" Class:"+typeRef.getType().toString()+" URL: "+url+" JSON: "+result);
+			if(preProcessor != null) 
+				result = preProcessor.preProcess(result);
+
 			t = objMapper.readValue(result, typeRef);
-		} catch (JsonParseException e) {
-			throw new RestClientException("Error getting from controller - " + e);
-		} catch (JsonMappingException e) {
-			throw new RestClientException("Error getting from controller - " + e);
-		} catch (IOException e) {
-			throw new RestClientException("Error getting from controller - " + e);}
-		
+		} catch (Throwable e) { 
+			log.error("Failed to get from controller " + odlOFC.hostname, e);
+			throw new RestClientException("Failed to get from controller " + odlOFC.hostname, e);
+		}
+
 		return t;
 	}
 
-	protected synchronized void postToController(String urlPrefix, Object object) throws RestClientException, ExceptionInvalidState {
+	protected synchronized void postToController(String urlPrefix, Object object) throws RestClientException {
 
-		String url = mkUrl(urlPrefix);
-		log.debug("Caller: URL: " + url );
-		
-		HttpEntity<String> entity = buildHttpEntityFromObject( object );
-		restTemplate.postForLocation(url, entity);
+		try {
+			String url = mkUrl(urlPrefix);
+			log.debug("Caller: URL: " + url );
+			HttpEntity<String> entity = buildHttpEntityFromObject( object );
+			restTemplate.postForLocation(url, entity);
+		} catch (Throwable e) {
+			log.error("Failed to post to controller " + odlOFC.hostname, e);
+			throw new RestClientException("Failed to post to controller " + odlOFC.hostname, e);
+		}
 	}
-	
-	protected synchronized void putToController(String urlPrefix, Object object) throws RestClientException, ExceptionInvalidState {
 
-		String url = mkUrl(urlPrefix);
-		log.debug("Caller: URL: " + url );
-		
-		HttpEntity<String> entity = buildHttpEntityFromObject( object );
-		restTemplate.put(url, entity);
+	protected synchronized void putToController(String urlPrefix, Object object) throws RestClientException {
+
+		try {
+			String url = mkUrl(urlPrefix);
+			log.debug("Caller: URL: " + url );
+			HttpEntity<String> entity = buildHttpEntityFromObject( object );
+			restTemplate.put(url, entity);
+		} catch (Throwable e) {
+			log.error("Failed to put to controller " + object + " to " + odlOFC.hostname, e);
+			throw new RestClientException("Failed to put to controller " + object + " to " + odlOFC.hostname, e);
+		}
 	}
-	
-	
-	private HttpEntity<String> buildHttpEntityFromObject( Object object)  throws RestClientException, ExceptionInvalidState {
-		
-		assertRestTemplateNotNull();
+
+	private HttpEntity<String> buildHttpEntityFromObject( Object object) throws RestClientException {
+
 		String jsonStr;
-		
+
 		try {
 			jsonStr = objMapper.writeValueAsString(object);
-		} catch (JsonGenerationException e) {throw new RestClientException("Error adding to controller - " + e);
-		} catch (JsonMappingException e) {throw new RestClientException("Error adding to controller - " + e);
-		} catch (IOException e) {throw new RestClientException("Error adding to controller - " + e);}
-		
-		log.debug("Caller: " + getMethodName(2) + " JSON: " + jsonStr);
+		} catch (Throwable e) {
+			String msg = "Failed to writeValueAsString " + object.toString() + " for controller " + odlOFC.hostname;
+			log.error(msg, e);
+			throw new RestClientException(msg, e);
+		}
 
+		log.debug("Caller: " + getMethodName(2) + " JSON: " + jsonStr);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		HttpEntity<String> entity = new HttpEntity<String>(jsonStr,headers);
 		return entity;
 	}
-	
 
-	protected synchronized void putToController(String urlPrefix) throws RestClientException, ExceptionInvalidState {
+	protected synchronized void putToController(String urlPrefix) throws RestClientException {
 
-		String url = mkUrl(urlPrefix);
-		assertRestTemplateNotNull();
-		
-		log.debug("Caller: " + getMethodName(2) + " URL: " + url + " JSON: ");
-		
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		restTemplate.put(url, null);			
+		try {
+			String url = mkUrl(urlPrefix);
+			log.debug("Caller: " + getMethodName(2) + " URL: " + url + " JSON: ");
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+			restTemplate.put(url, null);		
+		} catch (Throwable e) {
+			log.error("Failed to put to controller " + odlOFC.hostname, e);
+			throw new RestClientException("Failed to put to controller " + odlOFC.hostname, e);
+		}	
 	}
 
 	protected synchronized void delFromController(String urlPrefix) throws ExceptionInvalidState {
-		
-		String url = mkUrl(urlPrefix);
-		assertRestTemplateNotNull();
-		
-		log.debug("Caller: " + getMethodName(2) + " URL: " + url);
-		
-		restTemplate.delete(url);
+
+		try {
+			String url = mkUrl(urlPrefix);
+			log.debug("Caller: " + getMethodName(2) + " URL: " + url);
+			restTemplate.delete(url);		
+		} catch (Throwable e) {
+			log.error("Failed to put to controller " + odlOFC.hostname, e);
+			throw new RestClientException("Failed to put to controller " + odlOFC.hostname, e);
+		}	
 	}
 
 	protected String mkUrl(String path) {
@@ -158,10 +172,5 @@ public class Connector {
 	private static String getMethodName(final int depth) {
 		final StackTraceElement[] ste = Thread.currentThread().getStackTrace();
 		return ste[ste.length - 1 - depth].getMethodName();
-	}
-
-	protected void assertRestTemplateNotNull() throws ExceptionInvalidState {
-		if(restTemplate == null)
-			throw new ExceptionInvalidState("No controllers are defined in Defense4all.");
 	}
 }

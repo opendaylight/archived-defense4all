@@ -14,74 +14,128 @@ import org.opendaylight.defense4all.odl.pojos.FlowStatistics;
 import org.opendaylight.defense4all.odl.pojos.Nodes;
 import org.opendaylight.defense4all.odl.pojos.ReceivedFlowConfig;
 import org.opendaylight.defense4all.odl.pojos.SentFlowConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jmx.access.InvalidInvocationException;
 import org.codehaus.jackson.type.TypeReference;
 
 public class FlowEntryMgr {
-	
+
 	// TODO: Temporary before integration with controller
 	protected class NodeIDType{ public static final String OPENFLOW = "OF";}	
 
+	Logger log = LoggerFactory.getLogger(this.getClass());
+
 	static protected String openFlowEntryType = NodeIDType.OPENFLOW;
-	
+
 	public Connector connector = null;
 	public Odl odl;
-	
+
 	public FlowEntryMgr() {}
-	
+
 	/* Setters for Spring */
 	public void setOdl(Odl odl) {this.odl = odl;}
 
-	public ReceivedFlowConfig getOpenFlowEntry(String nodeId, String flowEntryLabel) throws Exception {	
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		StringBuilder urlPrefix = constructFlowUrlPrefix(nodeId, flowEntryLabel);
-		TypeReference<?> typeRef = new TypeReference<ReceivedFlowConfig>(){};
-		JsonPreprocessor preprocessor = ReceivedFlowConfig.getJsonPreprocessor();
-		ReceivedFlowConfig flowConfig = connector.getFromController(urlPrefix.toString(), typeRef, preprocessor);
-		return flowConfig;
+	protected void assertConnectorNotNull() throws InvalidInvocationException {
+
+		if(connector == null) {
+			log.error("No OFC has been set yet");
+			throw new InvalidInvocationException("No OFC has been set yet");
+		}
+	}
+
+	public ReceivedFlowConfig getOpenFlowEntry(String nodeId, String flowEntryLabel) throws Exception {
+
+		try {
+			assertConnectorNotNull();
+			StringBuilder urlPrefix = constructFlowUrlPrefix(nodeId, flowEntryLabel);
+			TypeReference<?> typeRef = new TypeReference<ReceivedFlowConfig>(){};
+			JsonPreprocessor preprocessor = ReceivedFlowConfig.getJsonPreprocessor();
+			ReceivedFlowConfig flowConfig = connector.getFromController(urlPrefix.toString(), typeRef, preprocessor);
+			return flowConfig;
+		} catch (Throwable e) {
+			String msg = "Excepted trying to getOpenFlowEntry for " + nodeId + " " + flowEntryLabel;
+			log.error(msg, e);
+			throw new Exception(msg, e);
+		}
 	}
 
 	public void addOpenFlowEntry(String nodeId, String flowEntryLabel, SentFlowConfig flowEntry) throws Exception {
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		StringBuilder urlPrefix = constructFlowUrlPrefix(nodeId, flowEntryLabel);
-		connector.putToController(urlPrefix.toString(), flowEntry);
+
+		try {
+			assertConnectorNotNull();
+			StringBuilder urlPrefix = constructFlowUrlPrefix(nodeId, flowEntryLabel);
+			connector.putToController(urlPrefix.toString(), flowEntry);
+		} catch (Throwable e) {
+			String msg = "Excepted trying to addOpenFlowEntry for " + nodeId + " " + flowEntryLabel + " " + flowEntry;
+			log.error(msg, e);
+			throw new Exception(msg, e);
+		}
 	}
 
-	public void toggleOpenFlowEntry(String nodeId, String flowEntryLabel) throws Exception {	
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		StringBuilder urlPrefix = constructFlowUrlPrefix(nodeId, flowEntryLabel);
-		connector.putToController(urlPrefix.toString());
+	public void toggleOpenFlowEntry(String nodeId, String flowEntryLabel) throws Exception {
+
+		try {
+			assertConnectorNotNull();
+			StringBuilder urlPrefix = constructFlowUrlPrefix(nodeId, flowEntryLabel);
+			connector.putToController(urlPrefix.toString());
+		} catch (Throwable e) {
+			String msg = "Excepted trying to toggleOpenFlowEntry for " + nodeId + " " + flowEntryLabel;
+			log.error(msg, e);
+			throw new Exception(msg, e);
+		}
 	}
 
-	public void deleteOpenFlowEntry(String nodeId, String flowEntryLabel) throws Exception {	
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		StringBuilder urlPrefix = constructFlowUrlPrefix(nodeId, flowEntryLabel);
-		connector.delFromController(urlPrefix.toString());
+	public void deleteOpenFlowEntry(String nodeId, String flowEntryLabel) throws Exception {
+
+		try {
+			assertConnectorNotNull();
+			StringBuilder urlPrefix = constructFlowUrlPrefix(nodeId, flowEntryLabel);
+			connector.delFromController(urlPrefix.toString());
+		} catch (Throwable e) {
+			String msg = "Excepted trying to deleteOpenFlowEntry for " + nodeId + " " + flowEntryLabel;
+			log.error(msg, e);
+			throw new Exception(msg, e);
+		}
 	}
 
-	public FlowStatistics getOpenFlowStats(String nodeId) throws Exception {	
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		StringBuilder urlPrefix = constructFlowStatsUrlPrefix(nodeId);
-		TypeReference<?> typeRef = new TypeReference<FlowStatistics>(){};
-		JsonPreprocessor preprocessor = FlowStatistics.getJsonPreprocessor();
-		FlowStatistics flowStatistics = connector.getFromController(urlPrefix.toString(), typeRef, preprocessor);
-		return flowStatistics;
+	public FlowStatistics getOpenFlowStats(String nodeId) throws Exception {
+
+		try {
+			assertConnectorNotNull();
+			StringBuilder urlPrefix = constructFlowStatsUrlPrefix(nodeId);
+			TypeReference<?> typeRef = new TypeReference<FlowStatistics>(){};
+			JsonPreprocessor preprocessor = FlowStatistics.getJsonPreprocessor();
+			FlowStatistics flowStatistics = connector.getFromController(urlPrefix.toString(), typeRef, preprocessor);
+			return flowStatistics;
+		} catch (Throwable e) {
+			String msg = "Excepted trying to getOpenFlowStats for " + nodeId;
+			log.error(msg, e);
+			throw new Exception(msg, e);
+		}
 	}
 
-	public Nodes getNodes() throws Exception {	
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		StringBuilder urlPrefix = constructFlowSwitchUrlPrefix();
-		TypeReference<?> typeRef = new TypeReference<Nodes>(){};
-		JsonPreprocessor preprocessor = Nodes.getJsonPreprocessor();
-		Nodes nodeProperties = connector.getFromController(urlPrefix.toString(), typeRef, preprocessor);
-		return nodeProperties;
+	public Nodes getNodes() throws Exception {
+
+		try {
+			assertConnectorNotNull();
+			StringBuilder urlPrefix = constructFlowSwitchUrlPrefix();
+			TypeReference<?> typeRef = new TypeReference<Nodes>(){};
+			JsonPreprocessor preprocessor = Nodes.getJsonPreprocessor();
+			Nodes nodeProperties = connector.getFromController(urlPrefix.toString(), typeRef, preprocessor);
+			return nodeProperties;
+		} catch (Throwable e) {
+			String msg = "Excepted trying to getNodes.";
+			log.error(msg, e);
+			throw new Exception(msg, e);
+		}
 	}
 
 	/* Append: {constUrlPrefix}/node/{containerName}/{nodeType}/{nodeId}/staticFlow/{name}/ */
 	protected StringBuilder constructFlowUrlPrefix(String nodeId, String flowEntryLabel) {
-		
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		
+
+		assertConnectorNotNull();
+
 		StringBuilder urlPrefix = new StringBuilder();		
 		urlPrefix.append(odl.constFlowUrlPrefix);
 		urlPrefix.append("/"); urlPrefix.append(connector.odlOFC.restpathControllerName);
@@ -95,9 +149,9 @@ public class FlowEntryMgr {
 
 	/* Append: {constUrlPrefix}/{containerName}/ */
 	protected StringBuilder constructAllFlowsUrlPrefix() {
-		
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		
+
+		assertConnectorNotNull();
+
 		StringBuilder urlPrefix = new StringBuilder();		
 		urlPrefix.append("/"); urlPrefix.append(odl.constFlowUrlPrefix);
 		urlPrefix.append("/"); urlPrefix.append(connector.odlOFC.restpathControllerName);
@@ -106,9 +160,9 @@ public class FlowEntryMgr {
 
 	/* Append: {containerName}/flow/node/{nodeType}/{nodeId} */
 	protected StringBuilder constructFlowStatsUrlPrefix(String nodeId) {
-		
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		
+
+		assertConnectorNotNull();
+
 		StringBuilder urlPrefix = new StringBuilder();		
 		urlPrefix.append("/"); urlPrefix.append(odl.constStatsUrlPrefix);
 		urlPrefix.append("/"); urlPrefix.append(connector.odlOFC.restpathControllerName);
@@ -120,9 +174,9 @@ public class FlowEntryMgr {
 
 	/* Append: {containerName}/flowstats/{nodeType}/{nodeId} */
 	protected StringBuilder constructFlowSwitchUrlPrefix() {
-		
-		if(connector == null) throw new InvalidInvocationException("No OFC has been set yet");
-		
+
+		assertConnectorNotNull();
+
 		StringBuilder urlPrefix = new StringBuilder();		
 		urlPrefix.append("/"); urlPrefix.append(odl.constSwitchUrlPrefix);
 		urlPrefix.append("/"); urlPrefix.append(connector.odlOFC.restpathControllerName);

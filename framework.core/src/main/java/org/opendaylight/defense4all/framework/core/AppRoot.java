@@ -16,7 +16,11 @@ import java.util.Properties;
 
 
 
+
+
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import me.prettyprint.cassandra.serializers.BooleanSerializer;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
@@ -26,11 +30,13 @@ import me.prettyprint.hector.api.Serializer;
 
 public class AppRoot {
 
-	public FrameworkMain frameworkMain;
+	public FrameworkMain fMain;
 	public Serializer<String> sSer;
 	public Serializer<Integer> iSerializer;
 	public Serializer<Boolean> bSerializer;
 	public PropertiesSerializer pSerializer;
+	public String name;
+	Logger log = LoggerFactory.getLogger(this.getClass());
 	
 	/** Constructor for Spring
 	 * @param param_name 
@@ -40,10 +46,11 @@ public class AppRoot {
 		iSerializer = IntegerSerializer.get();
 		bSerializer = BooleanSerializer.get();
 		pSerializer = PropertiesSerializer.get();	
+		name = "";
 	}
 	
 	/* Setters for Spring */
-	public void setFrameworkMain(FrameworkMain frameworkMain) {this.frameworkMain = frameworkMain;}
+	public void setFrameworkMain(FrameworkMain frameworkMain) {this.fMain = frameworkMain;}
 
 	/**
 	 * Initializes all modules after construction. App specific - should be overridden.
@@ -70,9 +77,10 @@ public class AppRoot {
 	 * Resets the application according to reset level.
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void reset(ResetLevel resetLevel) {
+	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 		// perform factory reset in all modules
 	}
 

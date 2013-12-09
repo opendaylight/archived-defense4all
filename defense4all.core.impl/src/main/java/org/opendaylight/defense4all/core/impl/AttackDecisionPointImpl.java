@@ -11,17 +11,17 @@
 
 package org.opendaylight.defense4all.core.impl;
 
-import java.net.UnknownHostException;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.opendaylight.defense4all.core.Attack;
 import org.opendaylight.defense4all.core.AttackDecisionPoint;
+import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.Detection;
 import org.opendaylight.defense4all.core.PN;
 import org.opendaylight.defense4all.core.ProtocolPort;
@@ -30,6 +30,8 @@ import org.opendaylight.defense4all.core.Attack.Status;
 import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
 import org.opendaylight.defense4all.core.Traffic.TrafficMatch;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
 
@@ -42,91 +44,100 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	protected static final int ACTION_RESERVED = 0; // Already defined in Module. Brought here for brevity
 	protected static final int ACTION_PROCESS_ATTACKS = 1;
 	protected static final int ACTION_REMOVE_PN = 2;
-	
+
 	/* Use the values set below if not set anywhere else */
 	protected long processAttacksPeriod = 1000;
 
-	Logger log = LoggerFactory.getLogger(this.getClass());
 	protected boolean initialized = false;
 
 	public AttackDecisionPointImpl() {
 		super();
 	}
-	
+
 	/* Setters for Spring */
 	public void setProcessAttacksPeriod(int period) { this.processAttacksPeriod = period;}
-	
+
 	/** Post-constructor initialization	 */
 	public void init() throws ExceptionControlApp {
-		
+
 		super.init();
+		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "AttackDecisionPoint is starting.");
 		addPeriodicExecution(ACTION_PROCESS_ATTACKS, null, processAttacksPeriod);
 		initialized = true;
 	}
 
 	/** Pre-shutdown cleanup */
 	public void finit() {
+		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "AttackDecisionPoint is stopping.");
 		super.finit();
 	}
 
-	/** Reset */
-	public void reset(ResetLevel resetLevel) {		
+	/** Reset 
+	 * @throws ExceptionControlApp */
+	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
+
+		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "AttackDecisionPoint is resetting to level " + resetLevel);
 		super.reset(resetLevel);
 		Traffic.NameHash.reset();
-		dfAppRootFullImpl.detectionsRepo.truncate();
-		dfAppRootFullImpl.attacksRepo.truncate();
+		try {
+			dfAppRootFullImpl.detectionsRepo.truncate();
+			dfAppRootFullImpl.attacksRepo.truncate();
+		} catch (Throwable e) {
+			log.error("Failed to reset detectionsRepo and/or attacksRepo", e );
+		}
 	}
 
-	/** Test */
-	public void test() {
+	/** Test 
+	 * @throws ExceptionControlApp */
+	public void test() throws ExceptionControlApp {
 		test2();
 	}
-	
-	protected void test2() {
+
+	protected void test2() throws ExceptionControlApp {
 
 		Attack attack = new Attack("pn1_TCP:0", "pn1", new ProtocolPort(DFProtocol.TCP, 0), Status.DECLARED, new Properties());
 		attack.detectionKeys.setProperty("df_detectorpn1.TCP:0", "df_detectorpn1.TCP:0");
 		dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
-		
+
 		Attack check;
 
 		long start = System.currentTimeMillis() / 1000;
 		for(int i=0;i<10000;i++) {
 			int j = ((int) Math.random()) % 4;
-//			System.out.println(i);
+			//			System.out.println(i);
 			switch(j) {
-				case 0:
-					attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-					attack.detectionKeys.setProperty("df_detectorpn1.TCP:0", "df_detectorpn1.TCP:0");
-					dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
-					check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-					if(attack.detectionKeys.size() != check.detectionKeys.size())
-						System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
-					break;
-				case 1:
-					attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-					attack.detectionKeys.setProperty("dp_based_detectorpn1.TCP:0", "dp_based_detectorpn1.TCP:0");
-					dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
-					check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-					if(attack.detectionKeys.size() != check.detectionKeys.size())
-						System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
-					break;
-				case 2:
-					attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-					attack.detectionKeys.setProperty("dp_based_detectorpn1.TCP:80", "dp_based_detectorpn1.TCP:80");
-					dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
-					check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-					if(attack.detectionKeys.size() != check.detectionKeys.size())
-						System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
-					break;
-				case 3:
-					attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-					attack.detectionKeys.clear();
-					dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
-					System.out.println("Cleared detectionKeys");
-					break;
-				default:
-						break;
+			case 0:
+				attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
+				attack.detectionKeys.setProperty("df_detectorpn1.TCP:0", "df_detectorpn1.TCP:0");
+				dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
+				check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
+				if(attack.detectionKeys.size() != check.detectionKeys.size())
+					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
+				break;
+			case 1:
+				attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
+				attack.detectionKeys.setProperty("dp_based_detectorpn1.TCP:0", "dp_based_detectorpn1.TCP:0");
+				dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
+				check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
+				if(attack.detectionKeys.size() != check.detectionKeys.size())
+					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
+				break;
+			case 2:
+				attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
+				attack.detectionKeys.setProperty("dp_based_detectorpn1.TCP:80", "dp_based_detectorpn1.TCP:80");
+				dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
+				check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
+				if(attack.detectionKeys.size() != check.detectionKeys.size())
+					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
+				break;
+			case 3:
+				attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
+				attack.detectionKeys.clear();
+				dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
+				System.out.println("Cleared detectionKeys");
+				break;
+			default:
+				break;
 			}
 		}
 		long end = System.currentTimeMillis() / 1000;
@@ -137,149 +148,248 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
 	public synchronized void addDetection(Detection detection) {
 
-		/* Record the detection in detections repo */		
-		dfAppRootFullImpl.detectionsRepo.setRow(detection.key, detection.toRow());
+		/* Record the detection in detections repo */	
+		if (detection== null || detection.key == null ) {
+			log.error("Trying to add null detection");
+			return;
+		}
 
-		/* Record the detection also in attacks repo. First look if there is already an attack containing the detection. */
+		fr.logRecord(DFAppRoot.FR_DF_SECURITY,"DF is processing detection "+detection.toString());
 
-		PN pn;
 		try {
-			pn = new PN(dfAppRootFullImpl.pNsRepo.getRow(detection.pnKey));
-		} catch (UnknownHostException e) {return;}
-		
-		Traffic traffic = new Traffic(pn.dstAddr, pn.dstAddrPrefixLen);
-		
-		Hashtable<String,Hashtable<String,Object>> attackTable = dfAppRootFullImpl.attacksRepo.getTable();		
-		Hashtable<String,Object> attackRow; boolean foundMatchingAttack = false; Attack attack = null; TrafficMatch trafficMatch;
-		Iterator<Map.Entry<String,Hashtable<String,Object>>> iter = attackTable.entrySet().iterator();
-		Map.Entry<String,Hashtable<String,Object>> entry; String attackKey = null;
-
-		while(iter.hasNext()) {
-			
-			entry = iter.next();
-			attackRow = entry.getValue();
-			attack = new Attack(attackRow);
-			if(!attack.pnKey.equals(detection.pnKey)) 
-				continue;
-			
-			/* Matched pnKey means matched dstAddr and dstAddrPrefixLen, so match proto-port */
-			traffic.setProtocolPort(attack.protocolPort.protocol,attack.protocolPort.port);
-			trafficMatch = traffic.match(pn.dstAddr, detection.protocolPort.protocol, detection.protocolPort.port);
-			if(trafficMatch == TrafficMatch.NO) 
-				continue;
-			
-			/* This attack either contains or matches the subject detection */
-			foundMatchingAttack = true;
-			attackKey = entry.getKey();
-			
-			if(attack!= null && attackKey!= null) {
-				Properties dKeys = ((Properties) dfAppRootFullImpl.attacksRepo.getCellValue(attackKey, Attack.DETECTION_KEYS));
-				if(attack.detectionKeys.size() != dKeys.size()) {
-					System.out.println("attack detection keys 2: " + attack.detectionKeys.toString());
-					System.out.println("attack repo detection keys 2: " + dKeys.toString());
-					System.out.println("DIFFERENT SIZE!");
-				}
-			}
-			
-			break;
+			dfAppRootFullImpl.detectionsRepo.setRow(detection.key, detection.toRow());
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to add detetection to detectionsRepo. Detection key: "+detection.key, e);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"DF failed to process detection "+detection.key);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return;
 		}
-		
 
-		if(foundMatchingAttack) {
-			switch(attack.status) {
-				case DECLARED:
-				case SUSPECTED:
-					break;
-				case ENDED:
-					dfAppRootFullImpl.attacksRepo.deleteRow(attackKey); // Attack can be deleted - cleanup completed
-					attackKey = Attack.generateKey(detection.pnKey, detection.protocolPort);
-					attack = new Attack(attackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
-					break;
-				case ENDING: 
-					return;    // Ignore new detections until ended attack is deleted
-				default:
-					return;
-			}
-		} else {
-			attackKey = Attack.generateKey(detection.pnKey, detection.protocolPort);
+		/* Record the detection also in attacks repo. Create new attack if no matching attack exists yet. */
+		Attack attack = findMatchingAttack(detection);
+		String attackKey = Attack.generateKey(detection.pnKey, detection.protocolPort);
+		if(attack == null) {
 			attack = new Attack(attackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring a new attack " + attackKey);
+		}
+		switch(attack.status) {
+		case DECLARED:
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is adding detection " + detection.key 
+					+ " to existing attack " + attackKey);
+			break;
+		case SUSPECTED:
+			break;
+		case ENDED:
+			try {
+				dfAppRootFullImpl.attacksRepo.deleteRow(attackKey); // Attack can be deleted - cleanup completed
+			} catch (Throwable e) {
+				log.error("Failed to delete attack from attacksRepo. " +attackKey, e);
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			}
+			attack = new Attack(attackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring a new attack " + attackKey);
+			log.info("DF is declaring a new attack " + attackKey);
+			break;
+		case ENDING:
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY,detection.toString() + " is of an \"ending attack\". "
+					+ "DF is ignoring new detections until the attack is fully ended.");
+			return;    // Ignore new detections until ended attack is deleted
+		default:
+			return;
+		}
+		attack.detectionKeys.setProperty(detection.key, detection.key);	
+		try {
+			dfAppRootFullImpl.attacksRepo.setRow(attackKey, attack.toRow());
+		} catch (Throwable e) {
+			log.error("Failed to create attack in the attacksRepo. " +attackKey, e);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"DF failed to create attack " + attackKey);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return;
 		}
 
-		attack.detectionKeys.setProperty(detection.key, detection.key);	
-		dfAppRootFullImpl.attacksRepo.setRow(attackKey, attack.toRow());
-		System.out.println("Adding " + detection.detector + " detection at " + System.currentTimeMillis() / 1000
-				+ ", attack detection keys: " + attack.detectionKeys.toString());
-
-		invokeDecoupledSerially(ACTION_PROCESS_ATTACKS, null); // Invoke to check status of all attacks (process all detections)
+		/* Invoke the processAttacks now. (Never mind if fails - it is invoked periodically anyway). */
+		try {
+			invokeDecoupledSerially(ACTION_PROCESS_ATTACKS, null);	// Invoke to check status of all attacks (process all detections)
+		} catch (Throwable e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_PROCESS_ATTACKS , e);
+		}
 	}
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	protected Attack findMatchingAttack(Detection detection) {
+
+		Attack attack; PN pn;
+		try {
+			pn = new PN(dfAppRootFullImpl.pNsRepo.getRow(detection.pnKey));
+		} catch (Throwable e1) {
+			log.error("Failed to inflate PN from repo for detection: " + detection.key + "PN key:" + detection.pnKey, e1);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return null;
+		}
+
+		Traffic traffic = new Traffic(pn.dstAddr, pn.dstAddrPrefixLen);
+		Hashtable<String,Hashtable<String,Object>> attackTable = dfAppRootFullImpl.attacksRepo.getTable();		
+		if(attackTable == null) {
+			log.error("Retrieved null attacksTable.");
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
+			return null;
+		}
+
+		Iterator<Map.Entry<String,Hashtable<String,Object>>> iter = attackTable.entrySet().iterator();
+		Map.Entry<String,Hashtable<String,Object>> entry; 
+		Hashtable<String,Object> attackRow; TrafficMatch trafficMatch;
+
+		while(iter.hasNext()) {
+
+			entry = iter.next();
+			try {
+				attackRow = entry.getValue();
+				attack = new Attack(attackRow);
+			} catch (Throwable e) {
+				log.error("Excepted trying to inflate attack from row. " , e);
+				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+				continue;
+			}
+			if(!attack.pnKey.equals(detection.pnKey)) continue;
+
+			/* Matched pnKey means matched dstAddr and dstAddrPrefixLen, so match proto-port */
+			traffic.setProtocolPort(attack.protocolPort.protocol,attack.protocolPort.port);
+			try {
+				trafficMatch = traffic.match(pn.dstAddr, detection.protocolPort.protocol, detection.protocolPort.port);
+			} catch (Throwable e) {
+				log.error("Excepted in match operation for attack traffic: "+ pn.dstAddr.getHostAddress()+":"+
+						detection.protocolPort.protocol+"."+ detection.protocolPort.port, e);
+				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+				continue;
+			}
+			if(trafficMatch == TrafficMatch.NO) continue;
+
+			return attack; // Found matching attack
+		}
+
+		return null;	// Did not find matching attack
+	}
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
 	public synchronized void removeDetection(String detectionKey) {
-		
-		/* Remove the detection from detections repo, but hold on to it for removal from attacks repo */
-		Hashtable<String,Object> detectionRow = dfAppRootFullImpl.detectionsRepo.getRow(detectionKey);
+
+		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is removing detection " + detectionKey);
+		log.info("DF is removing detection " + detectionKey);
+
+		Hashtable<String, Object> detectionRow;
+		try {
+			detectionRow = dfAppRootFullImpl.detectionsRepo.getRow(detectionKey);
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to get detetectionRow from detectionsRepo. Detection key: "+detectionKey, e);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove detection " + detectionKey);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return;
+		}
 		if(detectionRow == null) return;
 		Detection detection = new Detection(detectionRow);
-		dfAppRootFullImpl.detectionsRepo.deleteRow(detectionKey);
 
 		/* Remove the detection also in attacks repo - not very efficient, but clear */
-		Hashtable<String,Hashtable<String,Object>> attackTable = dfAppRootFullImpl.attacksRepo.getTable();
-		Iterator<Map.Entry<String,Hashtable<String,Object>>> iter = attackTable.entrySet().iterator();
-		Map.Entry<String,Hashtable<String,Object>> entry; Properties detectionKeys;		
-		while(iter.hasNext()) {
-			entry = iter.next();
-			detectionKeys = (Properties) entry.getValue().get(Attack.DETECTION_KEYS);
-			if(detectionKeys == null) continue; 
-			detectionKeys.remove(detection.key);
-			dfAppRootFullImpl.attacksRepo.setCell(entry.getKey(), Attack.DETECTION_KEYS, detectionKeys);
+		try {
+			Hashtable<String,Hashtable<String,Object>> attackTable = dfAppRootFullImpl.attacksRepo.getTable();
+			Iterator<Map.Entry<String,Hashtable<String,Object>>> iter = attackTable.entrySet().iterator();
+			Map.Entry<String,Hashtable<String,Object>> entry; Properties detectionKeys;		
+			while(iter.hasNext()) {
+				entry = iter.next();
+				detectionKeys = (Properties) entry.getValue().get(Attack.DETECTION_KEYS);
+				if(detectionKeys == null) continue; 
+				detectionKeys.remove(detection.key);
+				dfAppRootFullImpl.attacksRepo.setCell(entry.getKey(), Attack.DETECTION_KEYS, detectionKeys);
+			}
+		} catch (Throwable e) {
+			log.error("Failed to delete detection from the attack. Detection key: "+detection.key, e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return;
 		}
-		
-		// For possible name changes
+
+		/* Remove the detection from detections repo, but hold on to it for removal from attacks repo */		
+		try {
+			dfAppRootFullImpl.detectionsRepo.deleteRow(detectionKey);
+		} catch (ExceptionControlApp e1) {
+			log.error("Failed to delete detetectionRow from detectionsRepo. Detection key: "+detectionKey, e1);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return;
+		}
+
+		// Piggyback processing. For possible name changes
 		Traffic.NameHash.reset();
-
-		invokeDecoupledSerially(ACTION_PROCESS_ATTACKS, null); // To process all detections.
+		try {
+			invokeDecoupledSerially(ACTION_PROCESS_ATTACKS, null);	// To process all detections.
+		} catch (Throwable e) {
+			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_PROCESS_ATTACKS, e);
+		}
 	}
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public synchronized void removePN(String pnKey) {
-		invokeDecoupledSerially(ACTION_REMOVE_PN, pnKey);
+	public synchronized void removePN(String pnKey) throws ExceptionControlApp {
+
+		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "DF is processing PN removal with respect to ongoing attacks "
+				+ pnKey);
+		try {
+			invokeDecoupledSerially(ACTION_REMOVE_PN, pnKey);	
+		} catch (ExceptionControlApp e) {
+			String msg = "Excepted trying to invokeDecoupledSerialiy " + ACTION_REMOVE_PN + " " + pnKey;
+			log.error(msg, e);
+			throw new ExceptionControlApp(msg, e);
+		}
 	}
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void decoupledRemovePN(String pnKey) {
+	protected void decoupledRemovePN(String pnKey)  {
 
 		Hashtable<String,Hashtable<String,Object>> attackTable = dfAppRootFullImpl.attacksRepo.getTable();
+		if (attackTable  == null ) return;
 		Iterator<Map.Entry<String,Hashtable<String,Object>>> iter = attackTable.entrySet().iterator();
 		Map.Entry<String,Hashtable<String,Object>> entry; Hashtable<String,Object> attackRow;
 		String attackPnkey;
-		
+
 		/* Check if there are any attacks for this PN, and end them */
 		while(iter.hasNext()) {
-			
-			entry = iter.next();
-			attackRow = entry.getValue();
-			attackPnkey = (String) attackRow.get(Attack.PNKEY);
-			if(attackPnkey.equals(pnKey))			
-				endAttack(new Attack(attackRow));
+			try {
+				entry = iter.next();
+				attackRow = entry.getValue();
+				attackPnkey = (String) attackRow.get(Attack.PNKEY);
+				if(attackPnkey.equals(pnKey)) {
+					String msg = "DF is ending attack " + entry.getKey() + " for removed PN " + pnKey;
+					fr.logRecord(DFAppRoot.FR_DF_SECURITY, msg);
+					endAttack(new Attack(attackRow));
+				}
+			} catch (ExceptionControlApp e) {
+				log.error("Failed to process endAttack in decoupledRemovePN ", e);
+			}
 		}
 	}
 
@@ -287,114 +397,185 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	protected void decoupledProcessAttacks() {
-		
-		List<String> attackKeys = dfAppRootFullImpl.attacksRepo.getKeys();
-		for(String attackKey : attackKeys)	
-			processAttack(attackKey);
+	protected void periodicProcessAttacks() {
+
+		if(!fMain.isOpenForBusiness()) return; // Operate only after everything is initialized and is not terminating
+
+		List<String> attackKeys = null;
+		try {
+			attackKeys = dfAppRootFullImpl.attacksRepo.getKeys();
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to get keys from attacksRepo", e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+		}
+		if ( attackKeys == null ) return;
+		for(String attackKey : attackKeys) {
+			try {
+				processAttack(attackKey);
+			} catch (ExceptionControlApp e) {
+				log.error("Failed in decoupledProcessAttacks. Attack key: "+attackKey);
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			}
+		}
 	}
 
-	protected void processAttack(String attackKey) {
-		
-		Hashtable<String,Object> attackRow = dfAppRootFullImpl.attacksRepo.getRow(attackKey);
+	protected void processAttack(String attackKey) throws ExceptionControlApp {
+
+		Hashtable<String, Object> attackRow;
+		try {
+			attackRow = dfAppRootFullImpl.attacksRepo.getRow(attackKey);
+		} catch (Throwable e) {
+			log.error("Failed to get attackRow from attacksRepo. Attack key: "+attackKey, e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp ("Failed to get attackRow from attacksRepo. Attack key: "+attackKey, e);
+
+		}
 		if(attackRow == null) return;
-		
+
 		Attack attack = new Attack(attackRow);
 		if(attack.status == Status.ENDING) 
 			return;
 		if(attack.status == Status.ENDED) {
-			dfAppRootFullImpl.attacksRepo.deleteRow(attackKey); // Attack can be deleted - cleanup completed
+			try {
+				dfAppRootFullImpl.attacksRepo.deleteRow(attackKey); // Attack can be deleted - cleanup completed
+			} catch (Exception e) {
+				log.error("Failed to delete attackRow from attacksRepo. Attack key: "+attackKey, e);
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+				throw new ExceptionControlApp ("Failed to delete attackRow from attacksRepo. Attack key: "+attackKey, e);
+			}
 			return;
 		}
-		
+
 		Detection detection; long detectionExpiration; Hashtable<String,Object> detectionRow;
 		long currentTime = System.currentTimeMillis() / 1000;
 		long latestDetectionExpiration = currentTime;
-		
-		System.out.println("processAttack " + attack.key + ": currentTime = " + currentTime + 
-				", detection keys = " + attack.detectionKeys.toString());
-		
-		Iterator<Map.Entry<Object,Object>> iter = attack.detectionKeys.entrySet().iterator();
+		Set<Entry<Object, Object>> attackSet = attack.detectionKeys.entrySet();
+		if ( attackSet == null ) return;
+		Iterator<Map.Entry<Object,Object>> iter	= attackSet.iterator();
 		String detectionKey;
-		while(iter.hasNext()) {
-			
-			detectionKey = (String) iter.next().getKey();
-			detectionRow = dfAppRootFullImpl.detectionsRepo.getRow(detectionKey);
 
-			if(detectionRow == null) 
+		while(iter.hasNext()) {
+
+			detectionKey = (String) iter.next().getKey();
+			try {
+				detectionRow = dfAppRootFullImpl.detectionsRepo.getRow(detectionKey);
+			} catch (Throwable e) {
+				log.error("Failed to get detectionRow from detectionsRepo. Detection key: "+detectionKey, e);
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				continue;
-			
+			}
+
+			if(detectionRow == null) continue;
+
 			detection = new Detection(detectionRow);
-			
 			detectionExpiration = detection.setTime + detection.duration;
-			
-			System.out.println("processAttack: detector = " + detection.detector + " detection set time = " + detection.setTime
-					+ ", detection duration = " + detection.duration + ", detectionExpiration = " + detectionExpiration);
-			
 			if(detectionExpiration > latestDetectionExpiration) {
 				latestDetectionExpiration = detectionExpiration;
 			}
 		}
-		
-		if(latestDetectionExpiration <= currentTime) { // The attack should be ended
-			System.out.println("processAttack: ending attack: " + attack.toString());
-			endAttack(attack);
+
+		if(latestDetectionExpiration <= currentTime && attack.status != Status.ENDING && attack.status != Status.ENDED) {
+			log.info("processAttack: ending attack: " + attack.toString());
+			endAttack(attack); // The attack should be ended
 		} else if(attack.status != Status.DECLARED) { // New attack
 			declareAttack(attackKey);
 		}
-		
-		System.out.println("attack detection keys: " + attack.detectionKeys.toString());
-		System.out.println("attack repo detection keys: " + ((Properties) dfAppRootFullImpl.attacksRepo.getCellValue(attackKey, Attack.DETECTION_KEYS)).toString());
+
+		log.debug("attack detection keys: " + attack.detectionKeys.toString());
+		try {
+			log.debug("attack repo detection keys: " + ((Properties) dfAppRootFullImpl.attacksRepo.getCellValue(attackKey, Attack.DETECTION_KEYS)).toString());
+		} catch (Exception e) {} // ignore
+
 		// Else ongoing attack - nothing to be done
 	}
-	
-	protected synchronized void declareAttack(String attackKey) {
 
-		System.out.println("processAttack: declaring attack on " + attackKey);
-		
-		// clean-up counters from previous attacks 	
-		dfAppRootFullImpl.detectorMgrImpl.cleanup();
-		dfAppRootFullImpl.attacksRepo.setCell(attackKey, Attack.STATUS, Status.DECLARED.name());
-		dfAppRootFullImpl.mitigationMgrImpl.mitigate(attackKey);
-	}
-	
-	protected synchronized void endAttack(Attack attack) {
-		
-		if(attack.status != Status.DECLARED) return;		
-		
-		Iterator<Map.Entry<Object,Object>> iter = attack.detectionKeys.entrySet().iterator();
-		Map.Entry<Object,Object> entry; String detectionKey;
-		
-		while(iter.hasNext()) {
-			
-			entry = iter.next();
-			detectionKey = (String) entry.getKey();
-			dfAppRootFullImpl.detectorMgrImpl.notifyEndDetection(detectionKey);
-			
-			dfAppRootFullImpl.detectionsRepo.deleteRow(detectionKey);
-			iter.remove();
+	protected synchronized void declareAttack(String attackKey) throws ExceptionControlApp {
+
+		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring new attack " + attackKey);
+
+		try {
+			// clean-up counters from previous attacks 	
+			dfAppRootFullImpl.detectorMgrImpl.cleanup();
+		} catch ( Throwable e) {
+			log.error("Failed to initiate detector manager claenup", e);
+			// ignore
+		}; 
+
+		try {
+			dfAppRootFullImpl.attacksRepo.setCell(attackKey, Attack.STATUS, Status.DECLARED.name());
+		} catch (ExceptionControlApp e1) {
+			log.error("Failed to update attack status in attacksRepo "+attackKey, e1);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process attack " + attackKey);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp ("Failed to update attack status in attacksRepo "+attackKey, e1);
 		}
-		
+
+		dfAppRootFullImpl.mitigationMgrImpl.mitigate(attackKey);
+
+		// Update attack row 
+	}
+
+	protected synchronized void endAttack(Attack attack) throws ExceptionControlApp {
+
+		if(attack.status != Status.DECLARED) return;
+		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is ending the attack " + attack.key);		
+
+		Set<Entry<Object, Object>> attackSet = attack.detectionKeys.entrySet();
+		if ( attackSet != null ) {
+			Iterator<Map.Entry<Object,Object>> iter	= attackSet.iterator();
+			Map.Entry<Object,Object> entry; String detectionKey;
+
+			while(iter.hasNext()) {
+
+				entry = iter.next();
+				detectionKey = (String) entry.getKey();
+				try {
+					dfAppRootFullImpl.detectorMgrImpl.notifyEndDetection(detectionKey);
+					dfAppRootFullImpl.detectionsRepo.deleteRow(detectionKey);
+				} catch (Throwable e) {
+					log.error("Failed to end detection for attack. "+detectionKey);
+					//				// don't process next - it will be retry on next circle
+					//				throw new ExceptionControlApp("Failed to end detection for attack. "+detectionKey); 
+				}
+				iter.remove();
+			}	
+		}
+
 		attack.status = Status.ENDING;
-		dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
-		dfAppRootFullImpl.mitigationMgrImpl.endMitigation(attack.key);
+		try {
+			dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
+		} catch (Exception e) {
+			log.error("Failed to update attack in attacksRepo. "+attack.key);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly end attack " + attack.key);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			// don't process next - it will be retry on next circle
+			throw new ExceptionControlApp("Failed to update attack in attacksRepo. "+attack.key);
+		}
+
+		try {
+			dfAppRootFullImpl.mitigationMgrImpl.endMitigation(attack.key);
+		} catch (Exception e) {
+			//			log.error("Excepted trying to request endMitigation from mitigation manager. "+attack.key ); 
+			//			throw new ExceptionControlApp("Excepted trying to request endMitigation from mitigation manager. "+attack.key );
+		}
 	}
 
 	@Override
 	protected void actionSwitcher(int actionCode, Object param) {
 
 		switch(actionCode) {
-			case ACTION_RESERVED:
-				break;
-			case ACTION_PROCESS_ATTACKS:
-				decoupledProcessAttacks();
-				break;
-			case ACTION_REMOVE_PN:
-				decoupledRemovePN((String) param);
-				break;
-			default:
+		case ACTION_RESERVED:
+			break;
+		case ACTION_PROCESS_ATTACKS:
+			periodicProcessAttacks();
+			break;
+		case ACTION_REMOVE_PN:
+			decoupledRemovePN((String) param);
+			break;
+		default:
 		}
 	}
 }

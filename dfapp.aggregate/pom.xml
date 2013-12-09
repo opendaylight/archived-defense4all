@@ -4,7 +4,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>df.aggregate</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<packaging>pom</packaging>
 	<name>df</name>
 	<url>http://maven.apache.org</url>
@@ -17,17 +17,17 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>framework.aggregate</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.aggregate</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>restservice</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>1.0.0</version>
 			<type>war</type>
 		</dependency>
 	</dependencies>
@@ -61,6 +61,176 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>rpm-maven-plugin</artifactId>
+				<version>2.1-alpha-3</version>
+				<executions>
+					<execution>
+						<id>generate-rpm</id>
+						<goals>
+							<goal>rpm</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<name>defense4all</name>
+					<!-- <version>0.0.1</version> -->
+					<copyright>2013, Radware Ltd.</copyright>
+					<distribution>OpenDaylight</distribution>
+					<group>Application/Communications</group>
+					<release>1</release>
+					<requires>
+						<require>cassandra20 &gt;= 2.0</require>
+						<require>java &gt;= 1.6</require>
+					</requires>
+
+					<mappings>
+						<mapping>
+							<directory>/usr/share/defense4all</directory>
+							<filemode>755</filemode>
+							<username>defense4all</username>
+							<groupname>defense4all</groupname>
+						</mapping>
+						<mapping>
+							<directory>/usr/share/defense4all/lib</directory>
+							<filemode>555</filemode>
+							<username>defense4all</username>
+							<groupname>defense4all</groupname>
+							<sources>
+								<source>
+									<location>../dfapp.aggregate/target/df.aggregate-1.0.0.jar</location>
+								</source>
+								<source>
+									<location>../restservice/target/restservice-1.0.0.war</location>
+								</source>
+							</sources>
+						</mapping>
+						<mapping>
+							<directory>/usr/share/defense4all/install</directory>
+							<filemode>555</filemode>
+							<username>defense4all</username>
+							<groupname>defense4all</groupname>
+							<sources>
+								<source>
+									<location>src/install</location>
+								</source>
+							</sources>
+						</mapping>
+						<mapping>
+							<directory>/etc/init.d</directory>
+							<directoryIncluded>false</directoryIncluded>
+							<username>root</username>
+							<groupname>root</groupname>
+							<sources>
+								<source>
+									<location>src/install/defense4all.bash</location>
+									<destination>defense4all</destination>
+								</source>
+							</sources>
+						</mapping>
+						<mapping>
+							<directory>/var/log/defense4all</directory>
+							<filemode>755</filemode>
+							<username>defense4all</username>
+							<groupname>defense4all</groupname>
+						</mapping>
+						<mapping>
+							<directory>/var/run/defense4all</directory>
+							<filemode>755</filemode>
+							<username>defense4all</username>
+							<groupname>defense4all</groupname>
+						</mapping>
+					</mappings>
+
+					<preinstallScriptlet>
+						<scriptFile>src/deb/control/preinst</scriptFile>
+					</preinstallScriptlet>
+					<postinstallScriptlet>
+						<scriptFile>src/deb/control/postinst</scriptFile>
+					</postinstallScriptlet>
+					<preremoveScriptlet>
+						<scriptFile>src/deb/control/prerm</scriptFile>
+					</preremoveScriptlet>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>jdeb</artifactId>
+				<groupId>org.vafer</groupId>
+				<version>1.0</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>jdeb</goal>
+						</goals>
+						<configuration>
+							<dataSet>
+								<data>
+									<type>template</type>
+									<paths>
+										<path>/usr/share/defense4all</path>
+										<path>/var/log/defense4all</path>
+										<path>/var/run/defense4all</path>
+									</paths>
+									<mapper>
+										<type>perm</type>
+										<user>defense4all</user>
+										<group>defense4all</group>
+										<filemode>755</filemode>
+									</mapper>
+								</data>
+								<data>
+									<src>../dfapp.aggregate/target/df.aggregate-1.0.0.jar</src>
+									<type>file</type>
+									<mapper>
+										<type>perm</type>
+										<prefix>/usr/share/defense4all/lib</prefix>
+										<user>defense4all</user>
+										<group>defense4all</group>
+										<filemode>555</filemode>
+									</mapper>
+								</data>
+								<data>
+									<src>../restservice/target/restservice-1.0.0.war</src>
+									<type>file</type>
+									<mapper>
+										<type>perm</type>
+										<prefix>/usr/share/defense4all/lib</prefix>
+										<user>defense4all</user>
+										<group>defense4all</group>
+										<filemode>555</filemode>
+									</mapper>
+								</data>
+								<data>
+									<src>src/install</src>
+									<type>directory</type>
+									<mapper>
+										<type>perm</type>
+										<prefix>/usr/share/defense4all/install</prefix>
+										<user>defense4all</user>
+										<group>defense4all</group>
+										<filemode>555</filemode>
+									</mapper>
+								</data>
+								<data>
+									<src>src/install/defense4all.bash</src>
+									<type>file</type>
+									<dst>defense4all</dst>
+									<mapper>
+										<type>perm</type>
+										<prefix>/etc/init.d</prefix>
+										<user>root</user>
+										<group>root</group>
+										<filemode>555</filemode>
+									</mapper>
+								</data>
+							</dataSet>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 </project>

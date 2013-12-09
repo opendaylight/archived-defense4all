@@ -21,12 +21,18 @@ import java.util.Map;
 import org.opendaylight.defense4all.core.ProtocolPort;
 import org.opendaylight.defense4all.core.Traffic;
 import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.RepoCD;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
-
 public class MonitoredTraffic {
+	
+	private static Logger log = LoggerFactory.getLogger(MonitoredTraffic.class);
 	
 	/* DiversionRepo column names */
 	public static final String KEY = "key";
@@ -66,32 +72,38 @@ public class MonitoredTraffic {
 		this.key = other.key; this.pnKey = other.pnKey; this.mitigationKey = other.mitigationKey; this.traffic = other.traffic;
 	}
 
-	public MonitoredTraffic(Hashtable<String, Object> monitoredTrafficRow) throws UnknownHostException {
+	public MonitoredTraffic(Hashtable<String, Object> monitoredTrafficRow) throws ExceptionControlApp {
 		
 		this();
-		key = (String) monitoredTrafficRow.get(KEY);
-		pnKey = (String) monitoredTrafficRow.get(PNKEY);
-		mitigationKey = (String) monitoredTrafficRow.get(MITIGATION_KEY);
-		String dstAddrStr = (String) monitoredTrafficRow.get(DST_ADDR);
-		traffic.dstAddr = dstAddrStr.isEmpty() ? null : InetAddress.getByName((String) monitoredTrafficRow.get(DST_ADDR));
-		
-		Iterator<Map.Entry<String,Object>> iter = monitoredTrafficRow.entrySet().iterator();
-		Map.Entry<String,Object> entry; String key; ProtocolPort protocolPort; ArrayList<Integer> ports;
-		
-		while(iter.hasNext()) {
+		try {
+			key = (String) monitoredTrafficRow.get(KEY);
+			pnKey = (String) monitoredTrafficRow.get(PNKEY);
+			mitigationKey = (String) monitoredTrafficRow.get(MITIGATION_KEY);
+			String dstAddrStr = (String) monitoredTrafficRow.get(DST_ADDR);
+			traffic.dstAddr = dstAddrStr.isEmpty() ? null : InetAddress.getByName((String) monitoredTrafficRow.get(DST_ADDR));
 			
-			entry = iter.next();
-			key = entry.getKey();
-			if(! key.startsWith(PROTO_PORT_PREFIX)) continue;
+			Iterator<Map.Entry<String,Object>> iter = monitoredTrafficRow.entrySet().iterator();
+			Map.Entry<String,Object> entry; String key; ProtocolPort protocolPort; ArrayList<Integer> ports;
 			
-			protocolPort = new ProtocolPort((String)entry.getValue());
-			ports = traffic.protoPorts.get(protocolPort.protocol.name());
-			if(ports == null) {
-				ports = new ArrayList<Integer>();
-				traffic.protoPorts.put(protocolPort.protocol.name(), ports);
+			while(iter.hasNext()) {
+				
+				entry = iter.next();
+				key = entry.getKey();
+				if(! key.startsWith(PROTO_PORT_PREFIX)) continue;
+				
+				protocolPort = new ProtocolPort((String)entry.getValue());
+				ports = traffic.protoPorts.get(protocolPort.protocol.name());
+				if(ports == null) {
+					ports = new ArrayList<Integer>();
+					traffic.protoPorts.put(protocolPort.protocol.name(), ports);
+				}
+				if(protocolPort.port != 0)
+					ports.add(protocolPort.port);
 			}
-			if(protocolPort.port != 0)
-				ports.add(protocolPort.port);
+		} catch (Throwable e) {
+			log.error("Excepted trying to inflate MonitoredTraffic from row.", e);
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Excepted trying to inflate MonitoredTraffic from row.", e);
 		}
 	}
 
@@ -160,7 +172,7 @@ public class MonitoredTraffic {
 	public Hashtable<String,ArrayList<Integer>>  getProtoPorts() {return traffic.protoPorts;}
 	public void setProtoPorts(Hashtable<String,ArrayList<Integer>> protoPorts) {this.traffic.protoPorts = protoPorts;}
 
-	public static List<RepoCD> getMonitoredTrafficRCDs() {
+	public static List<RepoCD> getRCDs() {
 
 		if(mMonitoredTrafficRepoCDs == null) {
 			RepoCD rcd;

@@ -11,20 +11,27 @@
 
 package com.radware.defenseflow.dp;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ####
  */
 public class DPEvent {
 
+	private static Logger log = LoggerFactory.getLogger(DPEvent.class);
+
 	private static Pattern syslogPfxRegex = null;
 	public String msg;
-	public InetAddress dpAddr;
-	
+	public String dpAddrStr;
+	public String dpName = null;
+
 	/* syslog DP message example:
 	 * Jun 17 11:40:43 10.210.49.41 DefensePro: security_msg_from_here
 	 * "^(\\w\\w\\w)\\s+(\\d+)\\s+(\\d+:\\d+:\\d+)\\s+(.+?)\\s+(\\w+?):\\s+?";
@@ -41,26 +48,32 @@ public class DPEvent {
 	public DPEvent() {
 		super();
 	}
-	
-	public static DPEvent fromString(String s) {
-		
-		if(syslogPfxRegex == null) // First time usage
-			syslogPfxRegex = Pattern.compile(SYSLOG_PREFIX_REGEX);
-		
+
+	public static DPEvent fromString(String s) throws ExceptionControlApp {
+
+		if(syslogPfxRegex == null) {
+			try {
+				syslogPfxRegex = Pattern.compile(SYSLOG_PREFIX_REGEX);
+			} catch (Throwable e1) {
+				log.error("Failed to construct the syslogPfxRegex from " + SYSLOG_PREFIX_REGEX, e1);
+				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
+				throw new ExceptionControlApp("Failed to construct the syslogPfxRegex from " + SYSLOG_PREFIX_REGEX, e1);
+			}
+		}
+
 		Matcher matcher = syslogPfxRegex.matcher(s);
 		if(!matcher.find() || matcher.groupCount() != SYSLOG_PREFIX_GROUPS) return null;
 
-		try {
-			DPEvent dpMsg = new DPEvent();
-			dpMsg.dpAddr = InetAddress.getByName(matcher.group(4));
-			dpMsg.msg = matcher.group(5);
-			return dpMsg;	
-		} catch (UnknownHostException e) {return null;}
+		DPEvent dpEvent = new DPEvent();
+		dpEvent.dpAddrStr = matcher.group(4);
+		dpEvent.dpName = dpEvent.dpAddrStr; // To be used if no name is set from outside
+		dpEvent.msg = matcher.group(5);
+		return dpEvent;	
 	}
-	
+
 	@Override
 	public String toString() {
-		String s = "DPEvent [msg=" + msg + ", dpAddr=" + dpAddr + "]";
+		String s = "DPEvent [dpName=" + dpName + ", dpAddr=" + dpAddrStr + ", msg=" + msg + "]";
 		return s;
 	}
 }

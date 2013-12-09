@@ -8,6 +8,8 @@
 		<constructor-arg index="0" name="statsQueueCapacity" value="10000" />
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="dfAppRoot" ref="appRoot" />
-		<property name="label" value="of_rate_based_detector" />		
+		<property name="label" value="of_rate_based_detector" />
+		<property name="durationOfDetection" value="100" />	
+			
 	</bean>	 
 </beans>	

@@ -9,7 +9,6 @@
 
 package org.opendaylight.defense4all.framework.core.impl;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import me.prettyprint.cassandra.serializers.BytesArraySerializer;
@@ -60,11 +59,7 @@ public  class EMObjectMapper extends HectorObjectMapper {
 	    byte[] keyBytes;
 		try {
 			keyBytes = (byte[]) method.invoke(this, params);
-		} catch (IllegalArgumentException e) {
-			return;
-		} catch (IllegalAccessException e) {
-			return;
-		} catch (InvocationTargetException e) {
+		} catch (Throwable e) {
 			return;
 		}
 	    

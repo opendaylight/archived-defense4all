@@ -29,8 +29,10 @@ public interface RepoFactory {
 	 * from the repo named as StateObjectClass.class, and populated into stateObject.
 	 * @param emId Id (name) of the requested entity manager
 	 * @return return Entity manager through through which state objects can be persisted and loaded from corresponding repo
+	 * @throws IllegalArgumentException
+	 * @throws ExceptionRepoFactoryInternalError 
 	 */
-	public EM getEM(String emId) throws IllegalArgumentException;
+	public EM getEM(String emId) throws IllegalArgumentException, IllegalArgumentException, ExceptionControlApp;
 
 	/**
 	 * Get or create EntityManager instance to persist objects of classes in the provided class paths. 
@@ -42,9 +44,10 @@ public interface RepoFactory {
 	 * @param stateClassPaths Class paths containing classes of objects to be persisted, delimited by colon (":"), 
 	 * for example: class.path1:classpath2:also.class.path3
 	 * @return return Entity manager through through which state objects can be persisted and loaded from corresponding repo
+	 * @throws ExceptionRepoFactoryInternalError 
 	 * @throws ExceptionEntityExists 
 	 */
-	public EM getOrCreateEM(String emId, String stateClassPaths) throws IllegalArgumentException;
+	public EM getOrCreateEM(String emId, String stateClassPaths) throws IllegalArgumentException, ExceptionControlApp;
 
 	/**
 	 * Create an EntityManager instance to persist objects of classes in the provided class paths. Once instantiated, 
@@ -56,8 +59,10 @@ public interface RepoFactory {
 	 * for example: class.path1:classpath2:also.class.path3
 	 * @return return Entity manager through through which state objects can be persisted and loaded from corresponding repo
 	 * @throws ExceptionEntityExists 
+	 * @throws ExceptionRepoFactoryInternalError 
 	 */
-	public EM createFrameworkMainEM(String emId, String stateClassPaths) throws  IllegalArgumentException, ExceptionEntityExists;
+	public EM createFrameworkMainEM(String emId, String stateClassPaths) throws  IllegalArgumentException, 
+		ExceptionEntityExists, ExceptionControlApp;
 
 	/**
 	 * Get an object representing an already created repo
@@ -67,7 +72,8 @@ public interface RepoFactory {
 	 * @return requested repo object, or null if this repo has not yet been created
 	 * @throws ExceptionRepoFactoryInternalError If there is an inconsistency between internal RepoFactory data structures
 	 */
-	public Repo<?> getRepo(String RepoNameMajor, String RepoNameMinor) throws  IllegalArgumentException;
+	public Repo<?> getRepo(String RepoNameMajor, String RepoNameMinor) throws  IllegalArgumentException, 
+	ExceptionControlApp;
 
 	/**
 	 * Create a repo and return an object representing it
@@ -80,7 +86,7 @@ public interface RepoFactory {
 	 * @throws ExceptionEntityExists If the repo already exists
 	 */
 	public <K> Repo<K> createRepo(String RepoNameMajor, String RepoNameMinor, Serializer<K> keySerializer, boolean immediateFlush,
-			List<RepoCD> columnDescriptions) throws IllegalArgumentException, ExceptionEntityExists, ExceptionRepoFactoryInternalError;
+			List<RepoCD> columnDescriptions) throws IllegalArgumentException, ExceptionEntityExists, ExceptionControlApp;
 
 	/**
 	 * Get a Java object representing a repo. Create the repo if non-existent. Create the java object if has not been 
@@ -95,12 +101,13 @@ public interface RepoFactory {
 	 */
 	public <K> Repo<K> getOrCreateRepo(String RepoNameMajor, String RepoNameMinor, Serializer<K> keySerializer, 
 			boolean immediateFlush,	List<RepoCD> columnDescriptions ) 
-			throws IllegalArgumentException, ExceptionEntityExists, ExceptionRepoFactoryInternalError;
+			throws IllegalArgumentException, ExceptionEntityExists, ExceptionControlApp;
 
 	/**
 	 * The table needs to be declared prior to persisting or finding the annotated state class, because
 	 * the corresponding Column Family needs to be created in Cassandra in advance. This method is idempotent.
 	 * @param tableName
+	 * @throws ExceptionRepoFactoryInternalError 
 	 */
-	public void declareAnnotationTable(String tableName);
+	public void declareAnnotationTable(String tableName) throws ExceptionControlApp;
 }

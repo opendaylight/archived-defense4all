@@ -14,8 +14,8 @@
 	
 	In /etc/rsyslog.d/50-default.conf append the following line at the end:
 	
-	Local6.* |/var/tmp/rsyslog-pipe
+	Local6.* |/var/tmp/rsyslog-df-pipe
 	
-3) DPRep code to yank logs from /var/tmp/rsyslog-pipe
+3) DPRep/DPEventMgr code to yank logs from /var/tmp/rsyslog-df-pipe
 
 	Get the next log entry and act upon the ones relevant for DF 

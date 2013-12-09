@@ -116,6 +116,21 @@ public class OFC {
 		return row;
 	}
 	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("OFC[hostname="); sb.append(hostname); sb.append(", ");
+		sb.append("username="); sb.append(username); sb.append(", ");
+		sb.append("password="); sb.append(password); sb.append(", ");
+		sb.append("forStatsCollection="); sb.append(forStatsCollection); sb.append(", ");
+		sb.append("ipAddrString="); sb.append(ipAddrString); sb.append(", ");
+		sb.append("port="); sb.append(port); sb.append(", ");
+		sb.append("forDiversion="); sb.append(forDiversion); sb.append(", ");
+		sb.append("props="); sb.append(props.toString());
+		sb.append("]");
+		return sb.toString();
+	}
+	
 	public static List<RepoCD> getOFCRCDs() {
 
 		if(mOFCsRepoCDs == null) {

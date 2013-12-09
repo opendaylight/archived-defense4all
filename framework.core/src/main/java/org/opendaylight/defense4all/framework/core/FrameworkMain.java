@@ -31,6 +31,11 @@ public interface FrameworkMain {
 			return returnValue;
 		}
 	}
+
+	/* Framework flight recorder event types */
+	public static final String FR_FRAMEWORK_CONFIG = "Framework_config";
+	public static final String FR_FRAMEWORK_OPERATIONAL = "Framework_operational";
+	public static final String FR_FRAMEWORK_FAILURE = "Framework_failure";
 	
 	public Properties getConfigProperties();
 	public RepoFactory getRepoFactory();
@@ -38,5 +43,10 @@ public interface FrameworkMain {
 	public PeerCommunicator getPeerCommunicator();
 	public FrameworkMgmtPoint getFrameworkMgmtPoint();
 	public AppRoot getAppRoot();
-	public MyLogger getMyLogger();
+	public FR getFR();
+	public HealthTracker getHealthTracker();
+	public void requestShutdown(boolean graceful);
+	public boolean isOpenForBusiness();
+	public boolean isDebugRun();
+	public String getHostAddr();
 }

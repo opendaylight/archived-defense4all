@@ -8,7 +8,7 @@
  */
 package org.opendaylight.defense4all.core;
 
-import java.net.UnknownHostException;
+import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -19,61 +19,92 @@ import java.util.Properties;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.PropertiesSerializer;
 import org.opendaylight.defense4all.framework.core.RepoCD;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author gerag
  *
  */
+@JsonIgnoreProperties({ "amsConnections", "trafficPorts", "protectedLinks" })
 public class NetNode {
 	
+	public static final String ITEMS_DELIMITER = ":";
+	public static final String LIST_ITEMS_DELIMITER = "::";
+
+	static Logger log = LoggerFactory.getLogger(NetNode.class);	
+	
 	public class AMSConnection {
+
 		
 		public String amsLabel;
-		public int toAMSInboundPort; 	// port in the node - closer to client
-		public int toAMSOutboundPort;	// port in the node - closer to server
-		public int inboundAMSPort; 		// port in the AMS device - closer to client
-		public int outboundAMSPort;		// port in the AMS device - closer to server
+		public int netNodeNorthPort; // port in the node - closer to client
+		public int netNodeSouthPort; // port in the node - closer to server
+		public int amsNorthPort; 	 // port in the AMS device - connected to netNodeNorthPort
+		public int amsSouthPort;	 // port in the AMS device - connected to netNodeSouthPort
+		
+		public int getAmsNorthPort() {return amsNorthPort;}
+		public void setAmsNorthPort(int amsNorthPort) {this.amsNorthPort = amsNorthPort;}
+		
+		public String getAmsLabel() {return amsLabel;}
+		public void setAmsLabel(String amsLabel) {this.amsLabel = amsLabel;}
+		
+		public int getNetNodeNorthPort() {return netNodeNorthPort;}
+		public void setNetNodeNorthPort(int netNodeNorthPort) {this.netNodeNorthPort = netNodeNorthPort;}
+		
+		public int getAmsSouthPort() {return amsSouthPort;}
+		public void setAmsSouthPort(int amsSouthPort) {this.amsSouthPort = amsSouthPort;}
+
+		public int getNetNodeSouthPort() {return netNodeSouthPort;}
+		public void setNetNodeSouthPort(int netNodeSouthPort) {this.netNodeSouthPort = netNodeSouthPort;}
 		
 		public AMSConnection() {
-			this.amsLabel = null; this.toAMSInboundPort = 0; this.toAMSOutboundPort = 0;
-			this.inboundAMSPort = 0; this.outboundAMSPort = 0;
+			amsLabel = null; netNodeNorthPort = 0; netNodeSouthPort = 0; amsNorthPort = 0; amsSouthPort = 0;
 		}
 		
-		public AMSConnection(String amsLabel, int toAMSPort, int fromAMSPort, int inboundAMSPort, int outboundAMSPort) {
-			this.amsLabel = amsLabel; this.toAMSInboundPort = toAMSPort; this.toAMSOutboundPort = fromAMSPort;
-			this.inboundAMSPort = inboundAMSPort; this.outboundAMSPort = outboundAMSPort;
+		public AMSConnection(String amsLabel,int netNodeNorthPort,int netNodeSouthPort,int amsNorthPort,int amsSouthPort) {
+			this.amsLabel = amsLabel; this.netNodeNorthPort = netNodeNorthPort; this.netNodeSouthPort = netNodeSouthPort;
+			this.amsNorthPort = amsNorthPort; this.amsSouthPort = amsSouthPort;
 		}
 		
-		public AMSConnection(String s) throws ExceptionControlApp {
+		public AMSConnection(String s) throws IllegalArgumentException {
 			
-			String[] split = s.split(":");
-			if(split.length < 3) throw new ExceptionControlApp("Improper serialized AMS connection");
+			String[] split = s.split(NetNode.ITEMS_DELIMITER);
+			if(split == null || split.length < 3) {
+				log.error("Invalid param s " + s + ".");
+				throw new IllegalArgumentException("Invalid param s " + s + ".");
+			}
 			amsLabel = split[0];
 			try {
-				toAMSInboundPort = Integer.valueOf(split[1]);
-				toAMSOutboundPort = Integer.valueOf(split[2]);
-				inboundAMSPort = Integer.valueOf(split[3]);
-				outboundAMSPort = Integer.valueOf(split[4]);
+				netNodeNorthPort = Integer.valueOf(split[1]);
+				netNodeSouthPort = Integer.valueOf(split[2]);
+				amsNorthPort = Integer.valueOf(split[3]);
+				amsSouthPort = Integer.valueOf(split[4]);
 			} catch (NumberFormatException e) {
-				throw new ExceptionControlApp("Improper serialized AMS connection", e);
+				log.error("Invalid param s " + s + "." + e.getLocalizedMessage());
+				throw new IllegalArgumentException("Invalid param s " + s + "." + e.getLocalizedMessage());
 			}
 		}
 		
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 			sb.append(amsLabel);  
-			sb.append(":"); sb.append(toAMSInboundPort); sb.append(":"); sb.append(toAMSOutboundPort);
-			sb.append(":"); sb.append(inboundAMSPort); sb.append(":"); sb.append(outboundAMSPort);
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(netNodeNorthPort); 
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(netNodeSouthPort);
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(amsNorthPort); 
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(amsSouthPort);
 			return sb.toString();
 		}
 	}
 	
-	public enum PortDirection {
-		INBOUND, // Closer to client
-		OUTBOUND // Closer to server
+	public enum PortLocation {
+		INVALID, 
+		NORTH, 	 // closer to client
+		SOUTH 	 // closer to server
 	}
 	
 	public enum SDNNodeMode {
@@ -85,30 +116,38 @@ public class NetNode {
 		public String label;
 		public short number;
 		public int vlan;
-		public PortDirection direction;
+		public PortLocation location;
 		
-		public TrafficPort() {this.label = null; this.number = 0; this.vlan = 0; direction = PortDirection.INBOUND;}
+		public TrafficPort() {this.label = null; this.number = 0; this.vlan = 0; location = PortLocation.INVALID;}
 		
-		public TrafficPort(String label, short number, int vlan, PortDirection direction) {
-			this.label = label; this.number = number; this.vlan = vlan; this.direction = direction;
+		public TrafficPort(String label, short number, int vlan, PortLocation location) {
+			this.label = label; this.number = number; this.vlan = vlan; this.location = location; 
 		}
 		
-		public TrafficPort(String s) throws ExceptionControlApp {
+		public TrafficPort(String s) throws IllegalArgumentException {
 			
-			String[] split = s.split(":");
-			if(split.length < 4) throw new ExceptionControlApp("Improper serialized Port");
+			String[] split = s.split(NetNode.ITEMS_DELIMITER);
+			if(split == null || split.length < 4) {
+				log.error("Invalid string parameter " + s);
+				throw new IllegalArgumentException("Invalid string parameter " + s);
+			}
 			label = split[0];
 			try {
 				number = Short.valueOf(split[1]);
 				vlan = Integer.valueOf(split[2]);
-				direction = PortDirection.valueOf(split[3]);
-			} catch (Exception e) {throw new ExceptionControlApp("Improper serialized Port", e);}
+				location = PortLocation.valueOf(split[3]);
+			} catch (NumberFormatException e) {
+				log.error("Invalid string parameter " + s);
+				throw new IllegalArgumentException("Invalid string parameter " + s, e);
+			}
 		}
 		
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
-			sb.append(label); sb.append(":"); sb.append(number); sb.append(":"); 
-			sb.append(vlan); sb.append(":"); sb.append(direction); 
+			sb.append(label); 
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(number); 
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(vlan); 
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(location);
 			return sb.toString();
 		}
 	}
@@ -116,31 +155,41 @@ public class NetNode {
 	public class ProtectedLink {
 		
 		public String label;
-		public short inboundPort;
-		public int outboundPort;
+		public short northPort;
+		public short southPort;
+		public String macOfConnectedToNorthPort;
 		
-		public ProtectedLink() {this.label = null; this.inboundPort = 0; this.outboundPort = 0;}
+		public ProtectedLink() {this.label = null; this.northPort = 0; this.southPort = 0; macOfConnectedToNorthPort = "";}
 		
-		public ProtectedLink(String label, short inboundPort, int fromAMSPort) {
-			this.label = label; this.inboundPort = inboundPort; this.outboundPort = fromAMSPort;
+		public ProtectedLink(String label, short northPort, short southPort, String macOfConnectedToNorthPort) {
+			this.label = label; this.northPort = northPort; this.southPort = southPort;
+			this.macOfConnectedToNorthPort = (macOfConnectedToNorthPort != null) ? macOfConnectedToNorthPort : "";
 		}
 		
-		public ProtectedLink(String s) throws ExceptionControlApp {
+		public ProtectedLink(String s) throws IllegalArgumentException {
 			
-			String[] split = s.split(":");
-			if(split.length < 3) throw new ExceptionControlApp("Improper serialized PortsLink");
+			String[] split = s.split(NetNode.ITEMS_DELIMITER);
+			if(split == null || split.length < 3) {
+				log.error("Invalid string parameter " + s);
+				throw new IllegalArgumentException("Invalid string parameter " + s);
+			}
 			label = split[0];
 			try {
-				inboundPort = Short.valueOf(split[1]);
-				outboundPort = Integer.valueOf(split[2]);
+				northPort = Short.valueOf(split[1]);
+				southPort = Short.valueOf(split[2]);
+				macOfConnectedToNorthPort = split.length >= 4 ? split[3]:""; // Empty serialized Mac will not produce split[3] 
 			} catch (NumberFormatException e) {
-				throw new ExceptionControlApp("Improper serialized PortsLink", e);
+				log.error("Invalid string parameter " + s);
+				throw new IllegalArgumentException("Invalid string parameter " + s, e);
 			}
 		}
 		
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
-			sb.append(label); sb.append(":"); sb.append(inboundPort); sb.append(":"); sb.append(outboundPort);
+			sb.append(label); 
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(northPort); 
+			sb.append(NetNode.ITEMS_DELIMITER); sb.append(southPort); 
+			sb.append(NetNode.ITEMS_DELIMITER);	sb.append(macOfConnectedToNorthPort);
 			return sb.toString();
 		}
 	}
@@ -181,10 +230,43 @@ public class NetNode {
 	public SDNNodeMode sdnNodeMode;
 	public int 	  healthCheckFrequency; // When in-path in secs. When out of path - decrease frequency by X 10	
 	public Status status;
+	public Properties props;
+	
+	public String getAmsConnectionsStr() {
+		return amsConnectionsStr;
+	}
+
+	public void setAmsConnectionsStr(String amsConnectionsStr) {
+		this.amsConnectionsStr = amsConnectionsStr;
+		this.amsConnections = fromAmsConnectionsStr(amsConnectionsStr); 
+		
+	}
+
+	public String getTrafficPortsStr() {
+		return trafficPortsStr;
+	}
+
+	public void setTrafficPortsStr(String trafficPortsStr) {
+		this.trafficPortsStr = trafficPortsStr;
+		this.trafficPorts = fromTrafficPortsStr(trafficPortsStr); 
+	}
+
+	public String getProtectedLinksStr() {
+		return protectedLinksStr;
+	}
+
+	public void setProtectedLinksStr(String protectedLinksStr) {
+		this.protectedLinksStr = protectedLinksStr;
+		this.protectedLinks = fromProtectedLinksStr(protectedLinksStr);
+	}
+
+	String amsConnectionsStr; 	
+	String trafficPortsStr; 	
+	String protectedLinksStr; 
+	
 	public Hashtable<String,AMSConnection> amsConnections;
 	public Hashtable<String,TrafficPort> trafficPorts;
 	public Hashtable<String,ProtectedLink> protectedLinks;
-	public Properties props;
 	
 	/* ### Description ###
 	 * @param param_name 
@@ -193,8 +275,9 @@ public class NetNode {
 		
 		label = null; id = null; type = null; mgmtAddr = null; mgmtPort = 0; sdnNodeMode = SDNNodeMode.SDN_ENABLED_HYBRID;
 		healthCheckFrequency = DEFAULT_HEALTH_CHECK_FREQUENCY; status = Status.INVALID;
-		amsConnections = new Hashtable<String,AMSConnection>();
-		trafficPorts = new Hashtable<String,TrafficPort>(); protectedLinks = new Hashtable<String,ProtectedLink>();
+		amsConnectionsStr = null; amsConnections = new Hashtable<String,AMSConnection>();
+		trafficPortsStr = null; trafficPorts = new Hashtable<String,TrafficPort>(); 
+		protectedLinksStr = null; protectedLinks = new Hashtable<String,ProtectedLink>();
 		props = new Properties();
 	}
 	
@@ -202,14 +285,71 @@ public class NetNode {
 	 * @param param_name 
 	 */
 	public NetNode(String label, String id, String type, String mgmtAddr, int port, SDNNodeMode sdnNodeMode,
-			int healthCheckFrequency) throws UnknownHostException {
+			int healthCheckFrequency) {
 		this();
 		this.label = (label == null || label.isEmpty()) ? "label_" + id : label; 
 		this.id = id; this.type = type; this.mgmtAddr = mgmtAddr; this.mgmtPort = port;	
 		this.sdnNodeMode = sdnNodeMode; this.healthCheckFrequency = healthCheckFrequency; 
 	}
 	
-	public NetNode(Hashtable<String, Object> netNodeRow) throws UnknownHostException {
+	/* ### Description ###
+	 * @param param_name 
+	 */
+	public NetNode(String label, String id, String type, String mgmtAddr, int port, SDNNodeMode sdnNodeMode,
+			int healthCheckFrequency, String amsConnectionsStr, String trafficPortsStr, String protectedLinksStr) {
+		
+		this(label, id, type, mgmtAddr, port, sdnNodeMode, healthCheckFrequency);
+		this.amsConnections = fromAmsConnectionsStr(amsConnectionsStr); 
+		this.trafficPorts = fromTrafficPortsStr(trafficPortsStr); 
+		this.protectedLinks = fromProtectedLinksStr(protectedLinksStr);
+	}
+
+	protected Hashtable<String, AMSConnection> fromAmsConnectionsStr(String amsConnectionsStr) {
+		
+		String[] split = amsConnectionsStr.split(LIST_ITEMS_DELIMITER);
+		if(split == null) return null;
+		
+		Hashtable<String, AMSConnection> inflatedAmsConnections = new Hashtable<String, AMSConnection>();
+		AMSConnection amsConnection;
+		for(int i=0;i<split.length;i++) {
+			amsConnection = new AMSConnection(split[i]);
+			inflatedAmsConnections.put(amsConnection.amsLabel, amsConnection);
+		}
+		
+		return inflatedAmsConnections;
+	}
+	
+	protected Hashtable<String, TrafficPort> fromTrafficPortsStr(String trafficPortsStr) {
+		
+		String[] split = trafficPortsStr.split(LIST_ITEMS_DELIMITER);
+		if(split == null) return null;
+		
+		Hashtable<String, TrafficPort> InflatedTrafficPorts = new Hashtable<String, TrafficPort>();
+		TrafficPort trafficPort;
+		for(int i=0;i<split.length;i++) {
+			trafficPort = new TrafficPort(split[i]);
+			InflatedTrafficPorts.put(trafficPort.label, trafficPort);
+		}
+		
+		return InflatedTrafficPorts;
+	}
+
+	protected Hashtable<String, ProtectedLink> fromProtectedLinksStr(String protectedLinksStr) {
+		
+		String[] split = protectedLinksStr.split(LIST_ITEMS_DELIMITER);
+		if(split == null) return null;
+		
+		Hashtable<String, ProtectedLink> InflatedProtectedLinks = new Hashtable<String, ProtectedLink>();
+		ProtectedLink protectedLink;
+		for(int i=0;i<split.length;i++) {
+			protectedLink = new ProtectedLink(split[i]);
+			InflatedProtectedLinks.put(protectedLink.label, protectedLink);
+		}
+		
+		return InflatedProtectedLinks;
+	}	
+
+	public NetNode(Hashtable<String, Object> netNodeRow) throws ExceptionControlApp {
 		
 		this();
 		label = (String) netNodeRow.get(LABEL);
@@ -233,17 +373,26 @@ public class NetNode {
 				try {
 					amsConnection = new AMSConnection((String) entry.getValue());
 					amsConnections.put(amsConnection.amsLabel, amsConnection);
-				} catch (ExceptionControlApp e) { /* TODO: log and ignore */}
+				} catch (Throwable e) { 
+					log.error("Failed to instantiate AMSConnection using " + entry.getValue().toString());
+					throw new ExceptionControlApp("Failed to instantiate AMSConnection using "+entry.getValue().toString(),e);					
+				}
 			} else if(columnName.startsWith(PORT_PREFIX)) {
 				try {
 					port = new TrafficPort((String) entry.getValue());
 					trafficPorts.put(port.label, port);
-				} catch (ExceptionControlApp e) { /* TODO: log and ignore */}				
+				} catch (Throwable e) {
+					log.error("Failed to instantiate TrafficPort using " + entry.getValue().toString());
+					throw new ExceptionControlApp("Failed to instantiate TrafficPort using "+entry.getValue().toString(),e);
+				}				
 			} else if(columnName.startsWith(PORTS_LINK_PREFIX)) {
 				try {
 					portsLink = new ProtectedLink((String) entry.getValue());
 					protectedLinks.put(portsLink.label, portsLink);
-				} catch (ExceptionControlApp e) { /* TODO: log and ignore */}				
+				} catch (Throwable e) { 
+					log.error("Failed to instantiate ProtectedLink using " + entry.getValue().toString());
+					throw new ExceptionControlApp("Failed to instantiate ProtectedLink using "+entry.getValue().toString(),e);
+				}				
 			}
 		}		
 	}
@@ -334,6 +483,34 @@ public class NetNode {
 
 	public Properties getProps() {return props;}
 	public void setProps(Properties props) {this.props = props;}
+	
+	@Override
+	public String toString() {
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("OFC[label="); sb.append(label); sb.append(", ");
+		sb.append("id="); sb.append(id); sb.append(", ");
+		sb.append("type="); sb.append(type); sb.append(", ");
+		sb.append("mgmtAddr="); sb.append(mgmtAddr); sb.append(", ");
+		sb.append("mgmtPort="); sb.append(mgmtPort); sb.append(", ");
+		sb.append("sdnNodeMode="); sb.append(sdnNodeMode); sb.append(", ");
+		sb.append("healthCheckFrequency="); sb.append(healthCheckFrequency); sb.append(", ");
+		Iterator<Map.Entry<String,AMSConnection>> iter1 = amsConnections.entrySet().iterator();
+		while(iter1.hasNext()) {
+			sb.append("amsConnection="); sb.append(iter1.next().getValue().toString()); sb.append(", ");
+		}
+		Iterator<Map.Entry<String,TrafficPort>> iter2 = trafficPorts.entrySet().iterator();
+		while(iter2.hasNext()) {
+			sb.append("trafficPort="); sb.append(iter2.next().getValue().toString()); sb.append(", ");
+		}
+		Iterator<Map.Entry<String,ProtectedLink>> iter3 = protectedLinks.entrySet().iterator();
+		while(iter3.hasNext()) {
+			sb.append("protectedLink="); sb.append(iter3.next().getValue().toString()); sb.append(", ");
+		}
+		sb.append("props="); sb.append(props.toString());
+		sb.append("]");
+		return sb.toString();
+	}
 	
 	public static List<RepoCD> getNetNodeRCDs() {
 

@@ -9,12 +9,15 @@
 
 package org.opendaylight.defense4all.core;
 
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+
 public interface AttackDecisionPoint {
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
 	public void addDetection(Detection detection);
@@ -23,6 +26,7 @@ public interface AttackDecisionPoint {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
 	public void removeDetection(String detectionKey);

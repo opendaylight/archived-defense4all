@@ -14,25 +14,35 @@ import org.opendaylight.defense4all.framework.core.EM;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hom.ClassCacheMgr;
 import me.prettyprint.hom.EntityManagerImpl;
+import me.prettyprint.hom.annotations.AnnotationScanner;
 import me.prettyprint.hom.annotations.DefaultAnnotationScanner;
 
 public class EMImpl extends EntityManagerImpl implements EM {
 
-	protected FrameworkMainImpl mFrameworkMain = null;
-	protected RepoFactoryImpl mRepoFactory = null;
-	protected EMDescription mEMDescription = null;
-	protected static ClassCacheMgr mCacheMgr = new ClassCacheMgr();
-	protected static EMObjectMapper mObjMapper = new EMObjectMapper(mCacheMgr);
+	protected FrameworkMainImpl frameworkMain = null;
+	protected RepoFactoryImpl repoFactory = null;
+	protected EMDescription emDescription = null;
+	protected static ClassCacheMgr cacheMgr = new ClassCacheMgr();
+	protected static EMObjectMapper objMapper = new EMObjectMapper(cacheMgr);
 
-	public EMImpl(FrameworkMainImpl frameworkMain, RepoFactoryImpl repoFactoryImpl, Keyspace keyspace, EMDescription emDescription) {
-		super(keyspace, emDescription.classPathsDelimitedByColon.split(":"), mCacheMgr, mObjMapper, new DefaultAnnotationScanner());
-		mFrameworkMain = frameworkMain;
-		mObjMapper.setKeyspace(keyspace);
-		mRepoFactory = repoFactoryImpl;
-		mEMDescription = emDescription;		
+	public static EMImpl getEM(FrameworkMainImpl fMain, RepoFactoryImpl rfImpl, Keyspace keyspace, EMDescription emDesc) {
+		
+		String[] classpathPrefix = emDesc.classPathsDelimitedByColon.split(":");
+		AnnotationScanner scanner = new DefaultAnnotationScanner();
+		EMImpl emImpl = new EMImpl(fMain, rfImpl, keyspace, emDesc, classpathPrefix, scanner);
+		return emImpl;
+	}
+	
+	public EMImpl(FrameworkMainImpl fMain, RepoFactoryImpl rfImpl, Keyspace keyspace, EMDescription emDesc,
+			String[] classpathPrefix, AnnotationScanner scanner) {
+		super(keyspace, classpathPrefix, cacheMgr, objMapper, scanner);
+		this.frameworkMain = fMain;
+		objMapper.setKeyspace(keyspace);
+		this.repoFactory = rfImpl;
+		this.emDescription = emDesc;		
 	}
 	
 	public void remove(Object obj, Object key) {
-		mObjMapper.remove(obj, key);
+		objMapper.remove(obj, key);
 	}
 }

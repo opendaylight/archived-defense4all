@@ -23,4 +23,19 @@ public class StatsCountersPlacement {
 		this.counterLocations = counterLocations;
 		this.placementQoS = placementQoS;
 	}
+	
+	@Override
+	public String toString() {
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("StatsCountersPlacement [placementQoS="); sb.append(placementQoS == null ? "Not set" : placementQoS);
+		sb.append(", counterLocations: ");
+		for(String counterLocation : counterLocations) {
+			sb.append(counterLocation); sb.append(", "); 
+		}
+		sb.setLength(sb.length() - 2); // Remove last ", "
+		sb.append("]");
+		
+		return sb.toString();
+	}
 }

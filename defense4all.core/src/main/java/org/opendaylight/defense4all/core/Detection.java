@@ -19,7 +19,6 @@ import org.opendaylight.defense4all.framework.core.RepoCD;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
-
 public class Detection {
 	
 	public final static String DF_DETECTOR = "df_detector";
@@ -129,6 +128,20 @@ public class Detection {
 
 	public ProtocolPort getProtocolPort() {return protocolPort;}
 	public void setProtocolPort(ProtocolPort protocolPort) {this.protocolPort = protocolPort;}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Detection [key="); sb.append(key);
+		sb.append(", detector="); sb.append(detector);
+		sb.append(", detectorConfidence="); sb.append(detectionConfidence);
+		sb.append(", setTime="); sb.append(setTime);
+		sb.append(", duration="); sb.append(duration);
+		sb.append(", pn="); sb.append(pnKey);
+		sb.append(", protocol-port="); sb.append(protocolPort.toString());
+		sb.append("]");
+		return sb.toString();
+	}
 
 	public static List<RepoCD> getDetectionRCDs() {
 

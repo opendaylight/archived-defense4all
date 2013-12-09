@@ -9,14 +9,17 @@
 
 package org.opendaylight.defense4all.core;
 
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+
 public interface DetectorMgr {
 	/**
 	 * Add an Detector to repository
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addDetector(Detector detector);
+	public void addDetector(Detector detector) throws ExceptionControlApp;
 		
 	/**
 	 * Return an Detector from repository 
@@ -31,8 +34,8 @@ public interface DetectorMgr {
 	 * Delete an  Detector from repository 
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removeDetector(String label);
-	
+	public void removeDetector(String label) throws ExceptionControlApp;	
 }

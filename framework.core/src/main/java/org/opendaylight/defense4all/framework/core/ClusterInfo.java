@@ -18,4 +18,8 @@ public class ClusterInfo {
 	public ClusterInfo() {
 		// TODO Auto-generated constructor stub
 	}
+	
+	public String toString() {
+		return "";
+	}
 }

@@ -16,14 +16,27 @@ import java.util.Hashtable;
 
 import org.apache.mina.filter.firewall.Subnet;
 import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class Traffic {
+
+	static Logger log = LoggerFactory.getLogger(Traffic.class);
 	
 	public enum TrafficMatch {
 		MATCH,
 		CONTAIN,
 		NO
+	}
+	
+	public enum TrafficDirection {
+		INVALID, 
+		INBOUND, // Client to server
+		OUTBOUND // Server to client
 	}
 	
 	public InetAddress dstAddr;
@@ -34,7 +47,8 @@ public class Traffic {
 	public Hashtable<String,ArrayList<Integer>> protoPorts;
 	
 	/* Local hashtable for hostname lookups */
-	public static class NameHash {		
+	public static class NameHash {
+		
 		private static Hashtable<InetAddress,String> nameHash = null;
 		
 		public static String getHostName(InetAddress addr) {
@@ -49,6 +63,7 @@ public class Traffic {
 				return name;
 			}
 		}
+		
 		public static void reset() {
 			if (nameHash != null )
 				nameHash.clear();
@@ -88,12 +103,18 @@ public class Traffic {
 		if(port != 0) ports.add(port);
 	}
 	
-	public TrafficMatch match(InetAddress dstAddr, DFProtocol dfProtocol, int dstPort) {
+	public TrafficMatch match(InetAddress dstAddr, DFProtocol dfProtocol, int dstPort) throws ExceptionControlApp {
 
 		if(this.dstAddr == null || dstAddr == null) return TrafficMatch.NO;	
 
 		Subnet subnet = null;
-		subnet = new Subnet(this.dstAddr, dstAddrPrefixLen);
+		try {
+			subnet = new Subnet(this.dstAddr, dstAddrPrefixLen);
+		} catch (Throwable e) {
+			log.error("Failed to construct Subnet. " + this.dstAddr + ". " + e.getLocalizedMessage());
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to construct Subnet. + ", e);
+		}
 		
 		/* Resolve destination address match */
 		if(! subnet.inSubnet(dstAddr)) return TrafficMatch.NO;

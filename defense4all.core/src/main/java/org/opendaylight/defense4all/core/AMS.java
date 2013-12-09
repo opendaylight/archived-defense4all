@@ -7,18 +7,23 @@
  * @version 0.1
  */
 
-
 package org.opendaylight.defense4all.core;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.PropertiesSerializer;
 import org.opendaylight.defense4all.framework.core.RepoCD;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import me.prettyprint.cassandra.serializers.BooleanSerializer;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
@@ -33,12 +38,17 @@ public class AMS {
 	public static final String VERSION = "version";
 	public static final String MGMT_IP_ADDR_STRING = "mgmt_ip_addr_string";
 	public static final String MGMT_PORT = "mgmt_port";
+	public static final String USERNAME = "username";
+	public static final String PASSWORD = "password";
 	public static final String FOR_STATS_COLLECTION = "for_stats_collection";
 	public static final String FOR_DIVERSION = "for_diversion";
 	public static final String HEALTH_CHECK_FREQUENCY = "health_check_frequency";
 	public static final String PROPS = "props";
+	public static final String SECURITY_CONFIG_PREFIX = "security_config_";
 	
 	public static final int DEFAULT_HEALTH_CHECK_FREQUENCY = 10;
+	
+	static Logger log = LoggerFactory.getLogger(AMS.class);
 
 	protected static ArrayList<RepoCD> amsRepoCDs = null;
 	
@@ -47,32 +57,37 @@ public class AMS {
 	public String version;
 	public InetAddress mgmtAddr;
 	public int mgmtPort;
+	public String username;
+	public String password;
 	public boolean forStatsCollection;
 	public boolean forDiversion;
 	public int healthCheckFrequency; // When in-path in secs. When out of path - decrease frequency by X 10	
 	public Properties props;
+	public List<String> securityConfigKeys;
 	
 	/* ### Description ###
 	 * @param param_name 
 	 */
 	public AMS() {
 		
-		label = null; brand = null; version = null; mgmtAddr = null; mgmtPort = 0; 
+		label = null; brand = null; version = null; mgmtAddr = null; mgmtPort = 0; username = null; password = null;
 		forStatsCollection = forDiversion = false; healthCheckFrequency = DEFAULT_HEALTH_CHECK_FREQUENCY;
 		props = new Properties();
+		securityConfigKeys = new ArrayList<String>();
 	}
 	
 	/* ### Description ###
 	 * @param param_name 
 	 */
-	public AMS(String label, String brand, String version, InetAddress mgmtAddr, int port, 
-			boolean forStatsCollection, boolean forDiversion, int healthCheckFrequency, Properties props) 
-					throws UnknownHostException {
+	public AMS(String label, String brand, String version, InetAddress mgmtAddr, int port, boolean forStatsCollection, 
+			boolean forDiversion, int healthCheckFrequency, String username, String password, List<String> securityConfigKeys, 
+			Properties props) throws UnknownHostException {
 		
 		this.label = label;	this.brand = brand; this.version = version; this.mgmtAddr = mgmtAddr;	
-		this.mgmtPort = port; this.forStatsCollection = forStatsCollection;	this.forDiversion = forDiversion; 
-		this.healthCheckFrequency = healthCheckFrequency; 
+		this.mgmtPort = port; this.username = username; this.password = password; this.forStatsCollection = forStatsCollection;	
+		this.forDiversion = forDiversion; this.healthCheckFrequency = healthCheckFrequency; 
 		this.props = props == null ? new Properties() : props;
+		this.securityConfigKeys = securityConfigKeys;
 		if(label == null || label.isEmpty()) label = "ams_" + mgmtAddr.getHostName();
 	}
 	
@@ -85,10 +100,30 @@ public class AMS {
 			mgmtAddr = InetAddress.getByName((String) amsRow.get(MGMT_IP_ADDR_STRING));
 		} catch (UnknownHostException e) {/* Ignore - some AMSs may not be manageable via Defense4All */}
 		mgmtPort = (Integer) amsRow.get(MGMT_PORT);
+		username = (String) amsRow.get(USERNAME);
+		password = (String) amsRow.get(PASSWORD);
 		forStatsCollection = (Boolean) amsRow.get(FOR_STATS_COLLECTION);
 		forDiversion = (Boolean) amsRow.get(FOR_DIVERSION);
 		healthCheckFrequency = (Integer) amsRow.get(HEALTH_CHECK_FREQUENCY);
 		props = (Properties) amsRow.get(PROPS);
+
+		/* Retrieve all securityConfigKeys */
+		Iterator<Map.Entry<Object,Object>> iter = props.entrySet().iterator();
+		Map.Entry<Object,Object> entry; String key; String securityconfigStr;
+		securityConfigKeys = new ArrayList<String>();
+		while(iter.hasNext()) {
+			entry = iter.next();
+			key = (String) entry.getKey();
+			if(key.startsWith(SECURITY_CONFIG_PREFIX)) {
+				securityconfigStr = (String) (entry.getValue());
+				if(securityconfigStr == null) {
+					log.error("Securityconfig cell " + key + " in AMS " + label + " has null value.");
+					FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+					continue;
+				}
+				securityConfigKeys.add(securityconfigStr);
+			}
+		}
 	}
 
 	public Hashtable<String, Object> toRow() {
@@ -97,6 +132,8 @@ public class AMS {
 		if(label == null) label = "";
 		if(brand == null) brand = "";
 		if(version == null ) version = "";
+		if(username == null ) username = "";
+		if(password == null ) password = "";
 		if(props == null) props = new Properties();
 		String mgmtAddrStr = mgmtAddr == null ? "" : mgmtAddr.getHostAddress();
 		
@@ -106,10 +143,14 @@ public class AMS {
 		row.put(VERSION, version);
 		row.put(MGMT_IP_ADDR_STRING, mgmtAddrStr);
 		row.put(MGMT_PORT, mgmtPort);
+		row.put(USERNAME, username);
+		row.put(PASSWORD, password);
 		row.put(FOR_STATS_COLLECTION, forStatsCollection);
 		row.put(FOR_DIVERSION, forDiversion);
 		row.put(HEALTH_CHECK_FREQUENCY, healthCheckFrequency);
 		row.put(PROPS, props);
+		for(String securityConfigKey : securityConfigKeys)
+			row.put(SECURITY_CONFIG_PREFIX + securityConfigKey, securityConfigKey);
 		return row;
 	}
 
@@ -138,7 +179,38 @@ public class AMS {
 	public void setHealthCheckFrequency(int healthCheckFrequency) {this.healthCheckFrequency = healthCheckFrequency;}
 	
 	public Properties getProps() {return props;}
-	public void setProps(Properties props) {this.props = props;}	
+	public void setProps(Properties props) {this.props = props;}
+	
+	public String getUsername() {return username;}
+	public void setUsername(String username) {this.username = username;}
+
+	public String getPassword() {return password;}
+	public void setPassword(String password) {this.password = password;}
+	
+	public List<String> getSecurityConfigKeys() {return securityConfigKeys;}
+	public void setSecurityConfigKeys(List<String> securityConfigKeys) {this.securityConfigKeys = securityConfigKeys;}
+
+	@Override
+	public String toString() {
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("AMS[label="); sb.append(label); sb.append(", ");
+		sb.append("brand="); sb.append(brand); sb.append(", ");
+		sb.append("version="); sb.append(version); sb.append(", ");
+		sb.append("mgmtAddr="); sb.append(mgmtAddr); sb.append(", ");
+		sb.append("mgmtPort="); sb.append(mgmtPort); sb.append(", ");
+		sb.append("username="); sb.append(username); sb.append(", ");
+		sb.append("password="); sb.append(password); sb.append(", ");
+		sb.append("forStatsCollection="); sb.append(forStatsCollection); sb.append(", ");
+		sb.append("forDiversion="); sb.append(forDiversion); sb.append(", ");
+		sb.append("healthCheckFrequency="); sb.append(healthCheckFrequency); sb.append(", ");
+		for(String securityConfigKey : securityConfigKeys) {
+			sb.append("securityConfigKey="); sb.append(securityConfigKey); sb.append(", ");
+		}
+		sb.append("props="); sb.append(props.toString());
+		sb.append("]");
+		return sb.toString();
+	}
 	
 	public static List<RepoCD> getAMSRCDs() {
 

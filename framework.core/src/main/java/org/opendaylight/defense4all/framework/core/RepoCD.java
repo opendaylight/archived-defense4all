@@ -15,13 +15,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Properties;
+
 import me.prettyprint.hector.api.Serializer;
 
 public class RepoCD implements Serializable {
 	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	public String columnName;
 	public transient Serializer<?> columnValueSerializer;

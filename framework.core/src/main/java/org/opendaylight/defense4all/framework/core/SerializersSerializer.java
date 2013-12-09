@@ -11,6 +11,9 @@ package org.opendaylight.defense4all.framework.core;
 
 import java.nio.ByteBuffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import me.prettyprint.cassandra.serializers.AbstractSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.hector.api.Serializer;
@@ -20,17 +23,21 @@ import me.prettyprint.hom.converters.Converter;
 public class SerializersSerializer extends AbstractSerializer<Serializer<?>> implements Converter<Serializer<?>> {
 	
 	private static SerializersSerializer instance = new SerializersSerializer();
+	public static SerializersSerializer getInstance() {return instance;}
 
-	public static SerializersSerializer getInstance() {
-		return instance;
-	}
+	Logger log = LoggerFactory.getLogger(this.getClass());
 
 	/* For AbstractSerializer */
 	
 	@Override
 	public ByteBuffer toByteBuffer(Serializer<?> serializer) {
-		String serializerName = serializer.getClass().getCanonicalName();
-		return StringSerializer.get().toByteBuffer(serializerName);
+		try {
+			String serializerName = serializer.getClass().getCanonicalName();
+			return StringSerializer.get().toByteBuffer(serializerName);
+		} catch (Throwable e) {
+			log.error("Failed to convert." + e.getLocalizedMessage());
+			return null;
+		}
 	}
 	
 	@Override
@@ -38,7 +45,10 @@ public class SerializersSerializer extends AbstractSerializer<Serializer<?>> imp
 	    try {
 	    	String serializerName = StringSerializer.get().fromByteBuffer(byteBuffer);
 			return (Serializer<?>) Class.forName(serializerName).newInstance();
-		} catch (Throwable e) {	return null; }
+		} catch (Throwable e) {
+			log.error("Failed to convert." + e.getLocalizedMessage());
+			return null; 
+		}
 	}
 
 	/* For Converter */
@@ -47,12 +57,20 @@ public class SerializersSerializer extends AbstractSerializer<Serializer<?>> imp
 	    try {
 	    	String serializerName = StringSerializer.get().fromBytes(serializedSerializer);
 			return (Serializer<?>) Class.forName(serializerName).newInstance();
-		} catch (Throwable e) {	return null; }
+		} catch (Throwable e) {	
+			log.error("Failed to convert." + e.getLocalizedMessage());
+			return null; 
+		}
 	}
 
 	public byte[] convertObjTypeToCassType(Serializer<?> serializer) {
-		String serializerName = serializer.getClass().getCanonicalName();
-		return StringSerializer.get().toBytes(serializerName);
+		try {
+			String serializerName = serializer.getClass().getCanonicalName();
+			return StringSerializer.get().toBytes(serializerName);
+		} catch (Throwable e) {
+			log.error("Failed to convert." + e.getLocalizedMessage());
+			return null;
+		}
 	}
 
 	/* For serialization to/from UTF strings */
@@ -64,6 +82,9 @@ public class SerializersSerializer extends AbstractSerializer<Serializer<?>> imp
 	public Serializer<?> fromString(String serializerName) {		
 	    try {
 			return (Serializer<?>) Class.forName(serializerName).newInstance();
-		} catch (Throwable e) {	return null; }
+		} catch (Throwable e) {
+			log.error("Failed to convert." + e.getLocalizedMessage());
+			return null; 
+		}
 	}
 }

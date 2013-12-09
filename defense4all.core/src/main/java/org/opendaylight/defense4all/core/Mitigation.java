@@ -8,7 +8,6 @@
  * @version 0.1
  */
 
-
 package org.opendaylight.defense4all.core;
 
 import java.net.InetAddress;
@@ -20,15 +19,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.PropertiesSerializer;
 import org.opendaylight.defense4all.framework.core.RepoCD;
-import org.opendaylight.defense4all.framework.core.Utils;
 import org.opendaylight.defense4all.core.ProtocolPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import me.prettyprint.cassandra.serializers.BooleanSerializer;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
-
 
 public class Mitigation {
 	
@@ -50,9 +52,11 @@ public class Mitigation {
 	public static final String STATUS = "status";
 	public static final String COLLECT_STATS = "collect_stats";
 	public static final String MITIGATION_DRIVER = "mitigation_driver";
-	public static final String TRAFFIC_FLOOR_KEY = "traffic_floor_key";
-	public static final String DVSN_INFO_PREFIX = "dvsn_info_";
+	public static final String TRAFFIC_FLOOR_KEY_PREFIX = "traffic_floor_key_";
+	public static final String DVSN_INFO_KEY_PREFIX = "dvsn_info_key_";
 	public static final String MITIGATION_EXECUTION_PROPS = "mitigation_execution_props";
+
+	static Logger log = LoggerFactory.getLogger(Mitigation.class);
 
 	public String key;
 	public String attackKey;
@@ -64,8 +68,8 @@ public class Mitigation {
 	public Status status;
 	public Boolean collectStats;
 	public String mitigationDriverLabel;
-	public String trafficFloorKey; // used to indicate traffic floor created for mitigation
-	public List<String> dvsnInfos;
+	public List<String> trafficFloorKeys; // used to indicate traffic floors created for mitigation
+	public List<String> dvsnInfoKeys;
 	public Properties mitigationExecutionProps;
 	
 	public static String generateKey(String s) {return s + "_" + System.currentTimeMillis() / 1000;}
@@ -78,9 +82,9 @@ public class Mitigation {
 	public Mitigation() {
 		key = attackKey = pnKey = monitoredTrafficKey = null; dstAddr = null; dstAddrPrefixLen = 0; 
 		status = Status.INVALID; collectStats = false; mitigationDriverLabel = "";
-		trafficFloorKey = "";
+		trafficFloorKeys = new ArrayList<String>();
 		protocolPort = new ProtocolPort(); 
-		dvsnInfos = new ArrayList<String>(); 
+		dvsnInfoKeys = new ArrayList<String>(); 
 		mitigationExecutionProps = new Properties();
 	}
 	
@@ -90,12 +94,12 @@ public class Mitigation {
 	 */
 	public Mitigation(String key, String attackKey, String pnKey, String monitoredTrafficKey, InetAddress dstAddr, 
 			int dstAddrPrefixLen, ProtocolPort protocolPort, Status status, Boolean collectStats, 
-			String mitigationDriverLabel, List<String> dvsnInfos) {	
+			String mitigationDriverLabel, List<String> dvsnInfoKeys) {	
 		this.key = key;	this.attackKey = attackKey;	this.pnKey = pnKey;	this.monitoredTrafficKey = monitoredTrafficKey;
 		this.dstAddr = dstAddr; this.dstAddrPrefixLen = dstAddrPrefixLen; this.protocolPort = protocolPort; 
 		this.status = status; this.collectStats= collectStats; this.mitigationDriverLabel = mitigationDriverLabel;
-		this.trafficFloorKey = "";
-		this.dvsnInfos = dvsnInfos == null ? new ArrayList<String>() : dvsnInfos;
+		this.trafficFloorKeys = new ArrayList<String>();
+		this.dvsnInfoKeys = dvsnInfoKeys == null ? new ArrayList<String>() : dvsnInfoKeys;
 		this.mitigationExecutionProps = new Properties();
 	}
 
@@ -108,32 +112,40 @@ public class Mitigation {
 		this.dstAddrPrefixLen = other.dstAddrPrefixLen; this.protocolPort = other.protocolPort; 
 		this.status = other.status; this.collectStats= other.collectStats; 
 		this.mitigationDriverLabel = other.mitigationDriverLabel;
-		this.trafficFloorKey = other.trafficFloorKey;
-		this.dvsnInfos = other.dvsnInfos;
+		this.trafficFloorKeys = other.trafficFloorKeys;
+		this.dvsnInfoKeys = other.dvsnInfoKeys;
 		this.mitigationExecutionProps = other.mitigationExecutionProps;
 	}
 
-	public Mitigation(Hashtable<String, Object> mitigationRow) throws UnknownHostException {
+	public Mitigation(Hashtable<String, Object> mitigationRow) throws UnknownHostException, ExceptionControlApp {
 		this();
 		key = (String) mitigationRow.get(KEY);
 		attackKey = (String) mitigationRow.get(ATTACK_KEY);
 		pnKey = (String) mitigationRow.get(PNKEY);
 		monitoredTrafficKey = (String) mitigationRow.get(MONITORED_TRAFFIC_KEY);
-		dstAddr = InetAddress.getByName((String) mitigationRow.get(DST_ADDR));
+		try {
+			dstAddr = InetAddress.getByName((String) mitigationRow.get(DST_ADDR));
+		} catch (Exception e) {
+			log.error("Failed to construct Mitigation - bad destination address " + dstAddr + ". " + e.getLocalizedMessage());
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to construct Mitigation. + ", e);
+		}
 		dstAddrPrefixLen = (Integer) mitigationRow.get(DST_ADDR_PREFIX_LEN);
 		protocolPort = new ProtocolPort((String) mitigationRow.get(PROTOCOL_PORT));
 		status = Status.valueOf((String) mitigationRow.get(STATUS));
 		collectStats= (Boolean) mitigationRow.get(COLLECT_STATS);
 		mitigationDriverLabel = (String) mitigationRow.get(MITIGATION_DRIVER);
-		trafficFloorKey = (String) mitigationRow.get(TRAFFIC_FLOOR_KEY);
 		mitigationExecutionProps = (Properties) mitigationRow.get(MITIGATION_EXECUTION_PROPS);
 		
 		Iterator<Map.Entry<String,Object>> iter = mitigationRow.entrySet().iterator();
-		Map.Entry<String,Object> entry;
+		Map.Entry<String,Object> entry; String key;
 		while(iter.hasNext()) {
 			entry = iter.next();
-			if(entry.getKey().startsWith(DVSN_INFO_PREFIX))
-				dvsnInfos.add((String) entry.getValue());
+			key = entry.getKey();
+			if(key.startsWith(DVSN_INFO_KEY_PREFIX))
+				dvsnInfoKeys.add((String) entry.getValue());
+			else if(key.startsWith(TRAFFIC_FLOOR_KEY_PREFIX))
+				trafficFloorKeys.add((String) entry.getValue());
 		}	
 	}
 
@@ -145,7 +157,6 @@ public class Mitigation {
 		if(pnKey == null) pnKey = "";
 		if(monitoredTrafficKey == null) monitoredTrafficKey = "";
 		if(mitigationDriverLabel == null) mitigationDriverLabel = "";
-		if(trafficFloorKey == null) trafficFloorKey = "";
 		if(protocolPort == null) protocolPort = new ProtocolPort();
 		
 		Hashtable<String, Object> row = new Hashtable<String, Object>();
@@ -159,15 +170,12 @@ public class Mitigation {
 		row.put(STATUS, status.name());
 		row.put(COLLECT_STATS, collectStats);
 		row.put(MITIGATION_DRIVER, mitigationDriverLabel);
-		row.put(TRAFFIC_FLOOR_KEY, trafficFloorKey );
 		row.put(MITIGATION_EXECUTION_PROPS, mitigationExecutionProps);
-		for(String dvsnInfo : dvsnInfos)
-			row.put(generateDvsnInfoColumnName(dvsnInfo), dvsnInfo);
+		for(String dvsnInfoKey : dvsnInfoKeys)
+			row.put(DVSN_INFO_KEY_PREFIX + dvsnInfoKey, dvsnInfoKey);
+		for(String trafficFloorKey : trafficFloorKeys)
+			row.put(trafficFloorKey, trafficFloorKey);
 		return row;
-	}
-	
-	public static String generateDvsnInfoColumnName(String dvsnInfo) {
-		return DVSN_INFO_PREFIX + Utils.shortHash(dvsnInfo);
 	}
 	
 	public String getKey() {return key;}
@@ -200,11 +208,11 @@ public class Mitigation {
 	public String getMitigationDriverLabel() {return mitigationDriverLabel;}
 	public void setMitigationDriverLabel(String label) {this.mitigationDriverLabel = label;}
 	
-	public String getTrafficFlowKey() {return trafficFloorKey;}
-	public void setTrafficFlowKey(String trafficFloorKey) {this.trafficFloorKey = trafficFloorKey;}
+	public List<String> getTrafficFlowKeys() {return trafficFloorKeys;}
+	public void setTrafficFlowKeys(List<String> trafficFloorKeys) {this.trafficFloorKeys = trafficFloorKeys;}
 	
-	public List<String> getDvsnInfos() {return dvsnInfos;}
-	public void setDvsnInfos(List<String> dvsnInfos) {this.dvsnInfos = dvsnInfos;}	
+	public List<String> getDvsnInfoKeys() {return dvsnInfoKeys;}
+	public void setDvsnInfoKeys(List<String> dvsnInfoKeys) {this.dvsnInfoKeys = dvsnInfoKeys;}	
 
 	public Properties getMitigationExecutionProps() {return mitigationExecutionProps;}
 	public void setMitigationExecutionProps(Properties props) {this.mitigationExecutionProps = props;}
@@ -224,7 +232,6 @@ public class Mitigation {
 			rcd = new RepoCD(STATUS, StringSerializer.get(), null);	mitigationRepoCDs.add(rcd);
 			rcd = new RepoCD(COLLECT_STATS, BooleanSerializer.get(), null);	mitigationRepoCDs.add(rcd);
 			rcd = new RepoCD(MITIGATION_DRIVER, StringSerializer.get(), null);	mitigationRepoCDs.add(rcd);
-			rcd = new RepoCD(TRAFFIC_FLOOR_KEY, StringSerializer.get(), null);	mitigationRepoCDs.add(rcd);
 			rcd = new RepoCD(MITIGATION_EXECUTION_PROPS, PropertiesSerializer.get(), null);	mitigationRepoCDs.add(rcd);
 		}		
 		return mitigationRepoCDs;

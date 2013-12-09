@@ -7,18 +7,19 @@
  * @version 0.1
  */
 
-
 package org.opendaylight.defense4all.core;
 
+import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
 import org.opendaylight.defense4all.framework.core.RepoCD;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import me.prettyprint.cassandra.serializers.BooleanSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
-
 
 public class DetectorInfo {
 	
@@ -34,6 +35,8 @@ public class DetectorInfo {
 		HIGH,
 		MEDIUM
 	}
+	
+	static Logger log = LoggerFactory.getLogger(DetectorInfo.class);
 	
 	protected static ArrayList<RepoCD> mDetectorsRepoCDs = null;
 
@@ -54,9 +57,8 @@ public class DetectorInfo {
 	 * @param param_name 
 	 * @throws  
 	 */
-	public DetectorInfo(String label, DetectorConfidence detectorConfidence, boolean ofBasedDetector,
-			boolean externalDetector) {	
-		this.label = label;	this.detectorConfidence = detectorConfidence; 
+	public DetectorInfo(String label,DetectorConfidence confidence, boolean ofBasedDetector, boolean externalDetector) {	
+		this.label = label;	this.detectorConfidence = confidence; 
 		this.ofBasedDetector = ofBasedDetector; this.externalDetector = externalDetector;
 	}
 	
@@ -64,18 +66,25 @@ public class DetectorInfo {
 	 * @param param_name 
 	 * @throws 
 	 */
-	public DetectorInfo(String combined) {
+	public DetectorInfo(String combined) throws IllegalArgumentException {
 		ofBasedDetector = false; externalDetector = true;
 		String[] split = combined.split(":");
+		if(split == null || split.length < 2) {
+			log.error("Invalid combined detectorInfo string " + combined + ".");
+			throw new IllegalArgumentException("Invalid combined detectorInfo string  " + combined + ".");
+		}
 		label = split[0]; detectorConfidence = DetectorConfidence.valueOf(split[1]);
 	}
 	
-	/** ### Description ###
-	 * @param param_name 
-	 * @throws 
-	 */
+	@Override
 	public String toString() {
-		return label+":"+detectorConfidence.toString();
+		StringBuilder sb = new StringBuilder();
+		sb.append("DetectorInfo[label="); sb.append(label); sb.append(", ");
+		sb.append("detectorConfidence="); sb.append(detectorConfidence); sb.append(", ");
+		sb.append("ofBasedDetector="); sb.append(ofBasedDetector); sb.append(", ");
+		sb.append("externalDetector="); sb.append(externalDetector); sb.append(", ");
+		sb.append("]");
+		return sb.toString();
 	}
 
 	/** ### Description ###
@@ -98,11 +107,16 @@ public class DetectorInfo {
 	public boolean getExternalDetector() {return externalDetector;}
 	public void setExternalDetector(boolean externalDetector) {this.externalDetector = externalDetector;}
 
-	public DetectorInfo(Hashtable<String, Object> pnRow) {		
+	public DetectorInfo(Hashtable<String, Object> pnRow) {
+		
+		Object obj;
 		label = (String) pnRow.get(DetectorInfo.LABEL);
-		detectorConfidence = DetectorConfidence.valueOf((String)pnRow.get(DetectorInfo.DETECTOR_CONFIDENCE));	
-		ofBasedDetector = (Boolean) pnRow.get(DetectorInfo.OF_BASED_DETECTOR);	
-		externalDetector = (Boolean) pnRow.get(DetectorInfo.EXTERNAL_DETECTOR);
+		obj = pnRow.get(DetectorInfo.DETECTOR_CONFIDENCE);
+		if (obj != null) detectorConfidence = DetectorConfidence.valueOf((String)obj);	
+		obj = pnRow.get(DetectorInfo.OF_BASED_DETECTOR);		
+		if (obj != null) ofBasedDetector = (Boolean) obj;	
+		obj = pnRow.get(DetectorInfo.EXTERNAL_DETECTOR);		
+		if (obj != null) externalDetector = (Boolean) obj;
 	}
 
 	public Hashtable<String, Object> toRow() {
@@ -119,14 +133,15 @@ public class DetectorInfo {
 	}
 	
 	public void fromRow(Hashtable<String, Object> pnRow) {
-		if ( pnRow.get(DetectorInfo.LABEL) != null )
-			label = (String) pnRow.get(DetectorInfo.LABEL);
-		if ( pnRow.get(DetectorInfo.DETECTOR_CONFIDENCE) != null )
-			detectorConfidence = DetectorConfidence.valueOf((String)pnRow.get(DetectorInfo.DETECTOR_CONFIDENCE));	
-		if ( pnRow.get(DetectorInfo.OF_BASED_DETECTOR) != null )
-			ofBasedDetector = Boolean.valueOf ( pnRow.get(DetectorInfo.OF_BASED_DETECTOR).toString() );	
-		if ( pnRow.get(DetectorInfo.EXTERNAL_DETECTOR) != null )
-			externalDetector = Boolean.valueOf( pnRow.get(DetectorInfo.EXTERNAL_DETECTOR).toString());
+		
+		Object obj;
+		label = (String) pnRow.get(LABEL);
+		obj = pnRow.get(DetectorInfo.DETECTOR_CONFIDENCE);
+		if (obj != null) detectorConfidence = DetectorConfidence.valueOf((String)obj);	
+		obj = pnRow.get(DetectorInfo.OF_BASED_DETECTOR);		
+		if (obj != null) ofBasedDetector = Boolean.valueOf(obj.toString());	
+		obj = pnRow.get(DetectorInfo.EXTERNAL_DETECTOR);		
+		if (obj != null) externalDetector = Boolean.valueOf(obj.toString());
 	}
 	
 	public static List<RepoCD> getDetectorRCDs() {

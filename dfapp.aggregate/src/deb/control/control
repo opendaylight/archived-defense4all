@@ -1,0 +1,9 @@
+Package: defense4all
+Version: 1.0.0
+Architecture: all
+Section: net
+Priority: optional
+Depends: cassandra (>= 2.0)
+Maintainer: Radware Ltd
+Description: Defense4all application
+Distribution: OpenDaylight

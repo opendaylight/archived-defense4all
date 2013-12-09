@@ -18,7 +18,7 @@
 		<property name="ofcPort" value="8080" />
 		<property name="ofcForStatsCollection" value="true" />
 		<property name="ofcForDvsn" value="true" />
-		<property name="ofcSetInSpring" value="true" />
+		<property name="ofcSetInSpring" value="false" />
 
 		<!-- default OFS settings -->
 
@@ -31,26 +31,35 @@
 		<property name="ofsHealthFrequency" value="120" />
 
 		<property name="ofsAmsConnAmsLabel" value="dp1" />
-		<property name="ofsAmsConnToAmsInPort" value="2" />
-		<property name="ofsAmsConnToAmsOutPort" value="4" />
-		<property name="ofsAmsConnInAmsPort" value="1" />
-		<property name="ofsAmsConnOutAmsPort" value="2" />
+		<property name="ofsAmsConnNetNodeNorthPort" value="2" />
+		<property name="ofsAmsConnNetNodeSouthPort" value="4" />
+		<property name="ofsAmsConnAmsNorthPort" value="1" />
+		<property name="ofsAmsConnAmsSouthPort" value="2" />
 
-		<property name="ofsTrafficPortLabel" value="client_side" />
-		<property name="ofsTrafficPort" value="1" />
-		<property name="ofsTrafficPortVlan" value="0" />
-		<property name="ofsTrafficPortDirection" value="INBOUND" />
+		<property name="ofsTrafficNorthPortLabel" value="north1" />
+		<property name="ofsTrafficNorthPort" value="1" />
+		<property name="ofsTrafficNorthPortVlan" value="0" />
+		<property name="ofsTrafficNorthPortLocation" value="NORTH" />
+
+		<property name="ofsTrafficSouthPortLabel" value="south1" />
+		<property name="ofsTrafficSouthPort" value="3" />
+		<property name="ofsTrafficSouthPortVlan" value="0" />
+		<property name="ofsTrafficSouthPortLocation" value="SOUTH" />
 
 		<property name="ofsProtectedLinkLabel" value="1_to_3" />
 		<property name="ofsProtectedLinkInPort" value="1" />
 		<property name="ofsProtectedLinkOutPort" value="3" />
 
-		<property name="ofsSetInSpring" value="true" />
+		<property name="ofsSetInSpring" value="false" />
 		
 		<!-- default AMS settings -->
 		<property name="amsLabel" value="dp1" />
 		<property name="amsForStatsCollection" value="false" />
 		<property name="amsForDvsn" value="true" />
-		<property name="amsSetInSpring" value="true" />
+		<property name="amsUsername" value="radware" />
+		<property name="amsPassword" value="radware" />
+		<property name="amsSecurityConfigKeys" value="" />
+		<property name="amsMgmtAddr" value="10.206.167.50" />
+		<property name="amsSetInSpring" value="false" />
 	</bean>
 </beans>	

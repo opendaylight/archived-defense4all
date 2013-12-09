@@ -12,6 +12,7 @@ package org.opendaylight.defense4all.odl.pojos;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.opendaylight.defense4all.core.DFHolder;
 import org.opendaylight.defense4all.core.NetNode;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.odl.OdlFlowConfigInfo;
 import org.opendaylight.defense4all.odl.controller.Connector.JsonPreprocessor;
 
@@ -47,7 +48,7 @@ public abstract class FlowConfig {
 
     public FlowConfig() {}
     
-    public FlowConfig(OdlFlowConfigInfo flowInfo) {
+    public FlowConfig(OdlFlowConfigInfo flowInfo) throws ExceptionControlApp {
     	
     	name = flowInfo.key; 
     	cookie = String.valueOf(flowInfo.id); 

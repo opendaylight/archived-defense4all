@@ -10,28 +10,34 @@ package org.opendaylight.defense4all.core;
 
 import java.util.ArrayList;
 
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+
 public interface MitigationMgr {
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addPN(String pnKey);
+	public void addPN(String pnKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removePN(String pnKey);
+	public void removePN(String pnKey) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws Throwable 
 	 * @throws exception_type circumstances description 
 	 */
 	public void mitigate(String attackKey);
@@ -40,6 +46,7 @@ public interface MitigationMgr {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
 	public void endMitigation(String attackKey);
@@ -48,6 +55,7 @@ public interface MitigationMgr {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
 	public void handleMitigationResponse(String mitigationKey, boolean mitigating);
@@ -64,7 +72,8 @@ public interface MitigationMgr {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void topologyChanged();
+	public void topologyChanged() ;
 }

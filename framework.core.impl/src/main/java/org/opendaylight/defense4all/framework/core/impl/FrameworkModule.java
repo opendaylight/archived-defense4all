@@ -15,15 +15,16 @@ import org.opendaylight.defense4all.framework.core.Module;
 
 public abstract class FrameworkModule extends Module {
 	
-	FrameworkMainImpl frameworkMainImpl;
+	FrameworkMainImpl fMainImpl;
 	
 	/* Constructor for Spring */
 	public FrameworkModule() {
+		super();
 	}
 
 	/* Setters for Spring */
-	public void setFrameworkMain(FrameworkMain frameworkMain) {
-		super.setFrameworkMain(frameworkMain);
-		this.frameworkMainImpl = (FrameworkMainImpl) frameworkMain;
+	public void setFrameworkMain(FrameworkMain fMain) {
+		super.setFrameworkMain(fMain);
+		this.fMainImpl = (FrameworkMainImpl) fMain;
 	}
 }

@@ -29,18 +29,12 @@ public class ProtocolPort {
 		final static int icmpCounter = 1;
 		
 		public static DFProtocol getProtocol(int protocol) {
-			switch ( protocol ) 
-			{
-			case invalidCounter:
-				return DFProtocol.INVALID;
-			case tcpCounter:
-				return DFProtocol.TCP;
-			case udpCounter:
-				return DFProtocol.UDP;
-			case icmpCounter:
-				return DFProtocol.ICMP;
-			default:
-				return DFProtocol.IP;
+			switch ( protocol ) {
+				case invalidCounter: return DFProtocol.INVALID;
+				case tcpCounter:     return DFProtocol.TCP;
+				case udpCounter:     return DFProtocol.UDP;
+				case icmpCounter:    return DFProtocol.ICMP;
+				default:             return DFProtocol.IP;
 			}
 		}
 		
