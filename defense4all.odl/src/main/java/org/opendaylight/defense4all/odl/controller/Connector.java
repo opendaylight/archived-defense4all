@@ -79,6 +79,8 @@ public class Connector {
 		T t;
 		try {
 			String url = mkUrl(urlPrefix);
+			log.debug("Caller: "+getMethodName(2)+" Class:"+typeRef.getType().toString()+" Invoking restTemplate.getForObject"
+					+ "Calling - URL: "+url+" JSON: ");
 			String result = restTemplate.getForObject(url, String.class);
 			if(result == null) return null;
 			log.debug("Caller: "+getMethodName(2)+" Class:"+typeRef.getType().toString()+" URL: "+url+" JSON: "+result);

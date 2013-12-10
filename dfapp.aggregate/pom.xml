@@ -4,7 +4,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>df.aggregate</artifactId>
-	<version>1.0.0</version>
+	<version>1.0.1</version>
 	<packaging>pom</packaging>
 	<name>df</name>
 	<url>http://maven.apache.org</url>
@@ -17,17 +17,17 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>framework.aggregate</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.aggregate</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>restservice</artifactId>
-			<version>1.0.0</version>
+			<version>1.0.1</version>
 			<type>war</type>
 		</dependency>
 	</dependencies>
@@ -99,10 +99,10 @@
 							<groupname>defense4all</groupname>
 							<sources>
 								<source>
-									<location>../dfapp.aggregate/target/df.aggregate-1.0.0.jar</location>
+									<location>../dfapp.aggregate/target/df.aggregate-1.0.1.jar</location>
 								</source>
 								<source>
-									<location>../restservice/target/restservice-1.0.0.war</location>
+									<location>../restservice/target/restservice-1.0.1.war</location>
 								</source>
 							</sources>
 						</mapping>
@@ -181,7 +181,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../dfapp.aggregate/target/df.aggregate-1.0.0.jar</src>
+									<src>../dfapp.aggregate/target/df.aggregate-1.0.1.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -192,7 +192,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../restservice/target/restservice-1.0.0.war</src>
+									<src>../restservice/target/restservice-1.0.1.war</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>

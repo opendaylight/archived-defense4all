@@ -153,7 +153,7 @@ public class FlowEntryMgr {
 		assertConnectorNotNull();
 
 		StringBuilder urlPrefix = new StringBuilder();		
-		urlPrefix.append("/"); urlPrefix.append(odl.constFlowUrlPrefix);
+		urlPrefix.append(odl.constFlowUrlPrefix);
 		urlPrefix.append("/"); urlPrefix.append(connector.odlOFC.restpathControllerName);
 		return urlPrefix;
 	}
@@ -164,7 +164,7 @@ public class FlowEntryMgr {
 		assertConnectorNotNull();
 
 		StringBuilder urlPrefix = new StringBuilder();		
-		urlPrefix.append("/"); urlPrefix.append(odl.constStatsUrlPrefix);
+		urlPrefix.append(odl.constStatsUrlPrefix);
 		urlPrefix.append("/"); urlPrefix.append(connector.odlOFC.restpathControllerName);
 		urlPrefix.append("/flow/node");
 		urlPrefix.append("/"); urlPrefix.append(openFlowEntryType); 
@@ -178,7 +178,7 @@ public class FlowEntryMgr {
 		assertConnectorNotNull();
 
 		StringBuilder urlPrefix = new StringBuilder();		
-		urlPrefix.append("/"); urlPrefix.append(odl.constSwitchUrlPrefix);
+		urlPrefix.append(odl.constSwitchUrlPrefix);
 		urlPrefix.append("/"); urlPrefix.append(connector.odlOFC.restpathControllerName);
 		urlPrefix.append("/nodes");		
 		return urlPrefix;

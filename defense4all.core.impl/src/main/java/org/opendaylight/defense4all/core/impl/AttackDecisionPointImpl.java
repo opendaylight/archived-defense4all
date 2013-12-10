@@ -172,28 +172,28 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 
 		/* Record the detection also in attacks repo. Create new attack if no matching attack exists yet. */
 		Attack attack = findMatchingAttack(detection);
-		String attackKey = Attack.generateKey(detection.pnKey, detection.protocolPort);
+		String newAttackKey = Attack.generateKey(detection.pnKey, detection.protocolPort);
 		if(attack == null) {
-			attack = new Attack(attackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
-			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring a new attack " + attackKey);
+			attack = new Attack(newAttackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring a new attack " + newAttackKey);
 		}
 		switch(attack.status) {
 		case DECLARED:
 			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is adding detection " + detection.key 
-					+ " to existing attack " + attackKey);
+					+ " to existing attack " + attack.key);
 			break;
 		case SUSPECTED:
 			break;
 		case ENDED:
 			try {
-				dfAppRootFullImpl.attacksRepo.deleteRow(attackKey); // Attack can be deleted - cleanup completed
+				dfAppRootFullImpl.attacksRepo.deleteRow(attack.key); // Attack can be deleted - cleanup completed
 			} catch (Throwable e) {
-				log.error("Failed to delete attack from attacksRepo. " +attackKey, e);
+				log.error("Failed to delete attack from attacksRepo. " +attack.key, e);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			}
-			attack = new Attack(attackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
-			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring a new attack " + attackKey);
-			log.info("DF is declaring a new attack " + attackKey);
+			attack = new Attack(newAttackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring a new attack " + newAttackKey);
+			log.info("DF is declaring a new attack " + newAttackKey);
 			break;
 		case ENDING:
 			fr.logRecord(DFAppRoot.FR_DF_SECURITY,detection.toString() + " is of an \"ending attack\". "
@@ -204,10 +204,10 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 		}
 		attack.detectionKeys.setProperty(detection.key, detection.key);	
 		try {
-			dfAppRootFullImpl.attacksRepo.setRow(attackKey, attack.toRow());
+			dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
 		} catch (Throwable e) {
-			log.error("Failed to create attack in the attacksRepo. " +attackKey, e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"DF failed to create attack " + attackKey);
+			log.error("Failed to create attack in the attacksRepo. " +attack.key, e);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"DF failed to create attack " + attack.key);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			return;
 		}
@@ -261,6 +261,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				continue;
 			}
+			
 			if(!attack.pnKey.equals(detection.pnKey)) continue;
 
 			/* Matched pnKey means matched dstAddr and dstAddrPrefixLen, so match proto-port */
@@ -273,7 +274,8 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				continue;
 			}
-			if(trafficMatch == TrafficMatch.NO) continue;
+			if(trafficMatch == TrafficMatch.NO) 
+				continue;
 
 			return attack; // Found matching attack
 		}
@@ -523,6 +525,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 		if(attack.status != Status.DECLARED) return;
 		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is ending the attack " + attack.key);		
 
+		attack.status = Status.ENDING;
 		Set<Entry<Object, Object>> attackSet = attack.detectionKeys.entrySet();
 		if ( attackSet != null ) {
 			Iterator<Map.Entry<Object,Object>> iter	= attackSet.iterator();
@@ -544,7 +547,6 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 			}	
 		}
 
-		attack.status = Status.ENDING;
 		try {
 			dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
 		} catch (Exception e) {

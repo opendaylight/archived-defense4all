@@ -318,10 +318,10 @@ public class Defense4allRestService {
 			log.debug("addNetNode: invoked");			
 			Repo<String> netNodeRepo = DFHolder.get().netNodesRepo;
 			if (netNodeRepo.getRow(netNode.label) != null) {
-				log.debug("addPN: already contains " + netNode.label);
-				servletResponse.sendError(400, "addPN: already contains " + netNode.label );
+				log.debug("addNetNode: already contains " + netNode.label);
+				servletResponse.sendError(400, "addNetNode: already contains " + netNode.label );
 			} else {
-				log.debug("addPN: adding " + netNode.label);
+				log.debug("addNetNode: adding " + netNode.label);
 				DFHolder.get().getMgmtPoint().addNetNode(netNode);
 			}
 		} catch (Throwable e) {

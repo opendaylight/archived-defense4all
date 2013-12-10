@@ -408,8 +408,6 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 	 * @throws exception_type circumstances description 
 	 */
 	public void endMitigation(String attackKey) {
-		
-		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is ending mitigation of attack " + attackKey);
 
 		// take care about some clean-up in case first running fails
 		String mitigationKey = null;
@@ -424,6 +422,8 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 			return;
 		}
 		if(mitigationStatusStr.equals(Mitigation.Status.ENDED.name())) return;
+		
+		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is ending mitigation of attack " + attackKey);
 
 		try {
 			invokeDecoupledSerially(ACTION_END_MITIGATION, mitigationKey);
