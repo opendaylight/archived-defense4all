@@ -13,7 +13,7 @@ use Date::Format;
 
 
 # setup my defaults
-my $uri    = '/rest/general/log/events';
+my $uri    = '/rest/general/fr/events';
 my $rport      = 8086;
 my $host = 'localhost';
 my $help     = 0;

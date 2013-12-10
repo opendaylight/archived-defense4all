@@ -13,6 +13,10 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jetty.version>8.0.4.v20111024</jetty.version>
+		<nexusdeploy>http://nexus.opendaylight.org/content</nexusdeploy>
+		<sitedeploy>http://nexus.opendaylight.org/content/sites/site</sitedeploy>
+		<releaseplugin.version>2.3.2</releaseplugin.version>
+
 	</properties>
 
 	<modules>
@@ -49,53 +53,31 @@
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
 				</configuration>
 			</plugin>
-			
-			<!-- <plugin>
-				<artifactId>maven-enforcer-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>enforce-versions</id>
-						<goals>
-							<goal>enforce</goal>
-						</goals>
-						<configuration>
-							<rules>
-								<bannedDependencies>
-									<excludes>
-										<exclude>commons-logging:commons-logging</exclude>
-										<exclude>commons-logging:commons-logging-api</exclude>
-									</excludes>
-								</bannedDependencies>
-							</rules>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin> -->
 		</plugins>
 	</build>
-	
-<distributionManagement>
-    <!-- OpenDayLight Released artifact -->
-    <repository>
-      <id>opendaylight-release</id>
-      <url>${nexusdeploy}/repositories/opendaylight.release/</url>
-    </repository>
-    <!-- OpenDayLight Snapshot artifact -->
-    <snapshotRepository>
-      <id>opendaylight-snapshot</id>
-      <url>${nexusdeploy}/repositories/opendaylight.snapshot/</url>
-    </snapshotRepository>
-    <!-- Site deployment -->
-    <site>
-      <id>website</id>
-      <url>${sitedeploy}</url>
-    </site>
-  </distributionManagement>
+
+	<distributionManagement>
+		<!-- OpenDayLight Released artifact -->
+		<repository>
+			<id>opendaylight-release</id>
+			<url>${nexusdeploy}/repositories/opendaylight.release/</url>
+		</repository>
+		<!-- OpenDayLight Snapshot artifact -->
+		<snapshotRepository>
+			<id>opendaylight-snapshot</id>
+			<url>${nexusdeploy}/repositories/opendaylight.snapshot/</url>
+		</snapshotRepository>
+		<!-- Site deployment -->
+		<site>
+			<id>website</id>
+			<url>${sitedeploy}</url>
+		</site>
+	</distributionManagement>
 
 
 
 	<dependencies>
-		
+
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-mapper-asl</artifactId>
