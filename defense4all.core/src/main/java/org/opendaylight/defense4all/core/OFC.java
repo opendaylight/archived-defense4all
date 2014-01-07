@@ -34,7 +34,7 @@ public class OFC {
 	public static final String FOR_DIVERSION = "for_diversion";
 	public static final String PROPS = "props";
 	
-	public String hostname; 			public String ipAddrString;  	public int port;
+	public String hostname; 			public String ipAddrString;  	public int port = -1;
 	public String username; 			public String password;
 	public boolean forStatsCollection;	public boolean forDiversion;
 	public Properties props;
@@ -146,5 +146,17 @@ public class OFC {
 			rcd = new RepoCD(PROPS, PropertiesSerializer.get(), null); mOFCsRepoCDs.add(rcd);
 		}		
 		return mOFCsRepoCDs;
+	}
+
+	public void toJacksonFriendly() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void validate() throws Exception {
+		if(hostname == null || hostname.isEmpty()) throw new Exception("Invalid ofc hostname.");
+		if(port < 0 ) throw new Exception("Invalid ofc port.");	
+		if(username == null || username.isEmpty()) throw new Exception("Invalid ofc username.");
+		if(password == null || password.isEmpty()) throw new Exception("Invalid ofc password.");
 	}
 }

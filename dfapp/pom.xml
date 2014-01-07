@@ -5,7 +5,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>dfapp</artifactId>
-	<version>1.0.1</version>
+	<version>1.0.2</version>
 	<packaging>pom</packaging>
 	<name>dfapp</name>
 	<url>http://maven.apache.org</url>
@@ -23,12 +23,14 @@
 		<module>../framework.core</module>
 		<module>../framework.core.impl</module>
 		<module>../framework.restservice</module>
+		<module>../framework.cli</module>
 		<module>../defense4all.core</module>
 		<module>../defense4all.core.impl</module>
 		<module>../defense4all.odl</module>
 		<module>../defenseflow.dp</module>
 		<module>../defense4all.mitigationdriver.local</module>
 		<module>../defense4all.restservice</module>
+		<module>../defense4all.cli</module>
 		<module>../restservice</module>
 		<module>../webgui</module>
 		<module>../framework.aggregate</module>

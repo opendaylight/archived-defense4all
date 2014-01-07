@@ -25,6 +25,7 @@ import java.util.ListIterator;
 import me.prettyprint.cassandra.serializers.DateSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
+import org.opendaylight.defense4all.framework.core.EventRecordData;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -55,17 +56,14 @@ public class FRImpl implements FR {
 		TIME_SLICES
 	}
 
-	public static class EventRecordImpl implements EventRecord {
+	public static class EventRecordImpl  extends EventRecordData implements EventRecord {
 		public static final String TIME_COUNTER = "timeCounter";
 		public static final String EVENT_TIME = "eventTime";
 		public static final String EVENT_TYPE = "eventType";
 		public static final String EVENT_DATA = "eventData";
 
 		public String			timeCounter;
-		public Date	   			eventTime;
-		public String        	eventType;
-		public String        	eventData;
-
+		
 		public  EventRecordImpl( String eventType, String eventData) {
 			this.eventTime = new Date();
 			this.eventType = eventType;
@@ -101,13 +99,7 @@ public class FRImpl implements FR {
 			sb.append(eventData);
 			return sb.toString();
 		}
-
-		public void dump(BufferedWriter bw) throws IOException {
-			bw.write(eventType);bw.write(":");		
-			bw.write(eventTime.toString()); bw.write(":");
-			bw.write(eventData);
-		}
-
+	
 		public Hashtable<String, Object> toRow() { 
 			Hashtable<String, Object> row = new Hashtable<String, Object>();
 			row.put(TIME_COUNTER,timeCounter ); 
@@ -418,8 +410,8 @@ public class FRImpl implements FR {
 			FileWriter fwriter = new FileWriter(absPath);
 			bw = new BufferedWriter(fwriter);
 
-			List<EventRecord> result = getTimeRangeEvents (  fromDate,  toDate,  maxNum, filter );
-			for ( EventRecord event:result) {
+			List<EventRecordData> result = getTimeRangeEvents (  fromDate,  toDate,  maxNum, filter );
+			for ( EventRecordData event:result) {
 				event.dump(bw);
 				bw.newLine();
 			}
@@ -447,14 +439,14 @@ public class FRImpl implements FR {
 	 * @throws ExceptionControlApp 
 	 */
 	@Override
-	public List<EventRecord> getLatestEvents(int number ) throws ExceptionControlApp {
+	public List<EventRecordData> getLatestEvents(int number ) throws ExceptionControlApp {
 		return getLatestEvents(number, null );
 	}
 
 	@Override
-	public List<EventRecord> getLatestEvents(int maxNum, FilterRecord filter) throws ExceptionControlApp {
+	public List<EventRecordData> getLatestEvents(int maxNum, FilterRecord filter) throws ExceptionControlApp {
 
-		List<EventRecord> result = new ArrayList<EventRecord>();
+		List<EventRecordData> result = new ArrayList<EventRecordData>();
 		List<String> eventSlicesKeys = timeSliceRepo.getOrderedColumns(SLICES_KEYS,0,false);
 		if(eventSlicesKeys == null) return null;
 		
@@ -498,14 +490,14 @@ public class FRImpl implements FR {
 	 * @return - list of  records in the repo
 	 */
 	@Override
-	public List<EventRecord> getTimeRangeEvents ( Date fromDate, Date toDate, int maxNum ) {
+	public List<EventRecordData> getTimeRangeEvents ( Date fromDate, Date toDate, int maxNum ) {
 		return getTimeRangeEvents (  fromDate,  toDate,  maxNum, null );
 	}
 
 	@Override
-	public List<EventRecord> getTimeRangeEvents ( Date fromDate, Date toDate, int maxNum, FilterRecord filter) {
+	public List<EventRecordData> getTimeRangeEvents ( Date fromDate, Date toDate, int maxNum, FilterRecord filter) {
 
-		List<EventRecord> result = new ArrayList<EventRecord>();
+		List<EventRecordData> result = new ArrayList<EventRecordData>();
 		//	List<Object> filterObjects = (List<Object>)((FilterRecordImpl)filter).filterMap;
 		List<String> allSlicesKeys = timeSliceRepo.getOrderedColumns(SLICES_KEYS, 0, false);
 		if(allSlicesKeys == null) return null;
@@ -633,9 +625,9 @@ public class FRImpl implements FR {
 			System.out.println("******************");
 
 			long bt = System.currentTimeMillis();
-			List<EventRecord> latest = getLatestEvents(20, createFilter("COMMON"));
+			List<EventRecordData> latest = getLatestEvents(20, createFilter("COMMON"));
 			long at = System.currentTimeMillis();
-			for (EventRecord ev:latest) {
+			for (EventRecordData ev:latest) {
 				System.out.println("Latest: "+ev.toString());
 			}
 

@@ -23,7 +23,7 @@ import javax.ws.rs.core.UriInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.opendaylight.defense4all.framework.core.FMHolder;
-
+import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
 @Path("/")
 public class FrameworkRestService {
@@ -60,6 +60,39 @@ public class FrameworkRestService {
 			FMHolder.get().getFrameworkMgmtPoint().setHostAddr(hostaddress);
 		} catch ( Throwable e) {  
 			log.error("Failed to set hostaddress - " + e.getLocalizedMessage());
+			servletResponse.sendError(400);
+		}
+	}
+
+	@POST
+	@Path("terminate")
+	@Consumes(MediaType.APPLICATION_JSON)
+	//	@Produces(MediaType.APPLICATION_JSON)
+	public void terminate(String scope, @Context HttpServletResponse servletResponse) throws Exception {
+
+		log.debug("terminate: invoked");
+		if (scope == null || scope.isEmpty())
+			scope = "this";
+		try {
+			FMHolder.get().getFrameworkMgmtPoint().requestTerminate(scope);
+		} catch ( Throwable e) {  
+			log.error("Failed to initiate termination - " + e.getLocalizedMessage());
+			servletResponse.sendError(400);
+		}
+	}
+
+	@POST
+	@Path("reset")
+	@Consumes(MediaType.APPLICATION_JSON)
+	//	@Produces(MediaType.APPLICATION_JSON)
+	public void reset(String levelStr, @Context HttpServletResponse servletResponse) throws Exception {
+
+		log.debug("reset: invoked");
+		ResetLevel level = ResetLevel.valueOf(levelStr, ResetLevel.soft); // If invalid or none - 'soft' assumed
+		try {
+			FMHolder.get().getFrameworkMgmtPoint().requestReset(level);
+		} catch ( Throwable e) {  
+			log.error("Failed to initiate reset - " + e.getLocalizedMessage());
 			servletResponse.sendError(400);
 		}
 	}

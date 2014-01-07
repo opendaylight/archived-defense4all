@@ -16,9 +16,9 @@ public interface FrameworkMain {
 	
 	public enum ResetLevel {
 		
-		soft, // Reset easily reconstructible dynamic state (e.g., latest traffic statistics, network topology)
-		dynamic, // Reset all dynamic state portions, including the not easily reconstructible (e.g., traffic baselines)
-		factory;  // Full reset of both dynamic state as well as user configurations
+		soft,
+		dynamic,
+		factory;
 		
 		public static ResetLevel valueOf(String s, ResetLevel defaultLevel) {
 			
@@ -29,6 +29,20 @@ public interface FrameworkMain {
 				returnValue = defaultLevel;
 			}
 			return returnValue;
+		}
+		
+		public String getExplanationMsg() {
+			
+			switch (this) {
+				case soft: 
+					return "Reset easily reconstructible dynamic state (e.g., latest traffic statistics, network topology)"; 
+				case dynamic: 
+					return "Reset all dynamic state portions, including the not easily reconstructible (e.g., traffic baselines)"; 
+				case factory: 
+					return "Full reset of both dynamic state as well as user configurations"; 
+				default:
+					return "";
+			}
 		}
 	}
 	

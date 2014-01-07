@@ -17,26 +17,26 @@ import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.opendaylight.defense4all.core.AMSConnection;
 import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.Mitigation;
 import org.opendaylight.defense4all.core.DvsnRep;
 import org.opendaylight.defense4all.core.NetNode;
-import org.opendaylight.defense4all.core.NetNode.PortLocation;
 import org.opendaylight.defense4all.core.PN;
 import org.opendaylight.defense4all.core.PN.MitigationScope;
+import org.opendaylight.defense4all.core.ProtectedLink;
 import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
 import org.opendaylight.defense4all.core.Traffic.TrafficDirection;
 import org.opendaylight.defense4all.core.TrafficFloor;
-import org.opendaylight.defense4all.core.NetNode.AMSConnection;
-import org.opendaylight.defense4all.core.NetNode.ProtectedLink;
 import org.opendaylight.defense4all.core.NetNode.SDNNodeMode;
-import org.opendaylight.defense4all.core.NetNode.TrafficPort;
 import org.opendaylight.defense4all.core.DvsnInfo;
 import org.opendaylight.defense4all.core.ProtocolPort;
+import org.opendaylight.defense4all.core.TrafficPort;
+import org.opendaylight.defense4all.core.TrafficPort.PortLocation;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
-import org.opendaylight.defense4all.odl.pojos.FlowConfig.ActionType;
+import org.opendaylight.defense4all.odl.pojos.FlowConfigNoProtocol.ActionType;
 
 public class OdlDvsnRep extends DvsnRep {
 
@@ -135,6 +135,7 @@ public class OdlDvsnRep extends DvsnRep {
 		NetNode netNode;
 		try {
 			Hashtable<String,Object> netNodeRow = dfAppRoot.netNodesRepo.getRow(netNodeLabel);
+			if(netNodeRow == null || NetNode.isRemoved(netNodeLabel)) return null;
 			netNode = new NetNode(netNodeRow);
 		} catch (ExceptionControlApp e) {
 			log.error("Excepted trying to inflate netNode " + netNodeLabel, e);
@@ -171,6 +172,10 @@ public class OdlDvsnRep extends DvsnRep {
 			dvsnInfo = new DvsnInfo(dvsnInfoRow);
 
 			Hashtable<String, Object> netNodeRow = dfAppRoot.netNodesRepo.getRow(dvsnInfo.netNodeLabel);
+			if(netNodeRow == null || NetNode.isRemoved(dvsnInfo.netNodeLabel)) {
+				log.warn("NetNode " + dvsnInfo.netNodeLabel + " specified for PN " + mitigation.pnKey + " is not known to Defense4All");
+				return null; 
+			}
 			netNode = new NetNode(netNodeRow);	// NetNode in which to install diversion flow entries
 
 			Hashtable<String, Object> pnRow = dfAppRoot.pNsRepo.getRow(mitigation.pnKey);
@@ -299,7 +304,7 @@ public class OdlDvsnRep extends DvsnRep {
 		/* For inbound traffic set return path flow from southToAms port. For outbound traffic - from northToAms port */
 		configInfoTemplateClone.ingressPort = (short) (inBoundTraffic ? amsConn.netNodeSouthPort : amsConn.netNodeNorthPort);			
 
-		if(netNode.sdnNodeMode == SDNNodeMode.SDN_ENABLED_HYBRID) { // hybrid switch - action is "send to normal"
+		if(netNode.sdnNodeMode == SDNNodeMode.sdnenabledhybrid) { // hybrid switch - action is "send to normal"
 
 			StringBuilder sb = new StringBuilder();
 			sb.append("adding diversion return path for traffic floor key="); sb.append(tFloor.key);
@@ -442,7 +447,7 @@ public class OdlDvsnRep extends DvsnRep {
 
 		int portToAms = inBoundTraffic ? amsConn.netNodeNorthPort : amsConn.netNodeSouthPort;
 		String divertAction = ActionType.OUTPUT.name() + "=" + portToAms; // E.g., "OUTPUT=2"
-		PortLocation relevantPortLoc = inBoundTraffic ? PortLocation.NORTH : PortLocation.SOUTH;
+		PortLocation relevantPortLoc = inBoundTraffic ? PortLocation.north : PortLocation.south;
 
 		/* 1) "Rest of traffic" diversion - send {TCP,UDP,ICMP} traffic to matching output port. "Rest of traffic" - to AMS. 
 		 * 2) Any other protocol diversion - divert traffic of that to AMS. 

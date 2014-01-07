@@ -9,7 +9,7 @@
 
 package org.opendaylight.defense4all.odl.pojos;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.opendaylight.defense4all.core.DFHolder;
 import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;

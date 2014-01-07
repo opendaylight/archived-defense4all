@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import org.opendaylight.defense4all.core.AMSConnection;
 import org.opendaylight.defense4all.core.Attack;
 import org.opendaylight.defense4all.core.CounterStat;
 import org.opendaylight.defense4all.core.DFAppModule;
@@ -28,7 +29,6 @@ import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.core.DvsnInfo;
 import org.opendaylight.defense4all.core.MitigationDriver;
 import org.opendaylight.defense4all.core.Mitigation;
-import org.opendaylight.defense4all.core.NetNode.AMSConnection;
 import org.opendaylight.defense4all.core.PN;
 import org.opendaylight.defense4all.core.Traffic.TrafficDirection;
 import org.opendaylight.defense4all.core.TrafficFloor;
@@ -222,7 +222,7 @@ public class MitigationDriverLocal extends DFAppModule implements MitigationDriv
 		Set<String> amsLabels = new HashSet<String>(); String amsLabel;
 		Set<Entry<String, AMSConnection>> amsConnectionsSet = netNode.amsConnections.entrySet();
 		if (amsConnectionsSet == null ) return;
-		Iterator<Map.Entry<String,NetNode.AMSConnection>>  iter = amsConnectionsSet.iterator();
+		Iterator<Map.Entry<String,AMSConnection>>  iter = amsConnectionsSet.iterator();
 		while(iter.hasNext()) {
 			amsLabel = iter.next().getKey();
 			amsLabels.add(amsLabel);
@@ -721,7 +721,6 @@ public class MitigationDriverLocal extends DFAppModule implements MitigationDriv
 		DvsnRep dvsnRep = dfAppRoot.getDvsnRep();
 		String pnKey = mitigation.pnKey; 
 		String msgTrying = "MitigationDriverLocal is ending diversion for traffic floor ";
-		String msgSucceeded = "MitigationDriverLocal succeeded ending diversion for traffic floor ";
 		String msgFailed = "MitigationDriverLocal failed ending diversion for traffic floor ";
 		if(mitigation.trafficFloorKeys != null && !mitigation.trafficFloorKeys.isEmpty()) { 
 			fMain.getFR().logRecord(DFAppRoot.FR_DF_SECURITY,"MitigationDriverLocal is ending diversions for "+mitigationKey);
@@ -745,7 +744,6 @@ public class MitigationDriverLocal extends DFAppModule implements MitigationDriv
 
 		/* Remove the security configuration from all mitigating AMSs. */
 		msgTrying = "MitigationDriverLocal is removing security configuration for diversion ";
-		msgSucceeded = "MitigationDriverLocal succeeded removing security configuration for diversion ";
 		msgFailed = "MitigationDriverLocal failed removing security configuration for diversion ";
 		for(String dvsnInfoKey : mitigation.dvsnInfoKeys) {
 			try {

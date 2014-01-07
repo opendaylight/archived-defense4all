@@ -14,7 +14,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.opendaylight.defense4all.core.AMS;
 import org.opendaylight.defense4all.core.DFHolder;
-import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.Repo;
 
@@ -52,7 +51,7 @@ public class AmsResource {
 		
 		try {
 			log.debug("DeleteAms: invoked");
-			DFHolder.get().getMgmtPoint().removeOFC(amsLabel);
+			DFHolder.get().getMgmtPoint().removeAMS(amsLabel);
 		} catch (ExceptionControlApp e) {{/* Ignore. Already logged in DFMgmtPoint. */}}
 	}
 	

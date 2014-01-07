@@ -10,7 +10,7 @@
 	<parent>
 		<groupId>org.opendaylight.defense4all</groupId>
 		<artifactId>dfapp</artifactId>
-		<version>1.0.1</version>
+		<version>1.0.2</version>
 		<relativePath>../dfapp/pom.xml</relativePath>
 	</parent>
 
@@ -22,12 +22,17 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.core</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>axis</groupId>
 			<artifactId>axis</artifactId>
 			<version>1.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.snmp4j</groupId>
+			<artifactId>snmp4j</artifactId>
+			<version>1.10.1</version>
 		</dependency>
 
 	</dependencies>

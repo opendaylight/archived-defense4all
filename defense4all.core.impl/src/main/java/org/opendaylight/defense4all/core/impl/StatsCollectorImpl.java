@@ -85,7 +85,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	protected void decoupledTopologyChanged() {
+	protected synchronized void decoupledTopologyChanged() {
 
 		if(!initialized) return; // Can happen if Rep completes init and topo retrieval before this module is initialized
 
@@ -163,6 +163,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 		Iterator<Map.Entry<String,Object>> iter = pnRow.entrySet().iterator();
 		Map.Entry<String,Object> entry; String oldTrafficFloorKey; String newTrafficFloorKey = null;
 		String oldTrafficFloorLoc; int numofLocs = 0; short oldTrafficFloor;
+		Hashtable<String,Object> newPnCells = new Hashtable<String,Object>();
 		//		List<String> processedLocations = new ArrayList<String>();
 
 		while(iter.hasNext()) {
@@ -207,7 +208,8 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 			try {
 				newTrafficFloorKey = statsCollectionRep.addPeacetimeCounterTrafficFloor(pnKey, newTrafficFloorLoc);
 				if(newTrafficFloorKey == null) continue;  // Failed to add peacetime traffic floor at this location
-				pnRow.put(PN.TRAFFIC_FLOOR_KEY_PREFIX + newTrafficFloorKey, newTrafficFloorKey);
+				//pnRow.put(PN.TRAFFIC_FLOOR_KEY_PREFIX + newTrafficFloorKey, newTrafficFloorKey);
+				newPnCells.put(PN.TRAFFIC_FLOOR_KEY_PREFIX + newTrafficFloorKey, newTrafficFloorKey);
 				newTrafficFloorKeys.add(newTrafficFloorKey);
 				numofLocs++;
 			} catch (ExceptionControlApp e) {
@@ -217,9 +219,9 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);			
 			}
 		}
-
+		
 		try {
-			dfAppRoot.pNsRepo.setRow(pnKey, pnRow);
+			dfAppRoot.pNsRepo.setRow(pnKey, newPnCells);
 		} catch (Exception e) {
 			log.error("Failed to record in repo PN updates with peacetime floor for " + pnKey, e);
 			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed adding peacetime counter traffic floors for PN "
@@ -299,15 +301,18 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 			}
 			iter.remove();	
-		}
-		try {
-			dfAppRoot.pNsRepo.setRow(pnKey, pnRow);
-		} catch (ExceptionControlApp e) {
-			log.error("Excepted trying to set pnRow for " + pnKey, e);
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to properly remove peacetime counter traffic floors "
-					+ "for PN " + pnKey);
-			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-		}			
+			
+			// Remove traffic floor cell from PN row
+			// Do it on cell level to avoid synchronization conflicts
+			try {
+				dfAppRoot.pNsRepo.deleteCell(pnKey, entry.getKey());
+			} catch (ExceptionControlApp e) {
+				log.error("Excepted trying to set pnRow for " + pnKey, e);
+				fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to properly remove peacetime counter traffic floors "
+						+ "for PN " + pnKey);
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
+			}				
+		}		
 	}
 
 	/**
@@ -327,7 +332,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 		}
 	}
 
-	protected void decoupledAddPN(String pnKey) {
+	protected synchronized void decoupledAddPN(String pnKey) {
 
 		boolean succeeded;
 
@@ -387,7 +392,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public void decoupledRemovePN(String pnKey) {
+	public synchronized void decoupledRemovePN(String pnKey) {
 
 		removeStatsCounters(pnKey);
 
@@ -404,7 +409,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	protected void periodicCollectStats() {
+	protected synchronized void periodicCollectStats() {
 
 		if(!fMain.isOpenForBusiness()) return; // Operate only after everything is initialized and is not terminating
 		

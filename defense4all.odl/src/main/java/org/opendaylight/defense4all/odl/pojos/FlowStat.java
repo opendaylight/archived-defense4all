@@ -9,7 +9,7 @@
 
 package org.opendaylight.defense4all.odl.pojos;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * Represents the flow that is installed on the network node

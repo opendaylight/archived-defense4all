@@ -229,4 +229,16 @@ public class AMS {
 		}		
 		return amsRepoCDs;
 	}
+	
+	public void toJacksonFriendly() {
+		// TODO Auto-generated method stub	
+	}
+
+	public void validate() throws Exception {
+		if(label == null || label.isEmpty()) throw new Exception("Invalid ams label.");			
+		if(mgmtAddr == null ) throw new Exception("Invalid ams address.");
+		if(mgmtPort < 0 ) throw new Exception("Invalid ams port.");	
+		if(username == null || username.isEmpty()) throw new Exception("Invalid ams username.");
+		if(password == null || password.isEmpty()) throw new Exception("Invalid ams password.");
+	}
 }

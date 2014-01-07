@@ -29,8 +29,8 @@ import javax.ws.rs.core.UriInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.opendaylight.defense4all.framework.core.EventRecordData;
 import org.opendaylight.defense4all.framework.core.FMHolder;
-import org.opendaylight.defense4all.framework.core.FR.EventRecord;
 import org.opendaylight.defense4all.framework.core.FR.FilterRecord;
 
 @Path("/fr")
@@ -54,7 +54,7 @@ public class FlightRecorderRestService {
 	@GET
 	@Path("events")
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<EventRecord> getEvents(@QueryParam(MAX_NUM_PARAM) int maxNum,
+	public List<EventRecordData> getEvents(@QueryParam(MAX_NUM_PARAM) int maxNum,
 			@QueryParam(FROM_DATE_PARAM) String fromDateStr, @QueryParam(TO_DATE_PARAM) String toDateStr,
 			@QueryParam(FILTER_PARAM) String filterStr,
 			@Context HttpServletResponse servletResponse) throws IOException {
@@ -84,7 +84,7 @@ public class FlightRecorderRestService {
 		if ( filterStr != null ) {
 			filterRec = FMHolder.get().getFR().createFilter(filterStr);
 		}
-		List<EventRecord> events;
+		List<EventRecordData> events;
 		try {
 			events = FMHolder.get().getFR().getTimeRangeEvents(fromDate, toDate, maxNum, filterRec);
 		} catch (Throwable e) {
@@ -98,7 +98,7 @@ public class FlightRecorderRestService {
 	@GET
 	@Path("latest")
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<EventRecord> getLatest(@QueryParam(MAX_NUM_PARAM) int maxNum, @QueryParam(FILTER_PARAM) String filterStr,
+	public List<EventRecordData> getLatest(@QueryParam(MAX_NUM_PARAM) int maxNum, @QueryParam(FILTER_PARAM) String filterStr,
 			@Context HttpServletResponse servletResponse) throws IOException {
 
 		log.debug("FlightRecorderRestService events : invoked");
@@ -107,7 +107,7 @@ public class FlightRecorderRestService {
 		if ( filterStr != null ) {
 			filterRec = FMHolder.get().getFR().createFilter(filterStr);
 		}
-		List<EventRecord> events = null;
+		List<EventRecordData> events = null;
 		try {
 			events = FMHolder.get().getFR().getLatestEvents(maxNum, filterRec);
 		} catch (Throwable e) {
@@ -146,7 +146,7 @@ public class FlightRecorderRestService {
 				toDate = sdf.parse( toDateStr );
 			if ( maxNumStr != null )
 				maxNum = Integer.valueOf(maxNumStr);
-			if (maxNumStr != null )
+			if (filterStr != null )
 				filterRec = FMHolder.get().getFR().createFilter(filterStr);
 		} catch ( Throwable pe) {  
 			log.error("Failed to parse input parameters " + pe.getLocalizedMessage());
@@ -162,7 +162,7 @@ public class FlightRecorderRestService {
 		} catch (Throwable ex ) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("Failed to dump to "); sb.append(fileName);
-			sb.append(". filter = "); sb.append(filterRec.toString());
+			sb.append(". filter = "); sb.append(filterStr);
 			if(fromDate != null) {
 				sb.append(". from date = "); sb.append(fromDate);
 			}

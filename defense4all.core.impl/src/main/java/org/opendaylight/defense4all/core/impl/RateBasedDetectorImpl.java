@@ -123,9 +123,9 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 
 	/** Post-constructor initialization	 */
 	public void init() throws ExceptionControlApp {
-		
+
 		super.init();
-		
+
 		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"RateBased Detector is starting");
 
 		try {
@@ -163,7 +163,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"RateBased Detector is resetting to level " + resetLevel);
 		super.reset(resetLevel);
 
-		pnStatSums.clear();		
+		pnStatSums.clear();
 		statsQueue.clear();
 		counterStats.clear();
 	}
@@ -261,10 +261,13 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	public void handleStatReport(StatReport statsReport) {
 		try {
 			statsQueue.put(statsReport);
-		} catch (InterruptedException e) {
+		} 
+		catch (InterruptedException e1) { // ignore - termination request
+		} 
+		catch ( Throwable e ){
 			log.error("Failed to handleStatReport. PN key: " + statsReport.pnKey+" Reading time: "+statsReport.readingTime, e);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-		}		
+		} 
 	}
 
 	/**
@@ -280,7 +283,11 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			try {
 				statReport = statsQueue.take();
 				processStatReport(statReport);
-			} catch (Throwable e) {
+			}
+			catch (InterruptedException e1) { // termination request
+				break;
+			}  
+			catch (Throwable e) {
 				String msg = "Failed to process stat report: PN key: " + ( statReport  != null ?statReport.pnKey:"");
 				log.error(msg, e);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
@@ -323,7 +330,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		}
 
 		try {
-			
+
 			cStat.lock(); // lock counter for modification
 
 			/* Zero stat is only used to clear latest rate of EXISTING counterStats. This can happen for instance,
@@ -351,11 +358,14 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			if(cStat.status == Status.LEARNING_PERIOD && cStat.lastReadTime - cStat.firstReadTime > gracePeriod) {
 				cStat.status = Status.ACTIVE;
 				fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"Counter " + cStat.trafficFloorKey + " is active");
+				// setup initial baselines
+				aggregatePNStat(statReport.pnKey);
+				periodicProcessBaselines();
 				return;
 			}
 
 			if(cStat.status != Status.ACTIVE) return;
-			
+
 			/* Periodically record in flight recorder the counter moving averages */
 			cStat.periodicallyRecordAverages(fr, dfAppRoot.baselineRecordingIntervalInSecs);
 
@@ -403,6 +413,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	protected void processPNcheckAttack(String pnKey, PNStatSum pnStatSum) throws ExceptionControlApp {
 
 		Hashtable<String,Object> pnRow = dfAppRoot.pNsRepo.getRow(pnKey);
+		Hashtable<String,Object> pnUpdateCells = new Hashtable<String,Object>();
 		try {
 			pnRow = dfAppRoot.pNsRepo.getRow(pnKey);
 		} catch (ExceptionControlApp e) {
@@ -424,9 +435,9 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 				average = pnStatSum.movingAverage ;
 
 			String averageStr = average.serialize();
-			pnRow.put(PN.AVERAGES, averageStr);
-			pnRow.put(PN.LATEST_RATES, pnStatSum.latestRate.serialize());
-			pnRow.put(PN.LATEST_RATES_TIME, currentTime);
+			pnUpdateCells.put(PN.AVERAGES, averageStr);
+			pnUpdateCells.put(PN.LATEST_RATES, pnStatSum.latestRate.serialize());
+			pnUpdateCells.put(PN.LATEST_RATES_TIME, currentTime);
 
 			if(pnStatSum.status != Status.ACTIVE ) return ;
 
@@ -437,7 +448,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			/* Check for attacks */	
 			List<ProtocolPort> attackedProtocolPorts = checkAggrForAttacks(pnStatSum);
 			/* Store updated status to PN repo */
-			pnRow.put(PN.ATTACK_SUSPICIONS, pnStatSum.serializeStatusData());
+			pnUpdateCells.put(PN.ATTACK_SUSPICIONS, pnStatSum.serializeStatusData());
 
 			if(attackedProtocolPorts == null) return; 
 
@@ -456,7 +467,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			//					",  average pps=" + (int)Math.ceil(averages.tcppackets));
 
 			try {
-				dfAppRoot.pNsRepo.setRow(pnKey, pnRow);
+				dfAppRoot.pNsRepo.setRow(pnKey, pnUpdateCells);
 			}  catch (ExceptionControlApp e) {
 				log.error("Failed to update attack status in pnRow for " + pnKey, e);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
@@ -486,7 +497,8 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 					}
 				}
 			}finally {
-				counterStat.unlock();
+				if ( counterStat != null)
+					counterStat.unlock();
 			}
 		}
 	}
@@ -622,7 +634,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 				}
 			} catch (Throwable e) {
 				String cStatInfo = (cStat == null) ? "" : cStat.getKey();
-				log.error("Failed to set INVALID state to PN counter " + cStatInfo);
+				log.error("Failed to set invalid state to PN counter " + cStatInfo);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			} finally {
 				if(cStat != null) cStat.unlock();
@@ -689,13 +701,13 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		Map.Entry<String,Object> entry; String trafficFloorKey;
 
 		while(iter.hasNext()) {
-			
+
 			entry = iter.next();
 			if(!entry.getKey().startsWith(PN.TRAFFIC_FLOOR_KEY_PREFIX)) continue;
-			
+
 			trafficFloorKey = (String) entry.getValue();
 			if(trafficFloorKey == null) continue;
-			
+
 			CounterStat cPNStat = new CounterStat (trafficFloorKey, cStat.pnKey);
 			if (cPNStat.getKey().equals(key)) {				
 				found = true; // This traffic floor still exists in the PN - do nothing
@@ -740,11 +752,12 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 				try {					
 					Hashtable<String,Object> pnRow = dfAppRoot.pNsRepo.getRow(pnKey);
 					if(pnRow == null) continue;
+					Hashtable<String,Object> pnUpdateCells = new Hashtable<String,Object>();
 					long currentTime = System.currentTimeMillis() / 1000;
 					String averageStr = average.serialize();
-					pnRow.put(PN.BASELINES, averageStr);
-					pnRow.put(PN.BASELINES_TIME, currentTime);
-					dfAppRoot.pNsRepo.setRow(pnKey, pnRow);					
+					pnUpdateCells.put(PN.BASELINES, averageStr);
+					pnUpdateCells.put(PN.BASELINES_TIME, currentTime);
+					dfAppRoot.pNsRepo.setRow(pnKey, pnUpdateCells);					
 					fr.logRecord(DFAppRoot.FR_DF_SECURITY,"Baselines for PN " + pnKey + ": " + averageStr);
 				} catch (ExceptionControlApp e) {
 					log.error("Excepted trying to update baselines for pnRow. " + pnKey, e);

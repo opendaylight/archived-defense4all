@@ -13,11 +13,10 @@ import org.opendaylight.defense4all.odl.controller.Connector.JsonPreprocessor;
 import org.opendaylight.defense4all.odl.pojos.FlowStatistics;
 import org.opendaylight.defense4all.odl.pojos.Nodes;
 import org.opendaylight.defense4all.odl.pojos.ReceivedFlowConfig;
-import org.opendaylight.defense4all.odl.pojos.SentFlowConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jmx.access.InvalidInvocationException;
-import org.codehaus.jackson.type.TypeReference;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 public class FlowEntryMgr {
 
@@ -60,7 +59,7 @@ public class FlowEntryMgr {
 		}
 	}
 
-	public void addOpenFlowEntry(String nodeId, String flowEntryLabel, SentFlowConfig flowEntry) throws Exception {
+	public void addOpenFlowEntry(String nodeId, String flowEntryLabel, Object flowEntry) throws Exception {
 
 		try {
 			assertConnectorNotNull();

@@ -7,10 +7,14 @@
 	<name>defense4all.odl</name>
 	<url>http://maven.apache.org</url>
 
+	<properties>
+		<jackson.version>2.3.0</jackson.version>
+	</properties>
+
 	<parent>
 		<groupId>org.opendaylight.defense4all</groupId>
 		<artifactId>dfapp</artifactId>
-		<version>1.0.1</version>
+		<version>1.0.2</version>
 		<relativePath>../dfapp/pom.xml</relativePath>
 	</parent>
 
@@ -18,7 +22,7 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.core</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
@@ -31,6 +35,22 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient</artifactId>

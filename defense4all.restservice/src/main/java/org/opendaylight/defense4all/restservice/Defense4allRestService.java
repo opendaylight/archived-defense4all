@@ -38,7 +38,6 @@ import org.opendaylight.defense4all.core.Mitigation;
 import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.core.OFC;
 import org.opendaylight.defense4all.core.PN;
-import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.Repo;
 
 
@@ -63,10 +62,9 @@ public class Defense4allRestService {
 			Hashtable<String,Hashtable<String,Object>> res = pNsRepo.getTable();
 			Collection<Hashtable<String, Object>> pnResList = res.values();			
 			for(Iterator<Hashtable<String, Object>> i = pnResList.iterator(); i.hasNext();)
-				pnList.add(new PN(i.next()));
-						
+				pnList.add(new PN(i.next()));						
 			return pnList;
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve pns. ", e);
 			return pnList;
 		}
@@ -82,7 +80,7 @@ public class Defense4allRestService {
 			Repo<String> pNsRepo = DFHolder.get().pNsRepo;
 			int count = pNsRepo.getKeys().size();
 			return String.valueOf(count);
-		} catch (ExceptionControlApp e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve PNs count");
 			return null;
 		}
@@ -139,7 +137,7 @@ public class Defense4allRestService {
 			Collection<Hashtable<String, Object>> amsResList = res.values();			
 			for(Iterator<Hashtable<String, Object>> i = amsResList.iterator(); i.hasNext();)
 				amsList.add(new AMS(i.next()));			
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve amss. ", e);
 		}
 		return amsList;
@@ -155,7 +153,7 @@ public class Defense4allRestService {
 			Repo<String> dPsRepo = DFHolder.get().amsRepo;
 			int count = dPsRepo.getKeys().size();
 			return String.valueOf(count);
-		} catch (ExceptionControlApp e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve AMSs count");
 			return null;
 		}
@@ -179,7 +177,7 @@ public class Defense4allRestService {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public void addAMS(AMS ams, @Context HttpServletResponse servletResponse) {
 		try {
-			log.debug("addAMS: invoked 123");
+			log.debug("addAMS: invoked");
 			Repo<String> amsRepo = DFHolder.get().amsRepo;
 			if (amsRepo.getRow(ams.getLabel()) != null){
 				log.debug("addAMS: already contains " + ams.getLabel());
@@ -218,7 +216,7 @@ public class Defense4allRestService {
 			Collection<Hashtable<String, Object>> ofcResList = res.values();			
 			for(Iterator<Hashtable<String, Object>> i = ofcResList.iterator(); i.hasNext();)
 				ofcList.add(new OFC(i.next()));				
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve ofcs. ", e);
 			return null;
 		}
@@ -235,7 +233,7 @@ public class Defense4allRestService {
 			Repo<String> oFCsRepo = DFHolder.get().oFCsRepo;
 			int count = oFCsRepo.getKeys().size();
 			return String.valueOf(count);
-		} catch (ExceptionControlApp e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve OFCs count");
 			return null;
 		}
@@ -250,7 +248,6 @@ public class Defense4allRestService {
 
 	}
 	
-	@SuppressWarnings("unchecked")
 	@POST
 	@Path("ofcs")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -287,18 +284,38 @@ public class Defense4allRestService {
 	@GET
 	@Path("netnodes")
 	@Produces(MediaType.APPLICATION_JSON)
-	public ArrayList<NetNode> getNetnode() {
+	public ArrayList<NetNode> getNetnodes() {
 		ArrayList<NetNode> netNodeList = new ArrayList<NetNode>();
+		NetNode netNode; 
 		try {
 			log.debug("getNetnode: Invoked");
 			Repo<String> netNodesRepo = DFHolder.get().netNodesRepo;
 			Hashtable<String,Hashtable<String,Object>> res = netNodesRepo.getTable();
 			Collection<Hashtable<String, Object>> netNodeResList = res.values();			
-			for(Iterator<Hashtable<String, Object>> i = netNodeResList.iterator(); i.hasNext();)
-				netNodeList.add(new NetNode(i.next()));		
+			for(Iterator<Hashtable<String, Object>> i = netNodeResList.iterator(); i.hasNext();) {
+				netNode = new NetNode(i.next() );
+				netNode.toJacksonFriendly();
+				netNodeList.add(netNode);		
+			}
 			return netNodeList;
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve netnode. ", e);
+			return null;
+		}
+	}
+	
+	@GET
+	@Path("netnodes/count")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getNetnodesCount() {
+		
+		try {
+			log.debug("getOFCsCount: invoked");
+			Repo<String> netNodesRepo = DFHolder.get().netNodesRepo;
+			int count = netNodesRepo.getKeys().size();
+			return String.valueOf(count);
+		} catch (Throwable e) {
+			log.error("Failed to retrieve OFCs count");
 			return null;
 		}
 	}
@@ -359,7 +376,7 @@ public class Defense4allRestService {
 			Collection<Hashtable<String, Object>> mitigationsResList = res.values();			
 			for(Iterator<Hashtable<String, Object>> i = mitigationsResList.iterator(); i.hasNext();)
 				mitigationsList.add(new Mitigation(i.next()));				
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve ofcs. ", e);
 			return null;
 		}
@@ -369,16 +386,16 @@ public class Defense4allRestService {
 	@GET
 	@Path("attacks")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Collection<Attack> getAttacs() {
+	public Collection<Attack> getAttacks() {
 		ArrayList<Attack> attackList = new ArrayList<Attack>();
 		try {
-			log.debug("getAttacs: Invoked");
+			log.debug("getAttacks: Invoked");
 			Repo<String> attacksRepo = DFHolder.get().attacksRepo;
 			Hashtable<String,Hashtable<String,Object>> res = attacksRepo.getTable();
 			Collection<Hashtable<String, Object>> attackResList = res.values();			
 			for(Iterator<Hashtable<String, Object>> i = attackResList.iterator(); i.hasNext();)
 				attackList.add(new Attack(i.next()));			
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Failed to retrieve attacs. ", e);
 			return null;
 		}

@@ -22,7 +22,7 @@ public class HealthTrackerImpl implements HealthTracker {
 	class ShutdownThread implements Runnable { 
 		boolean graceful;
 		public ShutdownThread(boolean graceful) {this.graceful = graceful;}
-		public void run() { 
+		public synchronized void run() { 
 			while ( true ) { 
 				fMain.requestShutdown(graceful); 
 			} 
@@ -49,7 +49,7 @@ public class HealthTrackerImpl implements HealthTracker {
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void reportHealthIssue(int issueLevel) {
+	public synchronized void reportHealthIssue(int issueLevel) {
 
 		long currentTime = System.currentTimeMillis();
 		long timeFromLastReportInMins = (currentTime - lastReportTime) / 60000;
@@ -89,7 +89,7 @@ public class HealthTrackerImpl implements HealthTracker {
 	}
 	
 	@Override
-	public void reportHealthIssue(int issueLevel, boolean permanent) {
+	public synchronized void reportHealthIssue(int issueLevel, boolean permanent) {
 		if ( permanent == false) {
 			// just report health issue
 			reportHealthIssue (issueLevel );

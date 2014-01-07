@@ -1,0 +1,148 @@
+#! /bin/bash
+#
+# Script for running defense4all cli
+# 
+
+NAME=controllapps
+DEFENSE4ALL_NAME=defense4all
+VERSION=1.0.2
+CLI_LIST="framework defense4all"
+JAR_LIST="framework.cli defense4all.cli"
+DEFENSE4ALL_HOME=/usr/share/$DEFENSE4ALL_NAME
+DEFENSE4ALL_USER=defense4all
+declare -A JAR_NAMES
+declare -A CMD_NAMES
+
+# If JAVA_HOME has not been set, try to determine it.
+if [ -z "$JAVA_HOME" ]; then
+  # Find the actual location of the Java launcher:
+      java_launcher=`which java`
+      java_launcher=`readlink -f "${java_launcher}"`
+
+      # Compute the Java home from the location of the Java launcher:
+      export JAVA_HOME="${java_launcher%/bin/java}"
+fi
+if [ -z "$JAVA_HOME" ]; then
+    echo "JAVA_HOME is unknown"
+    exit -1
+fi
+JAVA="$JAVA_HOME/bin/java"
+
+function find_jar() {
+	cli_name=$1
+	base_dir=$2	
+	if [ ! -z "${JAR_NAMES[$cli_name]}" ]
+	then
+		return
+	fi	
+	
+	# find relevant jars for cli_name
+	jar_names=`find $base_dir -name "${cli_name}.cli*${VERSION}*jar"`
+	for jar_name in $jar_names
+	do
+		# try to run jar with predefined argument
+		cmd_list=`$JAVA -jar $jar_name cmdlist 2>/dev/null`
+		if [ -z "$cmd_list" ] 
+		then
+			continue
+		fi	
+		
+		# remember found jar and command list 
+		JAR_NAMES[$cli_name]=$jar_name
+		CMD_NAMES[$cli_name]=$cmd_list
+		FULL_CMD_LIST="${FULL_CMD_LIST} $cmd_list"
+	done		
+}
+
+find_cmd() {
+	cmd_name=$1
+	for cli in ${CLI_LIST}
+	do
+		echo  ${CMD_NAMES[$cli]} | grep -w $cmd_name 2>&1 >/dev/null
+		if [ $? -eq 0 ]
+		then 
+			echo ${JAR_NAMES[$cli]}
+		fi	
+	done
+}
+
+verify_config()
+{
+	if [ -z "${FULL_CMD_LIST}" ]
+	then
+		echo "Can't find required files for running $NAME"
+		echo "Verify $DEFENSE4ALL_HOME installation"
+		exit -1
+	fi
+	if [ "$1" == "jars_list" ]
+	then
+		for cli in ${CLI_LIST}
+		do
+			echo $cli ${JAR_NAMES[$cli]} ${CMD_NAMES[$cli]}
+		done
+	fi
+}
+
+
+function usage() {
+	echo "Usage:  controlapps cmd [params]"
+	echo "Where cmd is one of: ${FULL_CMD_LIST}"
+	echo "[params] - zero or more cmd specific params, separated by spaces (e.g., param1 param2 ...)"
+	echo "To get help about specific cmd type: controlapps help cmd"
+}
+
+# remember current location
+pwdC=`pwd`
+# try eclipse environment first
+cd `dirname $0`; cd ../../; me=`pwd`
+for cli in ${CLI_LIST}
+do	
+	find_jar $cli $me
+done
+
+# try package installation
+cd $DEFENSE4ALL_HOME 2>/dev/null ; me=`pwd`
+for cli in ${CLI_LIST}
+do	
+	find_jar $cli $me
+done
+
+cd $pwdC	
+verify_config
+
+case "$1" in
+	"")
+	echo "Empty string"
+	usage >&2
+	;;
+	
+	help)
+	echo " Help $2"
+	if [ ! -z "$2" ]
+	then
+		jar_path=`find_cmd $2`
+	fi
+	if [ ! -z "$jar_path" ]
+	then
+		$JAVA -jar $jar_path help $2
+	else	
+		usage >&2
+	fi
+	;;
+	
+	jars_list)
+	verify_config jars_list
+	exit 0	
+	;;
+	
+	*)
+	jar_path=`find_cmd $1`
+	if [ -z "${jar_path}" ]
+	then
+		usage >&2
+		exit -1
+	fi	
+	$JAVA -jar $jar_path $*
+	exit $?
+	;;
+esac

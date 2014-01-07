@@ -17,12 +17,7 @@
 		<level value="debug" />
 		<appender-ref ref="CA" />
 	</logger>
-	<logger name="org.apache.axis.transport.http.HTTPSender"
-		additivity="false">
-		<level value="debug" />
-		<appender-ref ref="CA" />
-	</logger>
-
+	
 	<root>
 		<level value="INFO" />
 		<appender-ref ref="FA" />

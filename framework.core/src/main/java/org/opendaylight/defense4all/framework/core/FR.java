@@ -9,8 +9,6 @@
 
 package org.opendaylight.defense4all.framework.core;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 
@@ -18,8 +16,7 @@ import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
 public interface FR {
 	
-	public interface EventRecord {
-		public void dump(BufferedWriter bw) throws IOException;		
+	public interface EventRecord {	
 		public boolean match(FilterRecord filter);
 	}
 	
@@ -66,8 +63,8 @@ public interface FR {
 	 * @return list of latest records in the repo
 	 * @throws ExceptionControlApp 
 	 */
-	public List<EventRecord> getLatestEvents(int number) throws ExceptionControlApp ;
-	public List<EventRecord> getLatestEvents(int number, FilterRecord filter) throws ExceptionControlApp ;
+	public List<EventRecordData> getLatestEvents(int number) throws ExceptionControlApp ;
+	public List<EventRecordData> getLatestEvents(int number, FilterRecord filter) throws ExceptionControlApp ;
 	
 	/**
 	 * @param fromDate filter records from date
@@ -75,8 +72,8 @@ public interface FR {
 	 * @param maxNum - max records to return
 	 * @return - list of  records in the repo
 	 */
-	public List<EventRecord> getTimeRangeEvents ( Date fromDate, Date toDate, int maxNum);
-	public List<EventRecord> getTimeRangeEvents ( Date fromDate, Date toDate, int maxNum, FilterRecord filter);
+	public List<EventRecordData> getTimeRangeEvents ( Date fromDate, Date toDate, int maxNum);
+	public List<EventRecordData> getTimeRangeEvents ( Date fromDate, Date toDate, int maxNum, FilterRecord filter);
 	
 	/**
 	 * @param days cleanup older records 

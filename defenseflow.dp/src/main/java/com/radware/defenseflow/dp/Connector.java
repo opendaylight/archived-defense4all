@@ -145,7 +145,7 @@ public class Connector {
 		FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_FAILURE, "Failed to properly init connectivity to DP " + amsKey);
 		throw new ExceptionControlApp("Failed to init connector for " + dpMgmtAddr, e);
 	}
-	
+
 	private void initSyslogTargetSetupPort() throws ExceptionControlApp {
 
 		ManagementSyslogServersServiceLocator service = new ManagementSyslogServersServiceLocator();
@@ -159,7 +159,7 @@ public class Connector {
 		((ManagementSyslogServersBindingStub) syslogTargetPort).setUsername(dpUsername);
 		((ManagementSyslogServersBindingStub) syslogTargetPort).setPassword(dpPassword);
 	}	
-	
+
 	private void initSecuritySynProtectionPort() throws ExceptionControlApp {
 
 		SecuritySynProtectionServiceLocator service = new SecuritySynProtectionServiceLocator();
@@ -293,47 +293,28 @@ public class Connector {
 	public void createOOSProfile(Profile profile) throws ExceptionControlApp {
 
 		ProfileHolder entry = new ProfileHolder(profile);
-		for(int i=0;i<3;i++) {
-			try {
-				oosProfilePort.create_Profile(entry);
-				FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_SECURITY, "Created Out-Of-State profile " 
-						+ profile.getProfileName() + " in DP " + amsKey);
-				return;
-			} catch (Throwable e) {
-				if(e.getMessage().contains("OperationFailedException")) {
-					updateOOSProfile(profile);
-					return;
-				}
+		try {
+			oosProfilePort.create_Profile(entry);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_SECURITY, "Created Out-Of-State profile " 
+					+ profile.getProfileName() + " in DP " + amsKey);
+		} catch (Throwable e) {
+			if(e.getMessage().contains("OperationFailedException"))
+				updateOOSProfile(profile);
+			else
 				log.warn("Failed to create out of state profile in " + dpMgmtAddr, e);
-				try {
-					Thread.sleep(500);
-				} catch (Throwable e1) { /* Ignore */}
-			}
 		}
-		FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_FAILURE, "Failed to create Out-Of-State profile " 
-				+ profile.getProfileName() + " in DP " + amsKey);
-		throw new ExceptionControlApp("Exhausted trying to create out of state profile in " + dpMgmtAddr);
 	}
 
 	public void updateOOSProfile(Profile profile) throws ExceptionControlApp {
 
 		ProfileHolder entry = new ProfileHolder(profile);
-		for(int i=0;i<3;i++) {
-			try {
-				oosProfilePort.update_Profile(entry);
-				FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_SECURITY, "Updated Out-Of-State profile " 
-						+ profile.getProfileName() + " in DP " + amsKey);
-				return;
-			} catch (Throwable e) {
-				log.warn("Failed to update out of state profile in " + dpMgmtAddr, e);
-				try {
-					Thread.sleep(500);
-				} catch (Throwable e1) { /* Ignore */}
-			}
+		try {
+			oosProfilePort.update_Profile(entry);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_SECURITY, "Updated Out-Of-State profile " 
+					+ profile.getProfileName() + " in DP " + amsKey);
+		} catch (Throwable e) {
+			log.warn("Failed to update out of state profile in " + dpMgmtAddr, e);
 		}
-		FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_FAILURE, "Failed to update Out-Of-State profile " 
-				+ profile.getProfileName() + " in DP " + amsKey);
-		throw new ExceptionControlApp("Exhausted trying to update out of state profile in " + dpMgmtAddr);
 	}
 
 	/**
@@ -684,24 +665,24 @@ public class Connector {
 
 		return network;		
 	}
-	
+
 	public void addSyslogTarget(SyslogServersTable syslogTarget) throws ExceptionControlApp {
-		
+
 		SyslogServersTableHolder syslogHolder = new SyslogServersTableHolder(syslogTarget);
 		try {
 			syslogTargetPort.create_SyslogServersTable(syslogHolder);
 			FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_OPERATIONAL, "Setting DF as syslog target " 
 					+ syslogTarget.getSyslogServerAddress());
 		} catch (Throwable e) { // We ignore. Problem with DP. syslog entry is set anyways.
-//			if(e.getMessage().contains("OperationFailedException"))	
-//				return;	// This DF IP is already configured as syslog target in this DP
-//			log.error("Failed to create syslog target for " + syslogHolder, e);
-//			FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_FAILURE,"Failed to set syslog " 
-//					+ syslogTarget.getSyslogServerAddress());
-//			throw new ExceptionControlApp("Failed to create syslog target for" + syslogHolder + ": " + e.getMessage());
+			//			if(e.getMessage().contains("OperationFailedException"))	
+			//				return;	// This DF IP is already configured as syslog target in this DP
+			//			log.error("Failed to create syslog target for " + syslogHolder, e);
+			//			FMHolder.get().getFR().logRecord(DFAppRoot.FR_AMS_FAILURE,"Failed to set syslog " 
+			//					+ syslogTarget.getSyslogServerAddress());
+			//			throw new ExceptionControlApp("Failed to create syslog target for" + syslogHolder + ": " + e.getMessage());
 		}
 	}
-	
+
 	public void removeSyslogTarget(String syslogTargetAddr) throws ExceptionControlApp {
 
 		try {

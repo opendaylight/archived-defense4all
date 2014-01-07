@@ -34,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -133,6 +132,7 @@ public class FrameworkMainImpl implements FrameworkMain {
 				} catch (Throwable e3) {
 					System.exit(3);
 				}
+				log.info("Reset is done");
 				System.exit(0);
 			} else if(args[0].equals("test")) {
 				try {
@@ -146,12 +146,33 @@ public class FrameworkMainImpl implements FrameworkMain {
 			}
 		}
 
+		/* Bring-up of the jetty web server to serve REST requests. */
 		try {
-			frameworkMain.restServer.join();
+			frameworkMain.frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Rest server is starting");
+			frameworkMain.restServer.start();
+		} catch (Throwable e) {
+			frameworkMain.stopRestServer();
 			frameworkMain.finit();
-		} catch (InterruptedException e) {
 			System.exit(9);
 		}
+
+		try {
+			frameworkMain.restServer.join();
+			frameworkMain.stopRestServer();
+			frameworkMain.finit();
+		} catch (InterruptedException e) {
+			System.exit(10);
+		}
+	}
+	
+	protected void stopRestServer() {
+		try {
+			/* Stop rest server */
+			if(restServer != null) {
+				frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Rest server is stopping");
+				restServer.stop();
+			}
+		} catch (Throwable e) {/* Ignore interrupt exceptions. */}
 	}
 
 	protected void test() {
@@ -188,21 +209,15 @@ public class FrameworkMainImpl implements FrameworkMain {
 	 */
 	public void init() throws ExceptionControlApp {
 
-		boolean repoFactoryFinitNeeded = false; boolean frameworkEmFinitNeeded = false; 
-		boolean flightRecorderFinitNeeded = false; boolean peerCommunicatorFinitNeeded = false;
-		boolean clusterMgrFinitNeeded = false; boolean frameworkMgmtPointFinitNeeded = false; boolean appFinitNeeded = false;
-
 		/* This class initialization */
 		Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(this, appRoot));
 		log.info("Framework is starting");
 		setupRESTServer();
 
 		/* RepoFactoryImpl initialization */
-		repoFactoryFinitNeeded = true;
 		repoFactoryImpl.init();
 
 		/* This part of frameworkMain init can only be done after RepoFactoryImpl init. */
-		frameworkEmFinitNeeded = true;
 		frameworkEM = repoFactoryImpl.createFrameworkMainEM(FRAMEWORK_CORE_EM_ID, stateClassPaths);
 		try {
 			coreStateRepo = (Repo<String>) repoFactoryImpl.getOrCreateRepo(RepoMajor.FWORK_GLOBAL.name(), 
@@ -215,40 +230,21 @@ public class FrameworkMainImpl implements FrameworkMain {
 		}
 
 		/* init framework FlightLogger */
-		flightRecorderFinitNeeded = true;
 		frImpl.init();
 		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is starting");
 
 		/* Other modules initialization */
-		peerCommunicatorFinitNeeded = true;
 		peerCommunicatorImpl.init();
-		clusterMgrFinitNeeded = true;
 		clusterMgrImpl.init();
-		frameworkMgmtPointFinitNeeded = true;
 		frameworkMgmtPointImpl.init();
 
-		appFinitNeeded = true;
 		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is starting " + appRoot.name);
 		appRoot.init();
 
 		/* Mark completion of all initializations allowing all periodic operations to start working and using
 		 * repository and other services. */
+		log.info("Is openForBusiness "+ appRoot.name );
 		openForBusiness = true;
-
-		/* Bring-up of the jetty web server to serve REST requests. */
-		try {
-			frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Rest server is starting");
-			restServer.start();
-		} catch (Throwable e) {
-			if(repoFactoryFinitNeeded) repoFactoryImpl.finit();
-			if(frameworkEmFinitNeeded) frameworkEM.close();
-			if(flightRecorderFinitNeeded) frImpl.finit();
-			if(peerCommunicatorFinitNeeded) peerCommunicatorImpl.finit();
-			if(clusterMgrFinitNeeded) clusterMgrImpl.finit();
-			if(frameworkMgmtPointFinitNeeded) frameworkMgmtPointImpl.finit();
-			if(appFinitNeeded) appRoot.finit();
-			throw new ExceptionControlApp("Failed to start the framework", e);
-		}
 	}
 
 	/**
@@ -258,15 +254,6 @@ public class FrameworkMainImpl implements FrameworkMain {
 	public void finit() {
 
 		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is stopping");
-
-		try {
-			if(restServer != null) {
-				frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Rest server is stopping");
-				restServer.stop();
-			}
-		} catch (Throwable e) {
-			log.error("The rest server did not properly stop." + e.toString());
-		}
 
 		openForBusiness = false;
 
@@ -431,10 +418,13 @@ public class FrameworkMainImpl implements FrameworkMain {
 
 	@Override
 	public void requestShutdown(boolean graceful) {
-
-		if(graceful)
-			finit();
+		if(graceful) finit();
 		System.exit(0);
+	}
+
+	public void requestReset(ResetLevel resetLevel) throws ExceptionControlApp {
+		reset(resetLevel);
+		init();		
 	}
 
 	@Override

@@ -115,6 +115,7 @@ public abstract class Module {
 				log.error("Failed to shutdown decoupleExecutor." + e.getLocalizedMessage());
 			}
 		}
+		decoupleExecutor = null;
 
 		if(periodicExecutor != null) {
 			try {
@@ -141,6 +142,7 @@ public abstract class Module {
 				log.error("Failed to shutdown periodicExecutor." + e.getLocalizedMessage());
 			}
 		}
+		periodicExecutor = null;
 
 		if(backgroundExecutionThreads != null) {
 			for(Thread backgroundExecutionThread : backgroundExecutionThreads ) {
@@ -156,6 +158,7 @@ public abstract class Module {
 				}
 			}
 		}
+		backgroundExecutionThreads = null;
 		
 		if (gotCurrentTermination == true) { // Preserve interrupt status
 			Thread.currentThread().interrupt();

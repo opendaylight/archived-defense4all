@@ -101,7 +101,6 @@ public class DPConfigMgr extends DFAppModule {
 
 	public DPRep amsRep;
 	protected HashMap<String, Connector> connectors;
-	public String dfSyslogTargetAddr;
 
 	/*
 	 * Syn profile and its name, signatures default profile name (pre-existing
@@ -144,7 +143,6 @@ public class DPConfigMgr extends DFAppModule {
 
 	/* Setters for Spring */
 	public void setAmsRep(DPRep amsRep) {this.amsRep = amsRep;}
-	public void setDfSyslogTargetAddr(String dfSyslogTargetAddr) {this.dfSyslogTargetAddr = dfSyslogTargetAddr;}
 
 	@Override
 	public void init() throws ExceptionControlApp {
@@ -160,8 +158,6 @@ public class DPConfigMgr extends DFAppModule {
 					true, ConfiguredNetwork.getRCDs());
 			securityConfigRepo = (Repo<String>) rf.getOrCreateRepo(rMajor, RepoMinor.SECURITY_CONFIGURATIONS.name(), sSer, 
 					true, SecurityConfig.getRCDs());
-			if(dfSyslogTargetAddr == null)
-				dfSyslogTargetAddr = fMain.getHostAddr();
 		} catch (Throwable e) {
 			log.error("Failed to getOrCreateRepo for configured networks.", e);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
@@ -234,7 +230,7 @@ public class DPConfigMgr extends DFAppModule {
 
 		/* Add all DF instances (as of now there is only one) as DP syslog targets. */
 		try {
-			addSyslogTarget(connector, dfSyslogTargetAddr);
+			addSyslogTarget(connector, fMain.getHostAddr());
 		} catch (Throwable e1) {
 			connectors.remove(amsKey);
 		}
@@ -385,7 +381,7 @@ public class DPConfigMgr extends DFAppModule {
 		
 		/* Remove all DF instances (as of now there is only one) as syslog targets. */
 		try {
-			connector.removeSyslogTarget(dfSyslogTargetAddr);
+			connector.removeSyslogTarget(fMain.getHostAddr());
 		} catch (Exception e) { /* Ignore */}
 	}
 

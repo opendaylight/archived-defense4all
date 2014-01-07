@@ -22,6 +22,14 @@ import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
 public class FrameworkMgmtPointImpl extends FrameworkModule implements FrameworkMgmtPoint {
+
+	/**
+	 * Decoupled actions for ActionSwitcher
+	 */
+	protected static final int ACTION_INVALID = -1;	// Already defined in Module. Brought here for brevity
+	protected static final int ACTION_RESERVED = 0; // Already defined in Module. Brought here for brevity
+	protected static final int ACTION_REQUEST_SHUTDOWN = 1;
+	protected static final int ACTION_REQUEST_RESET = 2;
 	
 	/**
 	 * Request application to perform factory reset - i.e., return to factory settings
@@ -30,9 +38,35 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
+	@Override
+	public void requestTerminate(String scope) throws ExceptionControlApp {
+		fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_OPERATIONAL,"User requested termination of "+scope);
+		invokeDecoupledSerially(ACTION_REQUEST_SHUTDOWN, scope);
+	}
+	
+	protected void decoupledRequestTerminate(String scope) {
+		fMainImpl.requestShutdown(true);	// For now we ignore of scope until we implement clustering
+	}
+	
+	/**
+	 * Request application to perform factory reset - i.e., return to factory settings
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	@Override
 	public void requestReset(ResetLevel resetLevel) throws ExceptionControlApp {
 		fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_CONFIG, "User requested reset " + resetLevel);
-		fMainImpl.reset(resetLevel);
+		invokeDecoupledSerially(ACTION_REQUEST_RESET, resetLevel);
+	}
+	
+	protected void decoupledRequestReset(ResetLevel resetLevel) {
+		try {
+			fMainImpl.requestReset(resetLevel);
+		} catch (Throwable e) {
+			log.error("Failed to reset to level " + resetLevel.toString());
+		}
 	}
 
 	/**
@@ -54,7 +88,8 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	 * @throws exception_type circumstances description 
 	 */
 	public ClusterInfo getClusterInfo() {return null;}	
-	
+
+	@Override
 	public void setHostAddr(String hostAddr) throws ExceptionControlApp {
 		
 		fr.logRecord(FrameworkMain.FR_FRAMEWORK_CONFIG, "Framework is setting hostaddress to " + hostAddr);		
@@ -71,5 +106,18 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	}
 
 	@Override
-	protected void actionSwitcher(int actionCode, Object param) {}
+	protected void actionSwitcher(int actionCode, Object param) {
+
+		switch(actionCode) {
+		case ACTION_RESERVED:
+			break;
+		case ACTION_REQUEST_SHUTDOWN:
+			decoupledRequestTerminate((String) param);
+			break;
+		case ACTION_REQUEST_RESET:
+			decoupledRequestReset((ResetLevel) param);
+			break;
+		default:
+		}
+	}
 }

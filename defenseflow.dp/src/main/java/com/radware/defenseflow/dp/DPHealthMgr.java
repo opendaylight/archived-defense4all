@@ -64,8 +64,7 @@ public class DPHealthMgr extends DFAppModule {
 	 * @throws exception_type circumstances description 
 	 */
 	public void addAMS(String amsKey) {
-		// TODO Auto-generated method stub
-		
+		 
 	}
 
 	/**

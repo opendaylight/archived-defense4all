@@ -38,7 +38,9 @@ public class NetNodeResource {
 			log.debug("In getnetNode. NetNode label is " + netNodeLabel);
 			Repo<String> netNodesRepo = DFHolder.get().netNodesRepo;
 			Hashtable<String,Object> netNodeRow = netNodesRepo.getRow(netNodeLabel);
-			return new NetNode(netNodeRow);
+			NetNode netNode = new NetNode(netNodeRow);
+			netNode.toJacksonFriendly();
+			return netNode;
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to retrieve pn " + netNodeLabel, e);
 			return null;

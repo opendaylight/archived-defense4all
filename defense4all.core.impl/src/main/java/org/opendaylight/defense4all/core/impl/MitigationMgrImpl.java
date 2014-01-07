@@ -69,7 +69,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 
 	/** Reset 
 	 * @throws ExceptionControlApp */
-	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
+	public synchronized void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 
 		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "MitigationMgr is resetting to level " + resetLevel);
 		super.reset(resetLevel);
@@ -114,7 +114,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	protected void decoupledAddPN(String pnKey) {
+	protected synchronized void decoupledAddPN(String pnKey) {
 
 		for(MitigationDriver mitigationDriver : dfAppRootFullImpl.mitigationDrivers) {
 
@@ -152,7 +152,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	protected void decoupledRemovePN(String pnKey) {
+	protected synchronized void decoupledRemovePN(String pnKey) {
 		for(MitigationDriver mitigationDriver : dfAppRootFullImpl.mitigationDrivers) {
 			try {
 				mitigationDriver.removePN(pnKey);
@@ -163,7 +163,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 		}
 	}
 
-	public void addNetNode(String netNodeKey) {	
+	public synchronized void addNetNode(String netNodeKey) {	
 
 		for(MitigationDriver mitigationDriver : dfAppRootFullImpl.mitigationDrivers) {
 			try {
@@ -184,7 +184,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void topologyChanged()  {
+	public synchronized void topologyChanged()  {
 
 		for(MitigationDriver mitigationDriver : dfAppRootFullImpl.mitigationDrivers) {
 			try {
@@ -206,7 +206,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void mitigate(String attackKey) {
+	public synchronized void mitigate(String attackKey) {
 
 		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is starting mitigation for attack " + attackKey);
 		Hashtable<String, Object> attackRow;
@@ -333,7 +333,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 		}
 	}
 
-	protected void decoupledMitigate(MitigationInfo mitigationInfo)  {
+	protected synchronized void decoupledMitigate(MitigationInfo mitigationInfo)  {
 		/* mitigate is decoupled in the mitigation driver. 
 		 * Retry and recovery should be handled by mitigation driver.
 		 *  Mitigation manager can handle status of invocation only */
@@ -352,7 +352,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void handleMitigationResponse (String mitigationKey, boolean mitigating) {
+	public synchronized void handleMitigationResponse (String mitigationKey, boolean mitigating) {
 
 		String currentMitigationDriverLabel = "";
 		try {
@@ -433,7 +433,7 @@ public class MitigationMgrImpl extends DFAppCoreModule implements MitigationMgr 
 		}
 	}
 
-	protected void decoupledEndMitigation(String mitigationKey) {
+	protected synchronized void decoupledEndMitigation(String mitigationKey) {
 
 		boolean isError = false;
 		/* Notify all mitigationDrivers to end mitigating. There can be more than one driver mitigating

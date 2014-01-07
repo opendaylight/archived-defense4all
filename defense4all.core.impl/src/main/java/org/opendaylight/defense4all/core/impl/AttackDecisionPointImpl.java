@@ -74,7 +74,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 
 	/** Reset 
 	 * @throws ExceptionControlApp */
-	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
+	public synchronized void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 
 		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "AttackDecisionPoint is resetting to level " + resetLevel);
 		super.reset(resetLevel);
@@ -350,7 +350,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public synchronized void removePN(String pnKey) throws ExceptionControlApp {
+	public void removePN(String pnKey) throws ExceptionControlApp {
 
 		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "DF is processing PN removal with respect to ongoing attacks "
 				+ pnKey);
@@ -370,7 +370,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	protected void decoupledRemovePN(String pnKey)  {
+	protected synchronized void decoupledRemovePN(String pnKey)  {
 
 		Hashtable<String,Hashtable<String,Object>> attackTable = dfAppRootFullImpl.attacksRepo.getTable();
 		if (attackTable  == null ) return;

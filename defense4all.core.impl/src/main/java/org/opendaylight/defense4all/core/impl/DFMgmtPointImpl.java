@@ -13,7 +13,6 @@ package org.opendaylight.defense4all.core.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.IllegalArgumentException;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -31,13 +30,8 @@ import org.opendaylight.defense4all.core.DFMgmtPoint;
 import org.opendaylight.defense4all.core.Detector;
 import org.opendaylight.defense4all.core.DetectorInfo;
 import org.opendaylight.defense4all.core.NetNode;
-import org.opendaylight.defense4all.core.NetNode.AMSConnection;
-import org.opendaylight.defense4all.core.NetNode.PortLocation;
-import org.opendaylight.defense4all.core.NetNode.ProtectedLink;
-import org.opendaylight.defense4all.core.NetNode.TrafficPort;
 import org.opendaylight.defense4all.core.OFC;
 import org.opendaylight.defense4all.core.PN;
-import org.opendaylight.defense4all.core.NetNode.SDNNodeMode;
 import org.opendaylight.defense4all.core.PN.StatsCollectionStatus;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -55,110 +49,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	public static final int TYPE_INVALID = -1;
 	public static final int TYPE_RESERVED = 0;
 
-	/* OFC from Spring */
-	protected String ofcHostname = null;
-	protected String ofcIpAddrString = null;
-	protected int 	 ofcPort = -1;
-	protected String ofcUsername = null;
-	protected String ofcPassword = null;
-	protected boolean ofcForStatsCollection = false;
-	protected boolean ofcForDvsn = false;
-	protected boolean ofcSetInSpring = false;
-
-	/* AMS from Spring */
-	protected String amsLabel = null;
-	protected String amsBrand = null;
-	protected String amsVersion = null;
-	protected boolean amsForStatsCollection = false;
-	protected boolean amsForDvsn = false;
-	protected int amsHealthCheckFrequency;
-	protected boolean amsSetInSpring = false;
-	protected String amsUsername; 
-	protected String amsPassword; 
-	protected String amsMgmtAddrStr;
-	protected List<String> amsSecurityConfigKeys= new ArrayList<String>();
-	protected String amsSecurityConfigKeysComb;
-
-
-	/* OFS from Spring */
-	protected String ofsLabel;	// Record key.
-	protected String ofsId;		// For OpenFlow NetNodes this is the DPID
-	protected String ofsType;	// Covers ODL Node types and beyond 
-	protected String ofsMgmtAddr;
-	protected int 	 ofsMgmtPort;
-	protected SDNNodeMode ofsSdnNodeMode;
-	protected int 	 ofsHealthFrequency; // When in-path in secs. When out of path - decrease frequency by X 10	
-	protected String ofsAmsConnAmsLabel;
-	protected int 	 ofsAmsConnNetNodeNorthPort; // port in the node - closer to client
-	protected int 	 ofsAmsConnNetNodeSouthPort; // port in the node - closer to server
-	protected int 	 ofsAmsConnAmsNorthPort; 	 // port in the AMS device - connected to ofsAmsConnNetNodeNorthPort
-	protected int 	 ofsAmsConnAmsSouthPort;	 // port in the AMS device - connected to ofsAmsConnNetNodeSouthPort
-	protected String ofsTrafficNorthPortLabel;
-	protected int 	 ofsTrafficNorthPort;
-	protected int 	 ofsTrafficNorthPortVlan;
-	protected PortLocation ofsTrafficNorthPortLocation;
-	protected String ofsTrafficSouthPortLabel;
-	protected int 	 ofsTrafficSouthPort;
-	protected int 	 ofsTrafficSouthPortVlan;
-	protected PortLocation ofsTrafficSouthPortLocation;
-	protected String ofsProtectedLinkLabel;
-	protected int 	 ofsProtectedLinkInPort;
-	protected int 	 ofsProtectedLinkOutPort;
-	protected Properties ofsProps;
-	protected boolean ofsSetInSpring = false;
-
 	private static Log log = LogFactory.getLog(DFMgmtPointImpl.class);
-
-	/* Setters for Spring */
-
-	public void setOfcHostname(String ofcHostname) {this.ofcHostname = ofcHostname;}
-	public void setOfcIpAddrString(String ofcIpAddrString) {this.ofcIpAddrString = ofcIpAddrString;}
-	public void setOfcPort(int ofcPort) {this.ofcPort = ofcPort;}
-	public void setOfcUsername(String ofcUsername) {this.ofcUsername = ofcUsername;}
-	public void setOfcPassword(String ofcPassword) {this.ofcPassword = ofcPassword;}
-	public void setOfcForStatsCollection(boolean forStatsCollection) {this.ofcForStatsCollection = forStatsCollection;}
-	public void setOfcForDvsn(boolean forDvsn) {this.ofcForDvsn = forDvsn;}
-	public void setOfcSetInSpring(boolean ofcSetInSpring) {this.ofcSetInSpring = ofcSetInSpring;}
-
-	public void setOfsLabel(String ofsLabel) {this.ofsLabel = ofsLabel;}
-	public void setOfsId(String ofsId) {this.ofsId = ofsId;}
-	public void setOfsType(String ofsType) {this.ofsType = ofsType;}
-	public void setOfsMgmtAddr(String ofsMgmtAddr) {this.ofsMgmtAddr = ofsMgmtAddr;}
-	public void setOfsMgmtPort(int ofsMgmtPort) {this.ofsMgmtPort = ofsMgmtPort;}
-	public void setOfsSdnNodeMode(SDNNodeMode ofsSdnNodeMode) {this.ofsSdnNodeMode = ofsSdnNodeMode;}
-	public void setOfsHealthCheckFrequency(int frequency) {this.ofsHealthFrequency = frequency;}
-	public void setOfsAmsConnAmsLabel(String label) {this.ofsAmsConnAmsLabel = label;}
-	public void setOfsAmsConnNetNodeNorthPort(int port) {this.ofsAmsConnNetNodeNorthPort = port;}
-	public void setOfsAmsConnNetNodeSouthPort(int port) {this.ofsAmsConnNetNodeSouthPort = port;}
-	public void setOfsAmsConnAmsNorthPort(int port) {this.ofsAmsConnAmsNorthPort = port;}
-	public void setOfsAmsConnAmsSouthPort(int port) {this.ofsAmsConnAmsSouthPort = port;}
-	public void setOfsTrafficNorthPortLabel(String label) {this.ofsTrafficNorthPortLabel = label;}
-	public void setOfsTrafficNorthPort(int ofsTrafficPort) {this.ofsTrafficNorthPort = ofsTrafficPort;}
-	public void setOfsTrafficNorthPortVlan(int vlan) {this.ofsTrafficNorthPortVlan = vlan;}
-	public void setOfsTrafficNorthPortLocation(PortLocation portLocation) {this.ofsTrafficNorthPortLocation = portLocation;}
-	public void setOfsTrafficSouthPortLabel(String label) {this.ofsTrafficSouthPortLabel = label;}
-	public void setOfsTrafficSouthPort(int ofsTrafficPort) {this.ofsTrafficSouthPort = ofsTrafficPort;}
-	public void setOfsTrafficSouthPortVlan(int vlan) {this.ofsTrafficSouthPortVlan = vlan;}
-	public void setOfsTrafficSouthPortLocation(PortLocation portLocation) {this.ofsTrafficSouthPortLocation = portLocation;}
-	public void setOfsProtectedLinkLabel(String label) {this.ofsProtectedLinkLabel = label;}
-	public void setOfsProtectedLinkInPort(int port) {this.ofsProtectedLinkInPort = port;}
-	public void setOfsProtectedLinkOutPort(int port) {this.ofsProtectedLinkOutPort = port;}	
-	public void setOfsHealthFrequency(int ofsHealthFrequency) {this.ofsHealthFrequency = ofsHealthFrequency;}
-	public void setOfsProps(Properties ofsProps) {this.ofsProps = ofsProps;}
-	public void setOfsSetInSpring(boolean ofsSetInSpring) {this.ofsSetInSpring = ofsSetInSpring;}
-
-	public void setAmsLabel(String amsLabel) {this.amsLabel = amsLabel;}
-	public void setAmsBrand(String amsBrand) {this.amsBrand = amsBrand;}
-	public void setAmsVersion(String amsVersion) {this.amsVersion = amsVersion;}
-	public void setAmsForStatsCollection(boolean forStatsCollection) {this.amsForStatsCollection = forStatsCollection;}
-	public void setAmsForDvsn(boolean forDvsn) {this.amsForDvsn = forDvsn;}
-	public void setAmsHealthCheckFrequency(int frequency) {this.amsHealthCheckFrequency = frequency;}
-
-	public void setAmsUsername( String amsUsername ) { this.amsUsername = amsUsername;}
-	public void setAmsPassword( String amsPassword ) { this.amsPassword = amsPassword;}
-	public void setAmsMgmtAddr( String amsMgmtAddrStr ) { this.amsMgmtAddrStr = amsMgmtAddrStr;}
-	public void setAmsSecurityConfigKeys( String amsSecurityConfigKeys) {this.amsSecurityConfigKeysComb = amsSecurityConfigKeys; }
-	public void setAmsSetInSpring(boolean amsSetInSpring) {this.amsSetInSpring = amsSetInSpring;}
 
 	public DFMgmtPointImpl() {
 		super();
@@ -171,19 +62,12 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	public void init() throws ExceptionControlApp {
-		
+
 		super.init();
-		
+
 		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "DFMgmtPoint is starting.");
 
 		/* OFC related initializations. */
-		if (ofcHostname == null) {
-			if(ofcIpAddrString == null)
-				ofcSetInSpring = false; // At least one of hostname or ip must be not null, otherwise consider them unset by Spring.
-			else
-				ofcHostname = ofcIpAddrString;
-		}
-
 		List<String> ofcKeys = null;
 		try {
 			ofcKeys = dfAppRoot.oFCsRepo.getKeys();
@@ -202,10 +86,6 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 
 		if(ofcKeys.size() > 0) {
 			addOFC(ofcKeys.get(0));
-		} else if(ofcSetInSpring) { // Add OFC if one set through Spring. After first invocation ofc will be in repo.
-			OFC ofc = new OFC(ofcHostname, ofcIpAddrString, ofcPort, ofcUsername, ofcPassword, 
-					ofcForStatsCollection, ofcForDvsn, null);			
-			addOFC(ofc);
 		}
 
 		/* AMS related initializations. */
@@ -228,27 +108,6 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 		for(int i=0; i<amsKeys.size();i++) // Re-register all AMSs if not there yet
 			addAMS(amsKeys.get(i));
 
-		AMS ams;
-		if(amsKeys.size() == 0 && amsSetInSpring) { // Add AMS if one set through Spring. Next time AMS will be in repo.
-			try {
-				if ( amsSecurityConfigKeysComb != null && ! amsSecurityConfigKeysComb.isEmpty()) {
-					String[] split = amsSecurityConfigKeysComb.split(":");
-					for ( String key:split)
-						amsSecurityConfigKeys.add(key);
-				}
-				//public InetAddress dstAddr;
-				InetAddress amsMgmtAddr = InetAddress.getByName(amsMgmtAddrStr); // Throws exception if address is not valid.
-				ams = new AMS(amsLabel, amsBrand, amsVersion, amsMgmtAddr, 0, amsForStatsCollection, amsForDvsn, 
-						amsHealthCheckFrequency, amsUsername, amsPassword, amsSecurityConfigKeys, null);
-			} catch (Throwable e3) { 
-				log.error("Failed to create ams from default parameters ", e3 );
-				fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-				throw new ExceptionControlApp("Failed to create ams from default parameters ", e3 );
-			}
-			addAMS(ams);
-		}
-
 		/* NetNode related initializations. */
 		List<String> netNodeKeys;
 		try {
@@ -266,32 +125,16 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			throw new ExceptionControlApp("Invalid null netNodesRepo");
 		}
 
-		for(int i=0; i<netNodeKeys.size();i++) // Re-register all NetNodes if not there yet
-			addNetNode(netNodeKeys.get(i));
-		if(netNodeKeys.size() == 0 && ofsSetInSpring) { // Add OFS if one set through Spring. Next time OFS will be in repo.
-			NetNode ofs;
+
+		/* Re-register all NetNodes if not there yet, except those marked as removed. */
+		for(String netNodeLabel : netNodeKeys) {
 			try {
-				ofs = new NetNode(ofsLabel,ofsId,ofsType,ofsMgmtAddr,ofsMgmtPort,ofsSdnNodeMode,ofsHealthFrequency);				
-				AMSConnection amsConnection = ofs.new AMSConnection(ofsAmsConnAmsLabel, ofsAmsConnNetNodeNorthPort,
-						ofsAmsConnNetNodeSouthPort, ofsAmsConnAmsNorthPort, ofsAmsConnAmsSouthPort);
-				ofs.amsConnections.put(ofsAmsConnAmsLabel, amsConnection);			
-				TrafficPort trafficNorthPort = ofs.new TrafficPort(ofsTrafficNorthPortLabel, (short) ofsTrafficNorthPort,
-						ofsTrafficNorthPortVlan, ofsTrafficNorthPortLocation);
-				ofs.trafficPorts.put(ofsTrafficNorthPortLabel, trafficNorthPort);		
-				TrafficPort trafficSouthPort = ofs.new TrafficPort(ofsTrafficSouthPortLabel, (short) ofsTrafficSouthPort,
-						ofsTrafficSouthPortVlan, ofsTrafficSouthPortLocation);
-				ofs.trafficPorts.put(ofsTrafficSouthPortLabel, trafficSouthPort);				
-				ProtectedLink protectedLink = ofs.new ProtectedLink(ofsProtectedLinkLabel,
-						(short) ofsProtectedLinkInPort, (short) ofsProtectedLinkOutPort, null);
-				ofs.protectedLinks.put(ofsProtectedLinkLabel, protectedLink);	
-			} catch (Throwable e4) { 
-				log.error("Failed to create NetNode from default parameters ", e4);
-				fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-				throw new ExceptionControlApp("Failed to create NetNode from default parameters ", e4 );
-			}
-			addNetNode(ofs);
-		} 				
+				if(NetNode.isRemoved(netNodeLabel))
+					dfAppRoot.netNodesRepo.deleteRow(netNodeLabel);
+				else
+					addNetNode(netNodeLabel);	
+			} catch (Throwable e) {continue; /* Ignore */}
+		}
 
 		/* PN related initializations. */	
 		List<String> pnKeys;
@@ -359,7 +202,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 
 		String pnLabels = propsFromFile.getProperty("PN.pns");
 		if(pnLabels == null || pnLabels.isEmpty()) return;
-		
+
 		PN defaultPN = new PN(); 
 		Set<String> pnKeySet = defaultPN.toRow().keySet();
 		Properties pnProps; Properties pnAmsProps; Set<Object> propsFromFileKeySet;
@@ -514,7 +357,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	public void addOFC(OFC ofc) throws ExceptionControlApp {		
 
 		List<String> keys;
-		
+
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding OFC " + ofc.toString());
 		try {
 			keys = dfAppRootFullImpl.oFCsRepo.getKeys();
@@ -596,7 +439,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	public void removeOFC(String ofcLabel) throws ExceptionControlApp {
 
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is removing OFC " + ofcLabel);
-		
+
 		String ofcKey=ofcLabel; // get from repo
 		boolean forStatsCollection = false; // retrieve from repo
 		boolean forDvsn = false; // retrieve from repo
@@ -642,9 +485,9 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 */
 	@Override
 	public void addNetNode(NetNode netNode) throws ExceptionControlApp {
-		
+
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding NetNode " + netNode.toString());
-		
+
 		try {
 			dfAppRootFullImpl.netNodesRepo.setRow(netNode.label, netNode.toRow()); // Record netNode in netNodes repo.		
 		} catch (Exception e) {
@@ -709,11 +552,14 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	public void removeNetNode(String netNodeLabel) throws ExceptionControlApp {
 
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is removing NetNode " + netNodeLabel);
-		
+
 		boolean isError = false;
+
+		if(NetNode.isRemoved(netNodeLabel))	return; // Check if is already marked as removed.
+		
 		ExceptionControlApp concatException = new ExceptionControlApp("");
 		try {
-			dfAppRoot.netNodesRepo.setCell(netNodeLabel, NetNode.STATUS, NetNode.Status.REMOVED);
+			dfAppRoot.netNodesRepo.setCell(netNodeLabel, NetNode.STATUS, NetNode.Status.REMOVED.name());
 		} catch (Throwable e) {
 			log.error("Failed to update netNodesRepo", e);
 			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process removal of NetNode " + netNodeLabel);
@@ -751,7 +597,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	public void addAMS(AMS ams) throws ExceptionControlApp, IllegalArgumentException {
 
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding AMS " + ams.toString());
-		
+
 		Hashtable<String,Object> amsRow = dfAppRootFullImpl.amsRepo.getRow(ams.label);
 		if(amsRow != null) {
 			String msg = "AMS " + ams.label + " is already defined. Need to delete it first";
@@ -812,9 +658,9 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */	
 	public void addDetector(DetectorInfo detectorInfo) throws ExceptionControlApp {
-		
+
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding detector " + detectorInfo.toString());
-		
+
 		try {
 			if ( detectorInfo.getExternalDetector() == true) {
 				ExternalDetector externalDetector = new ExternalDetector(detectorInfo);
@@ -862,7 +708,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	public void addPN(PN pn) throws ExceptionControlApp {
 
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding PN " + pn.toString());
-		
+
 		Hashtable<String, Object> pnRow;
 		try {
 			pnRow = dfAppRootFullImpl.pNsRepo.getRow(pn.label);
@@ -945,7 +791,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	public void removePN(String pnLabel) throws ExceptionControlApp {
 
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is removing PN " + pnLabel);
-		
+
 		String pnKey = pnLabel;
 		boolean isError = false;
 		ExceptionControlApp concatException = new ExceptionControlApp("");

@@ -14,9 +14,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.type.TypeReference;
+import com.fasterxml.jackson.core.type.TypeReference;	
+import com.fasterxml.jackson.databind.DeserializationFeature;	
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -38,7 +38,7 @@ public class Connector {
 
 	public OdlOFC odlOFC;
 	protected String restPrefix;
-	protected ObjectMapper objMapper;
+	protected com.fasterxml.jackson.databind.ObjectMapper fasterxmlObjMapper;
 	protected RestTemplate restTemplate;
 
 	public Connector(OdlOFC odlOFC) {
@@ -47,8 +47,8 @@ public class Connector {
 			log.error("Failed to create connector - null odlOFC passed");
 			throw new IllegalArgumentException("Null odlOFC");
 		}
-		objMapper  = new ObjectMapper();
-		objMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Ignore unknown fields
+		fasterxmlObjMapper  = new ObjectMapper();
+		fasterxmlObjMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // Ignore unknownfields 
 		this.odlOFC = odlOFC;
 	}
 
@@ -83,11 +83,12 @@ public class Connector {
 					+ "Calling - URL: "+url+" JSON: ");
 			String result = restTemplate.getForObject(url, String.class);
 			if(result == null) return null;
-			log.debug("Caller: "+getMethodName(2)+" Class:"+typeRef.getType().toString()+" URL: "+url+" JSON: "+result);
+			// Don't print it to log - it may contain non-printable chars
+			// log.debug("Caller: "+getMethodName(2)+" Class:"+typeRef.getType().toString()+" URL: "+url+" JSON: "+result.toString());
 			if(preProcessor != null) 
 				result = preProcessor.preProcess(result);
 
-			t = objMapper.readValue(result, typeRef);
+			t = fasterxmlObjMapper.readValue(result, typeRef);
 		} catch (Throwable e) { 
 			log.error("Failed to get from controller " + odlOFC.hostname, e);
 			throw new RestClientException("Failed to get from controller " + odlOFC.hostname, e);
@@ -127,7 +128,7 @@ public class Connector {
 		String jsonStr;
 
 		try {
-			jsonStr = objMapper.writeValueAsString(object);
+			jsonStr = fasterxmlObjMapper.writeValueAsString(object);
 		} catch (Throwable e) {
 			String msg = "Failed to writeValueAsString " + object.toString() + " for controller " + odlOFC.hostname;
 			log.error(msg, e);

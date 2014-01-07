@@ -10,8 +10,12 @@
 
 package org.opendaylight.defense4all.framework.core;
 
+import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
+
 public interface FrameworkMgmtPoint {
 
 	public ClusterInfo getClusterInfo();
 	public void setHostAddr(String hostAddress) throws ExceptionControlApp;
+	void requestTerminate(String scope) throws ExceptionControlApp;
+	void requestReset(ResetLevel resetLevel) throws ExceptionControlApp;
 }

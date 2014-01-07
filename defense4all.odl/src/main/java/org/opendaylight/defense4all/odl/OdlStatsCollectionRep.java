@@ -8,7 +8,6 @@ package org.opendaylight.defense4all.odl;
  * @version 0.1
  */
 
-
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -16,28 +15,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.NetNode;
-import org.opendaylight.defense4all.core.NetNode.PortLocation;
-import org.opendaylight.defense4all.core.NetNode.ProtectedLink;
 import org.opendaylight.defense4all.core.NetNode.SDNNodeMode;
 import org.opendaylight.defense4all.core.NetNode.Status;
-import org.opendaylight.defense4all.core.NetNode.TrafficPort;
 import org.opendaylight.defense4all.core.PN;
+import org.opendaylight.defense4all.core.ProtectedLink;
 import org.opendaylight.defense4all.core.StatsCollectionRep;
 import org.opendaylight.defense4all.core.StatsCountersPlacement;
 import org.opendaylight.defense4all.core.Traffic.TrafficDirection;
 import org.opendaylight.defense4all.core.TrafficFloor;
+import org.opendaylight.defense4all.core.TrafficPort;
+import org.opendaylight.defense4all.core.TrafficPort.PortLocation;
 import org.opendaylight.defense4all.core.TrafficTuple;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
+import org.opendaylight.defense4all.odl.pojos.FlowConfigNoProtocol.ActionType;
 import org.opendaylight.defense4all.odl.pojos.FlowStat;
 import org.opendaylight.defense4all.odl.pojos.FlowStatistics;
-import org.opendaylight.defense4all.odl.pojos.FlowConfig.ActionType;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OdlStatsCollectionRep extends StatsCollectionRep {
 
@@ -206,6 +204,21 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 
 		TrafficFloor trafficFloor; NetNode netNode; OdlFlowConfigInfo configInfoCommon; 
 		OdlFlowConfigInfo configInfoClone; boolean success = true; String trafficFloorKey;
+		Hashtable<String,Object> netNodeRow;
+
+		try {
+			netNodeRow = dfAppRoot.netNodesRepo.getRow(location);
+			if(netNodeRow == null || NetNode.isRemoved(location)) {
+				log.warn("Location (NetNode) " + location + " specified for PN " + pnKey + " is not known to Defense4All");
+				return null;
+			}
+		} catch (ExceptionControlApp e1) {
+			String msg = "Excepted most likely trying to retrieve elements from repos for " + pnKey + " " + location;
+			log.error(msg, e1);
+			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to add peacetime counter traffic floor for " + pnKey
+					+ " at " + location);
+			throw new ExceptionControlApp(msg, e1);
+		}		
 		
 		fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, "Adding peacetime counter traffic floor for " + pnKey
 				+ " at " + location);
@@ -214,7 +227,7 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 			/* Create the trafficFloor object */
 			trafficFloor = new TrafficFloor();
 			trafficFloor.pnKey = pnKey; trafficFloor.nodeLabel = location;
-			trafficFloor.nodeId = (String) dfAppRoot.netNodesRepo.getCellValue(location, NetNode.ID);
+			trafficFloor.nodeId = (String) netNodeRow.get(NetNode.ID);
 			trafficFloor.floorBase = TrafficFloor.FLOOR_PEACETIME_START;
 			trafficFloorKey = trafficFloor.generateAndSetKey();
 
@@ -226,7 +239,6 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 
 			/* Add counter to its location (location == netNode label) */
 
-			Hashtable<String,Object> netNodeRow = dfAppRoot.netNodesRepo.getRow(location);
 			netNode = new NetNode(netNodeRow);
 
 			configInfoCommon = new OdlFlowConfigInfo();
@@ -244,7 +256,7 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 			throw new ExceptionControlApp(msg, e1);
 		}
 
-		if(netNode.sdnNodeMode == SDNNodeMode.SDN_ENABLED_HYBRID) { // Loop over all netnode traffic ports
+		if(netNode.sdnNodeMode == SDNNodeMode.sdnenabledhybrid) { // Loop over all netnode traffic ports
 
 			configInfoCommon.actions.add(ActionType.HW_PATH.name());	// "Send to normal" (non-OF routing)
 			if(netNode.trafficPorts == null) {
@@ -259,7 +271,7 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 			while(iter.hasNext()) {
 
 				trafficPort = iter.next().getValue();
-				if(trafficPort.location!= PortLocation.NORTH) continue;
+				if(trafficPort.location!= PortLocation.north) continue;
 
 				configInfoClone = new OdlFlowConfigInfo(configInfoCommon);
 				configInfoClone.ingressPort = trafficPort.number;
@@ -272,7 +284,7 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 				if(!success)
 					fMain.getFR().logRecord(DFAppRoot.FR_OFC_FAILURE, "Failed " + msg);					
 			}
-		} else { // SDNNodeMode.SDN_ENABLED_NATIVE - Loop over all netnode protected links
+		} else { // SDNNodeMode.sdnenablednative - Loop over all netnode protected links
 
 			Iterator<Map.Entry<String,ProtectedLink>> iter = netNode.protectedLinks.entrySet().iterator();
 			ProtectedLink protectedLink; String action;

@@ -9,6 +9,11 @@
 
 package org.opendaylight.defense4all.framework.core;
 
+import java.io.BufferedReader;
+import java.io.Console;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
@@ -57,5 +62,31 @@ public class Utils {
 			row = entry.getValue();
 			System.out.println("row " + key + ": " + row.toString());
 		}
-	}	
+	}
+
+	public static ArrayList<String> paramsFromArgs(String[] args, int firstParamPosition) {
+
+		ArrayList<String> params = new ArrayList<String>();
+		for(int i=firstParamPosition; i<args.length; i++)
+			params.add(args[i]);
+		return params;
+	}
+
+	public static boolean confirmYesByUser(String s) {
+
+		String input;
+		Console console = System.console();
+		System.out.println(s);
+		if(console != null)
+			input = console.readLine();
+		else {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		    try {
+				input = reader.readLine();
+			} catch (IOException e) {return false;}
+		}
+		if(input.startsWith("yes") || input.startsWith("Yes") || input.equals("y") || input.equals("Y"))
+			return true;
+		return false;
+	}
 }

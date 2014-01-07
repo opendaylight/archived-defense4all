@@ -91,7 +91,7 @@ public class DetectorMgrImpl extends DFAppCoreModule  implements DetectorMgr {
 			} catch (Throwable e) {
 				String msg = detectorInfo != null ? " Detector label "+detectorInfo.label:"";
 				log.error("Failed to inflate detector from detectorsRepo row. " + msg );
-				fr.logRecord(DFAppRoot.FR_DF_FAILURE,"Failed initilizing detector " + detectorInfo.label);
+				fr.logRecord(DFAppRoot.FR_DF_FAILURE,"Failed initilizing detector " + msg);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);			
 				continue;
 			}
@@ -111,7 +111,7 @@ public class DetectorMgrImpl extends DFAppCoreModule  implements DetectorMgr {
 			} catch (Exception e) {
 				String msg = detectorInfo != null ? " Detector label "+detectorInfo.label:"";
 				log.error("Failed to inflate detector from properties file. " + msg , e);
-				fr.logRecord(DFAppRoot.FR_DF_FAILURE,"Failed initilizing from properties file detector "+ detectorInfo.label);
+				fr.logRecord(DFAppRoot.FR_DF_FAILURE,"Failed initilizing from properties file  "+ msg);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);			
 				continue;
 			}
@@ -134,6 +134,12 @@ public class DetectorMgrImpl extends DFAppCoreModule  implements DetectorMgr {
 	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"DetectorMgr is resetting to level " + resetLevel);
 		super.reset(resetLevel);
+		
+		// loop over all detectors in detectors repo 
+		for ( Detector dt : detectors.values() ) {
+			dt.reset(resetLevel);
+		}
+		detectors.clear();
 	}
 
 	/**

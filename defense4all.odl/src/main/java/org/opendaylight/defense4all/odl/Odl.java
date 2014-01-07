@@ -19,13 +19,13 @@ import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.opendaylight.defense4all.core.AMSConnection;
 import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.DFHolder;
 import org.opendaylight.defense4all.core.FlowConfigInfo;
 import org.opendaylight.defense4all.core.NetNode;
-import org.opendaylight.defense4all.core.NetNode.AMSConnection;
+import org.opendaylight.defense4all.core.ProtectedLink;
 import org.opendaylight.defense4all.core.TrafficFloor;
-import org.opendaylight.defense4all.core.NetNode.ProtectedLink;
 import org.opendaylight.defense4all.core.NetNode.SDNNodeMode;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
@@ -34,9 +34,10 @@ import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 import org.opendaylight.defense4all.odl.controller.Connector;
 import org.opendaylight.defense4all.odl.controller.FlowEntryMgr;
+import org.opendaylight.defense4all.odl.pojos.FlowConfigNoProtocol.ActionType;
 import org.opendaylight.defense4all.odl.pojos.ReceivedFlowConfig;
 import org.opendaylight.defense4all.odl.pojos.SentFlowConfig;
-import org.opendaylight.defense4all.odl.pojos.FlowConfig.ActionType;
+import org.opendaylight.defense4all.odl.pojos.SentFlowConfigNoProtocol;
 
 public class Odl {
 
@@ -128,10 +129,10 @@ public class Odl {
 			log.error("Failed resetting because excepted retrieving traffic floor keys", e);
 			throw e;
 		}
-		
+
 		if(!trafficFloorKeys.isEmpty()) // Can be invoked more than once (by dvsnRep and statsCollectionRep)
 			fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, "Resetting - removing all traffic floors");
-		
+
 		for(String trafficFloorKey : trafficFloorKeys) {
 			try {
 				removeTrafficFloor(trafficFloorKey);
@@ -202,7 +203,7 @@ public class Odl {
 			log.debug("Set odl OFC connector");
 			flowEntryMgr.connector = connector; // TODO: in the future need to maintain flowEntryMgr per connector/OFC
 		}
-		
+
 		fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, "Connected to OFC " + ofcKey);
 	}
 
@@ -225,7 +226,7 @@ public class Odl {
 			netNode = new NetNode(netNodeRow);
 
 			/* Check if this netNode is SDN native or hybrid. Need to install common floor only for native OFS (SDN native mode)*/
-			if(netNode.sdnNodeMode != SDNNodeMode.SDN_ENABLED_NATIVE) return;
+			if(netNode.sdnNodeMode != SDNNodeMode.sdnenablednative) return;
 
 			if(netNode.protectedLinks == null) {
 				throw new ExceptionControlApp("Null protectedLinks in netNode record for " + netNodeKey);
@@ -251,7 +252,7 @@ public class Odl {
 
 		/* Create and set common fields in configInfo template object */
 		setProtectedLinks(netNode, trafficFloor);
-		
+
 		/* Block ARPs from AMS connectivity ports */
 		setARPBlockingFromAMSs(netNode, trafficFloor);
 	}
@@ -276,7 +277,7 @@ public class Odl {
 		List<OdlFlowConfigInfo> setFlowEntries = new ArrayList<OdlFlowConfigInfo>();
 
 		fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL,"Adding general connectivity flow entries to "+netNode.label);
-		
+
 		try {
 
 			while(iter.hasNext()) {
@@ -291,13 +292,13 @@ public class Odl {
 				action = ActionType.OUTPUT.name() + "=" + protectedLink.southPort; // Send to matching out port
 				configInfo.actions.add(action);
 				configInfo.generateAndSetKey();
-				
+
 				String msg = "setting flow entry in "+netNode.label+" for protected link north-to-south connectivity, id="
-					+configInfo.id+", ingress port="+configInfo.ingressPort+"out port="+protectedLink.southPort;
+						+configInfo.id+", ingress port="+configInfo.ingressPort+"out port="+protectedLink.southPort;
 				fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, msg);
 
 				setFlowEntry(configInfo, trafficFloor);
-				
+
 				setFlowEntries.add(configInfo);
 
 				/* Set connectivity from south port to north port */
@@ -308,13 +309,13 @@ public class Odl {
 				action = ActionType.OUTPUT.name() + "=" + protectedLink.northPort; // Send to matching out port
 				configInfo.actions.add(action);
 				configInfo.generateAndSetKey();
-				
+
 				msg = "setting flow entry in "+netNode.label+" for protected link south-to-north connectivity, id="
 						+configInfo.id+", ingress port="+configInfo.ingressPort+"out port="+protectedLink.northPort;
 				fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, msg);
-					
+
 				setFlowEntry(configInfo, trafficFloor);
-				
+
 				setFlowEntries.add(configInfo);
 			}
 
@@ -348,6 +349,7 @@ public class Odl {
 		/* Create and set common fields in configInfo template object */
 		OdlFlowConfigInfo configInfoTemplate = new OdlFlowConfigInfo();
 		configInfoTemplate.nodeLabel = netNode.label; configInfoTemplate.etherType = 2054;
+		configInfoTemplate.protocol = -1;	// To indicate that the protocol field should not be serialized at all.
 		configInfoTemplate.actions = new ArrayList<String>();
 		String action = ActionType.DROP.name(); // Drop the packet
 		configInfoTemplate.actions.add(action);
@@ -370,13 +372,13 @@ public class Odl {
 				configInfo.floor = trafficFloor.floorCurrentHeight++;
 				configInfo.ingressPort = (short) amsConnection.netNodeNorthPort; 
 				configInfo.generateAndSetKey();
-				
+
 				String msg = "setting flow entry in "+netNode.label+" to block ARPs from north AMS connectivity port, id="
 						+ configInfo.id + ", ingress port=" + configInfo.ingressPort;
 				fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, msg);
 
 				setFlowEntry(configInfo, trafficFloor);
-				
+
 				setFlowEntries.add(configInfo);
 
 				/* Block ARPs from south AMS connectivity port */
@@ -385,13 +387,13 @@ public class Odl {
 				configInfo.floor = trafficFloor.floorCurrentHeight++;
 				configInfo.ingressPort = (short) amsConnection.netNodeSouthPort;
 				configInfo.generateAndSetKey();
-				
+
 				msg = "setting flow entry in "+netNode.label+" to block ARPs from south AMS connectivity port, id="
 						+ configInfo.id + ", ingress port=" + configInfo.ingressPort;
 				fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, msg);
-					
+
 				setFlowEntry(configInfo, trafficFloor);
-				
+
 				setFlowEntries.add(configInfo);
 			}
 
@@ -467,16 +469,25 @@ public class Odl {
 	 */
 	public boolean setFlowEntry(OdlFlowConfigInfo configInfo, TrafficFloor trafficFloor) {
 
-		SentFlowConfig fe = null; int i=0; String exceptionMsg;
+		int i=0; String exceptionMsg;
+		SentFlowConfig fe = null; SentFlowConfigNoProtocol feNoProtocol = null;
+		String nodeId = null; String feName = null;
 		for(;i<3;i++) {
 			try {
-				fe = new SentFlowConfig(configInfo);
-				flowEntryMgr.addOpenFlowEntry((String) fe.node.id, fe.name, fe);
+				if(configInfo.protocol != -1) { // IP traffic filter flow entry (TCP, UDP, ICMP, other IP)
+					fe = new SentFlowConfig(configInfo);
+					nodeId = (String) fe.node.id; feName = fe.name;
+					flowEntryMgr.addOpenFlowEntry(nodeId, feName, fe);
+				} else {	// Non IP traffic filter flow entry (e.g., ARP)
+					feNoProtocol = new SentFlowConfigNoProtocol(configInfo);
+					nodeId = (String) feNoProtocol.node.id; feName = feNoProtocol.name;
+					flowEntryMgr.addOpenFlowEntry(nodeId, feName, feNoProtocol);					
+				}
 				break;
 			} catch (Throwable e) {
 				/* Check if the entry by any chance exists in the netNode already. Otherwise log error and retry*/
 				try {
-					ReceivedFlowConfig flowConfig = flowEntryMgr.getOpenFlowEntry((String) fe.node.id, fe.name);
+					ReceivedFlowConfig flowConfig = flowEntryMgr.getOpenFlowEntry(nodeId, feName);
 					if(flowConfig != null) break; // The entry already exists in the netNode
 				} catch (Exception e2) {/* Ignore */}				
 				exceptionMsg = "Failed to either construct flow entry object or install the flow entry in netNode " + 
@@ -501,7 +512,7 @@ public class Odl {
 		} catch (Exception e) {
 
 			try {	// Try to delete the flow entry in NetNode
-				flowEntryMgr.deleteOpenFlowEntry((String) fe.node.id, fe.name);
+				flowEntryMgr.deleteOpenFlowEntry(nodeId, feName);
 			} catch (Exception e2) {/* Ignore */}
 			try {
 				if(setInFlowConfigInfosRepo) dfAppRoot.flowConfigInfosRepo.deleteRow(configInfo.key);
@@ -528,6 +539,9 @@ public class Odl {
 		TrafficFloor trafficFloor;
 		try {
 			Hashtable<String,Object> trafficFloorRow = dfAppRoot.trafficFloorsRepo.getRow(trafficFloorKey);
+			// remove traffic floor may be called twice from StatsCollector and DiversionRep
+			if (trafficFloorRow == null )
+				return;
 			trafficFloor = new TrafficFloor(trafficFloorRow);
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to retrieve traffic floor row " + trafficFloorKey, e);
@@ -547,7 +561,7 @@ public class Odl {
 
 		String flowConfigInfoKey; boolean firstToDelete;
 		fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, "removing traffic floor " + trafficFloor.key);
-		
+
 		if(trafficFloor.flowConfigInfoKeys == null) {
 			log.error("Received trafficFloor contains null flowConfigInfoKeys " + trafficFloor.key);
 			throw new ExceptionControlApp("Received trafficFloor contains null flowConfigInfoKeys " + trafficFloor.key);

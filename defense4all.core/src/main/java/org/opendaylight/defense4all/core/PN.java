@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.opendaylight.defense4all.core.NetNode.Status;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -33,6 +34,7 @@ import me.prettyprint.cassandra.serializers.BooleanSerializer;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.LongSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
+
 
 public class PN {  
 
@@ -67,7 +69,6 @@ public class PN {
 	public static final String IP_VERSION = "ip_version";
 	public static final String DST_ADDR = "dest_addr";
 	public static final String DST_ADDR_PREFIX_LEN = "dest_addr_prefix_len";
-	public static final String PROTOCOL_PORT = "protocol_port";
 	public static final String AMS_CONFIG_PROPS = "ams_config_props";
 	public static final String PROTECTION_SLA = "protection_SLA";
 	public static final String MITIGATION_CONFIRMATION = "mitigation_confirmation";
@@ -102,7 +103,6 @@ public class PN {
 	public InetAddress dstAddr;
 	public int 		dstAddrPrefixLen;
 	public String   virtualNetid;
-	public ProtocolPort protocolPort;
 
 	public Properties amsConfigProps;	
 	public ProtectionSLA protectionSLA;  
@@ -158,7 +158,6 @@ public class PN {
 
 		label = null; dstAddr = null; dstAddrPrefixLen = 0;
 		this.ipVersion = Inet6Address.class.isInstance(dstAddr) ? IpVersion.IPV6 : IpVersion.IPV4;
-		protocolPort = new ProtocolPort();
 		protectionSLA = null; mitigationConfirmation = false;
 		detectorLabel = ""; props = new Properties(); amsConfigProps = new Properties();
 		thresholdStr = averageStr = latestRateStr = baselineStr = ""; 
@@ -191,7 +190,6 @@ public class PN {
 		this.ipVersion = Inet6Address.class.isInstance(dstAddr) ? IpVersion.IPV6 : IpVersion.IPV4;
 		this.dstAddr = InetAddress.getByName(dstAddrStr); // Throws exception if address is not valid.
 		this.dstAddrPrefixLen = assertAddrPrefixLen(dstAddrPrefixLen, this.ipVersion);
-		this.protocolPort = protocolPort;
 		this.amsConfigProps = amsConfigProps; // Null means default configProps are to be used.
 		this.protectionSLA = protectionSLA;	this.mitigationConfirmation = mitigationConfirmation;
 		this.detectorLabel = detectorLabel;
@@ -231,7 +229,6 @@ public class PN {
 	public PN(PN other) throws ExceptionControlApp {
 
 		this.label = other.label; this.dstAddr = other.dstAddr; this.dstAddrPrefixLen = other.dstAddrPrefixLen;
-		this.protocolPort = other.protocolPort.clone();
 		this.amsConfigProps = (Properties) other.amsConfigProps.clone(); 
 		this.statsCollectionStatus = other.statsCollectionStatus; this.protectionSLA = other.protectionSLA; 
 		this.mitigationConfirmation = other.mitigationConfirmation; this.detectorLabel = other.detectorLabel; 
@@ -273,8 +270,6 @@ public class PN {
 				ipVersion = Inet6Address.class.isInstance(dstAddr) ? IpVersion.IPV6 : IpVersion.IPV4;		
 			obj = pnRow.get(DST_ADDR_PREFIX_LEN);
 			if(obj != null)	dstAddrPrefixLen = (Integer) obj;
-			obj = pnRow.get(PROTOCOL_PORT);
-			if(obj != null)	protocolPort = new ProtocolPort((String) obj);
 			obj = pnRow.get(AMS_CONFIG_PROPS);
 			if(obj != null && Map.class.isInstance(obj)) amsConfigProps.putAll(( Map<String,Object> )obj);
 			obj = pnRow.get(PROTECTION_SLA);
@@ -325,8 +320,8 @@ public class PN {
 			}
 
 			/* Retrieve all netNode label pairs (key is formatted as netnode_X, where X is some suffix) */
-			Iterator<Map.Entry<Object,Object>> iter2 = props.entrySet().iterator();
-			Map.Entry<Object,Object> entry2; String key; String netNodeStr;
+			Iterator<Map.Entry<String,Object>> iter2 = pnRow.entrySet().iterator();
+			Map.Entry<String,Object> entry2; String key; String netNodeStr;
 			netNodeLabels = new ArrayList<String>();
 			while(iter2.hasNext()) {
 				entry2 = iter2.next();
@@ -369,8 +364,6 @@ public class PN {
 				ipVersion = Inet6Address.class.isInstance(dstAddr) ? IpVersion.IPV6 : IpVersion.IPV4;		
 			strobj = propsFromFile.getProperty(DST_ADDR_PREFIX_LEN); 
 			if ( strobj != null )	dstAddrPrefixLen =  Integer.valueOf (strobj);
-			strobj = propsFromFile.getProperty(PROTOCOL_PORT); 
-			if ( strobj != null) protocolPort = new ProtocolPort(strobj);
 			if (pnAmsProps != null)
 				this.amsConfigProps.putAll(pnAmsProps);
 			strobj = propsFromFile.getProperty(PROTECTION_SLA) ; if ( strobj != null )
@@ -451,7 +444,6 @@ public class PN {
 		row.put(IP_VERSION, ipVersion.name());
 		row.put(DST_ADDR, dstAddr.getHostAddress());
 		row.put(DST_ADDR_PREFIX_LEN, dstAddrPrefixLen);
-		row.put(PROTOCOL_PORT, protocolPort.toString());
 		row.put(AMS_CONFIG_PROPS, amsConfigProps);
 		row.put(PROTECTION_SLA, protectionSLA.toString());
 		row.put(MITIGATION_CONFIRMATION, mitigationConfirmation);
@@ -481,15 +473,14 @@ public class PN {
 
 	@Override
 	public String toString() {
-		
+
 		StringBuilder sb = new StringBuilder();
 		sb.append("PN[label="); sb.append(label); sb.append(", ");
 		sb.append("ipVersion="); sb.append(ipVersion); sb.append(", ");
 		sb.append("dstAddr="); sb.append(dstAddr); sb.append(", ");
 		sb.append("dstAddrPrefixLen="); sb.append(dstAddrPrefixLen); sb.append(", ");
 		sb.append("virtualNetid="); sb.append(virtualNetid); sb.append(", ");
-		sb.append("protocolPort="); sb.append(protocolPort.toString()); sb.append(", ");
-		sb.append("amsConfigProps="); sb.append(amsConfigProps.toString());
+		sb.append("amsConfigProps="); sb.append(amsConfigProps.toString()); sb.append(", ");
 		sb.append("protectionSLA="); sb.append(protectionSLA.toString()); sb.append(", ");
 		sb.append("mitigationConfirmation="); sb.append(mitigationConfirmation); sb.append(", ");
 		sb.append("detectorLabel="); sb.append(detectorLabel); sb.append(", ");
@@ -498,6 +489,9 @@ public class PN {
 		sb.append("anomalyThresholdPercentage="); sb.append(anomalyThresholdPercentage); sb.append(", ");
 		sb.append("mitigationScope="); sb.append(mitigationScope); sb.append(", ");
 		sb.append("ofBasedDetection="); sb.append(ofBasedDetection); sb.append(", ");
+		if ( pnCanceled ) {
+			sb.append("pnCanceled="); sb.append(pnCanceled); sb.append(", ");
+		}
 		for(String netNodeLabel : netNodeLabels) {
 			sb.append("netNodeLabel="); sb.append(netNodeLabel); sb.append(", ");
 		}
@@ -513,13 +507,13 @@ public class PN {
 	public void setIpVersion(IpVersion ipVersion) {this.ipVersion = ipVersion;}
 
 	public String getDstAddr() {return dstAddr.toString();}
-	public void setDstAddr(InetAddress dstAddr) {this.dstAddr = dstAddr;}
+	public void setDstAddr(String dstAddr) throws UnknownHostException {
+		String addrStr = dstAddr.replace("/", ""); // Serialized InetAddress adds "/" at the beginning 
+		this.dstAddr = InetAddress.getByName(addrStr);
+	}
 
 	public int getDstAddrPrefixLen() {return dstAddrPrefixLen;}
 	public void setDstAddrPrefixLen(int dstAddrPrefixLen) {this.dstAddrPrefixLen = dstAddrPrefixLen;}
-
-	public ProtocolPort getProtocolPort() {return protocolPort;}
-	public void setProtocol(ProtocolPort protocolPort) {this.protocolPort = protocolPort;}
 
 	public String getProtectionSLA() {return protectionSLA.toString();}
 	public void setProtectionSLA(ProtectionSLA protectionSLA) {this.protectionSLA = protectionSLA;}
@@ -557,10 +551,7 @@ public class PN {
 	public StatsCollectionStatus getStatsCollectionStatus() {return statsCollectionStatus;}	
 	public void setStatsCollectionStatus(StatsCollectionStatus scStatus) {this.statsCollectionStatus = scStatus;}
 
-	public void setCanceled() {pnCanceled = true;}
-	public boolean isCanceled() {return pnCanceled;}
-
-	public boolean isPnCanceled() {return pnCanceled;}
+	public boolean getPnCanceled() {return pnCanceled;}
 	public void setPnCanceled(boolean pnCanceled) {this.pnCanceled = pnCanceled;}
 
 	public MitigationScope getMitigationScope() {return mitigationScope;}
@@ -603,7 +594,7 @@ public class PN {
 
 	protected List<String> createFromAllNetNodes() throws ExceptionControlApp {	
 
-		List<String> netNodeLabels;
+		List<String> netNodeLabels; List<String> returnNetNodeLabels = new ArrayList<String>();
 		try {
 			netNodeLabels = DFHolder.get().netNodesRepo.getKeys();
 		} catch (Throwable e) {
@@ -611,7 +602,18 @@ public class PN {
 			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to obtain NetNodeLabels from netNodesRepo.", e);
 		}
-		return new ArrayList<String>(netNodeLabels);
+		
+		/* Remove all netNodes marked as removed. */
+		String netNodeStatusStr; Status netNodeStatus;
+		for(String netNodeLabel : netNodeLabels) {
+			try {
+				netNodeStatusStr = (String) DFHolder.get().netNodesRepo.getCellValue(netNodeLabel, NetNode.STATUS);
+				netNodeStatus = Status.valueOf(netNodeStatusStr);
+			} catch (Throwable e) {continue; /* Ignore */}
+			if(netNodeStatus != Status.REMOVED)
+				returnNetNodeLabels.add(netNodeLabel);
+		}
+		return returnNetNodeLabels;
 	}
 
 	public static List<RepoCD> getPNRCDs() {
@@ -622,7 +624,6 @@ public class PN {
 			rcd = new RepoCD(LABEL, StringSerializer.get(), null);	mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(DST_ADDR, StringSerializer.get(), null);	mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(DST_ADDR_PREFIX_LEN, IntegerSerializer.get(), null);	mPNsRepoCDs.add(rcd);
-			rcd = new RepoCD(PROTOCOL_PORT, StringSerializer.get(), null);	mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(AMS_CONFIG_PROPS, PropertiesSerializer.get(), null); mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(PROTECTION_SLA, StringSerializer.get(), null); mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(MITIGATION_CONFIRMATION, BooleanSerializer.get(), null);	mPNsRepoCDs.add(rcd);
@@ -642,5 +643,18 @@ public class PN {
 			rcd = new RepoCD(MITIGATION_SCOPE, StringSerializer.get(), null); mPNsRepoCDs.add(rcd);
 		}		
 		return mPNsRepoCDs;
+	}
+
+	public void toJacksonFriendly() {
+		// TODO Auto-generated method stub
+
+	}
+
+	public void validate() throws Exception {
+		if(label == null || label.isEmpty()) throw new Exception("Invalid pn label.");	
+		if(dstAddr == null ) throw new Exception("Invalid destination address.");	
+		if(ipVersion == null || ipVersion == IpVersion.INVALID ) throw new Exception("Invalid IP version.");		
+		if(mitigationScope == null || mitigationScope == MitigationScope.INVALID ) throw new Exception("Invalid Mitigation Scope.");	
+		if( detectorLabel ==null || detectorLabel.isEmpty()) throw new Exception("Invalid detector label.");	 
 	}
 }
