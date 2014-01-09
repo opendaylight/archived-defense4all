@@ -8,7 +8,6 @@ package org.opendaylight.defense4all.cli;
  * @version 0.1
  */
 
-
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +15,6 @@ import java.util.Properties;
 
 import org.codehaus.jackson.type.TypeReference;
 import org.opendaylight.defense4all.core.AMS;
-import org.opendaylight.defense4all.core.OFC;
 import org.opendaylight.defense4all.framework.core.Utils;
 
 public class CliAms {

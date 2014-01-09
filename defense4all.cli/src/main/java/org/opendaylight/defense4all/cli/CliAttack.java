@@ -8,13 +8,11 @@ package org.opendaylight.defense4all.cli;
  * @version 0.1
  */
 
-
 import java.util.ArrayList;
 import java.util.List;
 
 import org.codehaus.jackson.type.TypeReference;
 import org.opendaylight.defense4all.core.Attack;
-import org.opendaylight.defense4all.core.PN;
 
 public class CliAttack {
 
@@ -32,15 +30,27 @@ public class CliAttack {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
+	protected static void displayUsageGetAttacks() {
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("Usage:  controlapps getattacks\n");
+		sb.append("   Description - returns the current attacks in DF.\n");
+		System.out.println(sb.toString());
+	}
+	
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws exception_type circumstances description 
+	 */
 	protected static void displayUsageGetAttack() {
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("Usage:  controlapps getnetattack\n");
-		sb.append("   Description - returns the attack known to DF.\n");
+		sb.append("Usage:  controlapps getattack attack_label\n");
+		sb.append("   Description - returns the attack info.\n");
 		System.out.println(sb.toString());
 	}
-
-
 
 	/**
 	 * #### method description ####
@@ -48,29 +58,28 @@ public class CliAttack {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	protected static void handleGetAttack() {
+	protected static void handleGetAttacks() {
 
 		List<Attack> attacks;
 		try {
 			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);
-			TypeReference<?> typeRef = new TypeReference<List<PN>>(){};
-			attacks = connector.getFromControlApps("pns", typeRef);
+			TypeReference<?> typeRef = new TypeReference<List<Attack>>(){};
+			attacks = connector.getFromControlApps("attacks", typeRef);
 		} catch (Exception e) {
-			System.out.println("Could not get pns because " + e.getMessage());
+			System.out.println("Could not get attacks because " + e.getMessage());
 			return;
 		}
 		if(attacks == null || attacks.isEmpty()) {
-			System.out.println("DF has no pns configured.");
+			System.out.println("DF has no current attacks.");
 			return;
 		}
 
-		System.out.println("pns:\n");
+		System.out.println("attacks:\n");
 		for(Attack attack : attacks) {
 			System.out.println(attack.toString());
 			System.out.println("=================================");
 		}
 	}
-
 
 	/**
 	 * #### method description ####
@@ -93,7 +102,7 @@ public class CliAttack {
 		Attack attack;
 		try {
 			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);
-			TypeReference<?> typeRef = new TypeReference<PN>(){};
+			TypeReference<?> typeRef = new TypeReference<Attack>(){};
 			attack = connector.getFromControlApps("attacks/" + label, typeRef);
 			String printOut = (attack == null) ? "No attack " + label + " is known to DF.\n" : attack.toString();
 			System.out.println(printOut);
@@ -101,8 +110,5 @@ public class CliAttack {
 			System.out.println("Could not get attack " + label + " because " + e.getMessage());
 			return;
 		}		
-		
 	}
-
-
 }

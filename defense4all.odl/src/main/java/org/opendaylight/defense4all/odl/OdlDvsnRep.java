@@ -302,7 +302,8 @@ public class OdlDvsnRep extends DvsnRep {
 		boolean success = false;
 
 		/* For inbound traffic set return path flow from southToAms port. For outbound traffic - from northToAms port */
-		configInfoTemplateClone.ingressPort = (short) (inBoundTraffic ? amsConn.netNodeSouthPort : amsConn.netNodeNorthPort);			
+		String portStr = (inBoundTraffic ? amsConn.netNodeSouthPort : amsConn.netNodeNorthPort);
+		configInfoTemplateClone.ingressPort = Short.valueOf(portStr);			
 
 		if(netNode.sdnNodeMode == SDNNodeMode.sdnenabledhybrid) { // hybrid switch - action is "send to normal"
 
@@ -445,7 +446,8 @@ public class OdlDvsnRep extends DvsnRep {
 		else
 			configInfoTemplate.nwSrc = pnAddr;
 
-		int portToAms = inBoundTraffic ? amsConn.netNodeNorthPort : amsConn.netNodeSouthPort;
+		String portStr = (inBoundTraffic ? amsConn.netNodeNorthPort : amsConn.netNodeSouthPort);
+		int portToAms = Short.valueOf(portStr);
 		String divertAction = ActionType.OUTPUT.name() + "=" + portToAms; // E.g., "OUTPUT=2"
 		PortLocation relevantPortLoc = inBoundTraffic ? PortLocation.north : PortLocation.south;
 

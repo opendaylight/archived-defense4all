@@ -24,14 +24,14 @@ public class PNStatSum extends CounterStat {
 		status = Status.ACTIVE;
 		if (  latestRate == null) 
 			latestRate = new TrafficTuple();
-		if (  movingAverage == null) 
-			movingAverage = new TrafficTuple();
+		if (  average == null) 
+			average = new TrafficTuple();
 		if (  latestRate == null) 
 			latestRate = new TrafficTuple();
 	}
 	
 	public void reset() {
-		if ( movingAverage != null ) movingAverage.zero();
+		if ( average != null ) average.zero();
 		if ( latestRate != null ) latestRate.zero();
 		status = Status.ACTIVE;
 	}
@@ -48,7 +48,7 @@ public class PNStatSum extends CounterStat {
 		}
 	
 		if(status == Status.WARMUP_PERIOD) {
-			movingAverage.zero();
+			average.zero();
 			return;
 		}
 		
@@ -60,6 +60,6 @@ public class PNStatSum extends CounterStat {
 	
 		// update moving average of summary counter
 		if ( status == Status.LEARNING_PERIOD || status == Status.ACTIVE )
-			movingAverage.add(counterStat.movingAverage);
+			average.add(counterStat.average);
 	}
 }

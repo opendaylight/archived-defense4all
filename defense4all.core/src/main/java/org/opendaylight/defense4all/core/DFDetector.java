@@ -31,6 +31,13 @@ public interface DFDetector extends Detector {
 	public void notifyEndDetection(String detectionKey) ; 
 	
 	/**
+	 * Retrieve PN stats - latest rates and averages.
+	 * @param detectionKey
+	 * @throws ExceptionControlApp 
+	 */
+	public PNStatReport getLatestPNStatReport(String pnKey);
+	
+	/**
 	 * Trigger clean-up dynamic data 
 	 * @throws ExceptionControlApp 
 	 */

@@ -236,4 +236,18 @@ public class Mitigation {
 		}		
 		return mitigationRepoCDs;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Mitigation[key="); sb.append(key); sb.append(", ");
+		sb.append("attackKey="); sb.append(attackKey); sb.append(", ");
+		sb.append("pnKey="); sb.append(pnKey); sb.append(", ");
+		sb.append("monitoredTrafficKey="); sb.append(monitoredTrafficKey); sb.append(", ");
+		sb.append("protocolPort="); sb.append(protocolPort.toString()); sb.append(", ");
+		sb.append("status="); sb.append(status.name()); sb.append(", ");
+		sb.append("dvsnInfoKeys="); sb.append(dvsnInfoKeys);
+		sb.append("]");
+		return sb.toString();
+	}
 }

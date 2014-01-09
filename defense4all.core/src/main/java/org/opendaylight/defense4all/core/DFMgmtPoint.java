@@ -103,4 +103,13 @@ public interface DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	public void removePN(String pnLabel) throws ExceptionControlApp;
+
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	public PNStatReport getLatestPNStatReport(String pnKey) throws ExceptionControlApp, IllegalArgumentException;
 }

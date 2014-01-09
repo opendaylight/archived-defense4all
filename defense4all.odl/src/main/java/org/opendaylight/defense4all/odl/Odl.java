@@ -370,7 +370,7 @@ public class Odl {
 				configInfo = new OdlFlowConfigInfo(configInfoTemplate);
 				configInfo.id = getUniqueCookie();
 				configInfo.floor = trafficFloor.floorCurrentHeight++;
-				configInfo.ingressPort = (short) amsConnection.netNodeNorthPort; 
+				configInfo.ingressPort = Short.valueOf(amsConnection.netNodeNorthPort); 
 				configInfo.generateAndSetKey();
 
 				String msg = "setting flow entry in "+netNode.label+" to block ARPs from north AMS connectivity port, id="
@@ -385,7 +385,7 @@ public class Odl {
 				configInfo = new OdlFlowConfigInfo(configInfoTemplate);
 				configInfo.id = getUniqueCookie();
 				configInfo.floor = trafficFloor.floorCurrentHeight++;
-				configInfo.ingressPort = (short) amsConnection.netNodeSouthPort;
+				configInfo.ingressPort = Short.valueOf(amsConnection.netNodeSouthPort);
 				configInfo.generateAndSetKey();
 
 				msg = "setting flow entry in "+netNode.label+" to block ARPs from south AMS connectivity port, id="

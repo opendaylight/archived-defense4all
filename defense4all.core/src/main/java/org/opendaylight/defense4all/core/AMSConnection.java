@@ -3,8 +3,8 @@ package org.opendaylight.defense4all.core;
 public class AMSConnection {
 
 	public String amsLabel;
-	public int netNodeNorthPort; // port in the node - closer to client
-	public int netNodeSouthPort; // port in the node - closer to server
+	public String netNodeNorthPort; // port in the node - closer to client
+	public String netNodeSouthPort; // port in the node - closer to server
 	public int amsNorthPort; 	 // port in the AMS device - connected to netNodeNorthPort
 	public int amsSouthPort;	 // port in the AMS device - connected to netNodeSouthPort
 
@@ -14,20 +14,20 @@ public class AMSConnection {
 	public String getAmsLabel() {return amsLabel;}
 	public void setAmsLabel(String amsLabel) {this.amsLabel = amsLabel;}
 
-	public int getNetNodeNorthPort() {return netNodeNorthPort;}
-	public void setNetNodeNorthPort(int netNodeNorthPort) {this.netNodeNorthPort = netNodeNorthPort;}
+	public String getNetNodeNorthPort() {return netNodeNorthPort;}
+	public void setNetNodeNorthPort(String netNodeNorthPort) {this.netNodeNorthPort = netNodeNorthPort;}
 
 	public int getAmsSouthPort() {return amsSouthPort;}
 	public void setAmsSouthPort(int amsSouthPort) {this.amsSouthPort = amsSouthPort;}
 
-	public int getNetNodeSouthPort() {return netNodeSouthPort;}
-	public void setNetNodeSouthPort(int netNodeSouthPort) {this.netNodeSouthPort = netNodeSouthPort;}
+	public String getNetNodeSouthPort() {return netNodeSouthPort;}
+	public void setNetNodeSouthPort(String netNodeSouthPort) {this.netNodeSouthPort = netNodeSouthPort;}
 
 	public AMSConnection() {
-		amsLabel = null; netNodeNorthPort = 0; netNodeSouthPort = 0; amsNorthPort = 0; amsSouthPort = 0;
+		amsLabel = null; netNodeNorthPort = "0"; netNodeSouthPort = "0"; amsNorthPort = 0; amsSouthPort = 0;
 	}
 
-	public AMSConnection(String amsLabel,int netNodeNorthPort,int netNodeSouthPort,int amsNorthPort,int amsSouthPort) {
+	public AMSConnection(String amsLabel,String netNodeNorthPort,String netNodeSouthPort,int amsNorthPort,int amsSouthPort) {
 		this.amsLabel = amsLabel; this.netNodeNorthPort = netNodeNorthPort; this.netNodeSouthPort = netNodeSouthPort;
 		this.amsNorthPort = amsNorthPort; this.amsSouthPort = amsSouthPort;
 	}
@@ -41,8 +41,8 @@ public class AMSConnection {
 		}
 		amsLabel = split[0];
 		try {
-			netNodeNorthPort = Integer.valueOf(split[1]);
-			netNodeSouthPort = Integer.valueOf(split[2]);
+			netNodeNorthPort = split[1];
+			netNodeSouthPort = split[2];
 			amsNorthPort = Integer.valueOf(split[3]);
 			amsSouthPort = Integer.valueOf(split[4]);
 		} catch (NumberFormatException e) {
@@ -62,7 +62,7 @@ public class AMSConnection {
 	}
 
 	public void validate() throws Exception {
-		if(netNodeNorthPort == 0 || netNodeSouthPort == 0 || netNodeNorthPort == netNodeSouthPort )
+		if(netNodeNorthPort.equals("0") || netNodeSouthPort.equals("0") || netNodeNorthPort == netNodeSouthPort )
 			throw new Exception("Invalid netnode north/south ports - cannot be 0 and north cannot be equal to south.");
 		if(amsNorthPort == 0 || amsSouthPort == 0 || amsNorthPort == amsSouthPort)
 			throw new Exception("Invalid ams north/south ports - cannot be 0 and north cannot be equal to south.");

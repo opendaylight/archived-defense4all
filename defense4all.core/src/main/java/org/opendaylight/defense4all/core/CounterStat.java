@@ -62,7 +62,7 @@ public class CounterStat {
 	public String pnKey;
 	public String lastReadingStr;		public TrafficTuple lastReading;	// bytes/packets counter reading
 	public String latestRateStr;		public TrafficTuple latestRate;		// bytes/packets per second
-	public String movingAverageStr; 	public TrafficTuple movingAverage;	// bytes/packets per second
+	public String movingAverageStr; 	public TrafficTuple average;	// bytes/packets per second
 	public long   lastReadTime;		// Time of last reading	
 	public long   firstReadTime;	// Time of first reading - used to determine the end of grace period	
 	public Status status;
@@ -113,7 +113,7 @@ public class CounterStat {
 		this.key = "";	this.trafficFloorKey = "";	this.pnKey = "";
 		lastReadingStr = ""; lastReading = new TrafficTuple();
 		latestRateStr = "";  latestRate = new TrafficTuple();
-		movingAverageStr = "";  movingAverage = new TrafficTuple();
+		movingAverageStr = "";  average = new TrafficTuple();
 		countersStatus = new  Hashtable<Integer,CounterStatusData>();
 		lastBaselineFRTime = 0;	lastReadTime = 0;  firstReadTime = 0;
 		status = Status.INVALID;		
@@ -225,9 +225,9 @@ public class CounterStat {
 			latestTcpbytes = latestRate.getTrafficBytes(6, 0); 
 			latestTcppackets = latestRate.getTrafficPackets(6, 0);
 		}
-		if(movingAverage != null) {
-			averageTcpbytes = movingAverage.getTrafficBytes(6, 0); 
-			averageTcppackets = movingAverage.getTrafficPackets(6, 0);
+		if(average != null) {
+			averageTcpbytes = average.getTrafficBytes(6, 0); 
+			averageTcppackets = average.getTrafficPackets(6, 0);
 		}
 		if ( countersStatus != null) {
 			numofAttackSuspicions = getAttackSuspicions (6,0);
@@ -298,7 +298,7 @@ public class CounterStat {
 		pnKey = (String) counterStatRow.get(PNKEY);
 		key = generateKey(trafficFloorKey);
 		try {
-			movingAverageStr = (String) counterStatRow.get(MOVING_AVERAGE); movingAverage = new TrafficTuple(movingAverageStr);
+			movingAverageStr = (String) counterStatRow.get(MOVING_AVERAGE); average = new TrafficTuple(movingAverageStr);
 			lastReadingStr = (String) counterStatRow.get(LAST_READING); lastReading = new TrafficTuple(lastReadingStr);
 			latestRateStr = (String) counterStatRow.get(LATEST_RATE); latestRate = new TrafficTuple(latestRateStr);
 			lastReadTime = (Long) counterStatRow.get(LAST_READING_TIME);
@@ -316,7 +316,7 @@ public class CounterStat {
 		/* Change any null value to empty, otherwise Hashtable.put() will throw an exception */
 		if(trafficFloorKey == null) trafficFloorKey = "";
 		if(pnKey == null) pnKey = "";
-		if(movingAverage == null) movingAverage = new TrafficTuple(); movingAverageStr = movingAverage.serialize();
+		if(average == null) average = new TrafficTuple(); movingAverageStr = average.serialize();
 		if(lastReading == null) lastReading = new TrafficTuple(); lastReadingStr = lastReading.serialize();
 		if(latestRate == null) latestRate = new TrafficTuple(); latestRateStr = latestRate.serialize();
 
@@ -407,7 +407,7 @@ public class CounterStat {
 		float sumTime = movingAveragePeriod + latestPeriod;
 		if(sumTime == 0) sumTime = 1;
 
-		// Update movingAverage for received protocol/port data
+		// Update average for received protocol/port data
 		Iterator<Map.Entry<Integer,TrafficData>> iter = latestRate.getTuple().entrySet().iterator();
 		TrafficData latestTrafficData;
 
@@ -418,15 +418,15 @@ public class CounterStat {
 				if ( !latestTrafficData.forTrafficLearning ) continue;
 
 				int key = TrafficTuple.generateTrafficDataKey(latestTrafficData.protocol, latestTrafficData.port);
-				if ( ! movingAverage.getTuple().containsKey(key))
-					movingAverage.setTrafficData(latestTrafficData);
+				if ( ! average.getTuple().containsKey(key))
+					average.setTrafficData(latestTrafficData);
 				else {
 					// Average for same direction only
 					// It will take out attacked flow 
 					if ( isAttacked( latestTrafficData.protocol, latestTrafficData.port)   ) continue;
-					if ( latestTrafficData.direction != movingAverage.getTrafficData(key).direction ) continue;
-					movingAverage.getTrafficData(key).bytes = ( movingAverage.getTrafficData(key).bytes * movingAveragePeriod + latestTrafficData.bytes * latestPeriod) / sumTime;
-					movingAverage.getTrafficData(key).packets = ( movingAverage.getTrafficData(key).packets * movingAveragePeriod + latestTrafficData.packets * latestPeriod) / sumTime;
+					if ( latestTrafficData.direction != average.getTrafficData(key).direction ) continue;
+					average.getTrafficData(key).bytes = ( average.getTrafficData(key).bytes * movingAveragePeriod + latestTrafficData.bytes * latestPeriod) / sumTime;
+					average.getTrafficData(key).packets = ( average.getTrafficData(key).packets * movingAveragePeriod + latestTrafficData.packets * latestPeriod) / sumTime;
 				}		
 			}
 		} catch (Throwable e) {
@@ -488,7 +488,7 @@ public class CounterStat {
 		sb.append("pnKey:"); sb.append(pnKey); sb.append("; ");
 		sb.append("lastReading:"); if (lastReading!= null ) sb.append(lastReading.toString()); sb.append("; ");
 		sb.append("latestRate:"); if (latestRate!= null ) sb.append(latestRate.toString()); sb.append("; ");
-		sb.append("movingAverage:"); if (movingAverage!= null ) sb.append(movingAverage.toString()); sb.append("; ");
+		sb.append("average:"); if (average!= null ) sb.append(average.toString()); sb.append("; ");
 		sb.append("lastReadTime:"); sb.append(lastReadTime); sb.append("; ");
 		sb.append("firstReadTime:"); sb.append(firstReadTime); sb.append("; ");
 		sb.append("status:"); sb.append(status.name()); sb.append("; ");
@@ -500,14 +500,14 @@ public class CounterStat {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("latestRate="); if (latestRate!= null ) sb.append(latestRate.toString(protocol)); sb.append("; ");
-		sb.append("movingAverage="); if (movingAverage!= null ) sb.append(movingAverage.toString(protocol)); sb.append("; ");
+		sb.append("average="); if (average!= null ) sb.append(average.toString(protocol)); sb.append("; ");
 		return sb.toString();
 	}
 	
 	public void periodicallyRecordAverages(FR flightRecorder, long baselineRecordingIntervalInSecs) {		
 		long currentTimeInSecs = System.currentTimeMillis() / 1000;
 		if(currentTimeInSecs - lastBaselineFRTime > baselineRecordingIntervalInSecs) {
-			flightRecorder.logRecord(DFAppRoot.FR_DF_SECURITY,"Baselines for counter "+key+": "+movingAverage.toString());
+			flightRecorder.logRecord(DFAppRoot.FR_DF_SECURITY,"Baselines for counter "+key+": "+average.toString());
 			lastBaselineFRTime = currentTimeInSecs;
 		}
 	}

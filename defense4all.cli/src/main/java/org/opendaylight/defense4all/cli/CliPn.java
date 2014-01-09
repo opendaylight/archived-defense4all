@@ -8,8 +8,6 @@ package org.opendaylight.defense4all.cli;
  * @version 0.1
  */
 
-
-import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +17,6 @@ import org.codehaus.jackson.type.TypeReference;
 import org.opendaylight.defense4all.core.PN;
 import org.opendaylight.defense4all.core.PN.IpVersion;
 import org.opendaylight.defense4all.core.PN.MitigationScope;
-import org.opendaylight.defense4all.core.PN.StatsCollectionStatus;
 import org.opendaylight.defense4all.core.ProtectionSLA;
 import org.opendaylight.defense4all.framework.core.Utils;
 

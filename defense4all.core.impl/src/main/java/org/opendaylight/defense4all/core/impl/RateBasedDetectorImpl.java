@@ -28,6 +28,7 @@ import org.opendaylight.defense4all.core.Detection;
 import org.opendaylight.defense4all.core.DetectorInfo;
 import org.opendaylight.defense4all.core.Mitigation;
 import org.opendaylight.defense4all.core.PN;
+import org.opendaylight.defense4all.core.PNStatReport;
 import org.opendaylight.defense4all.core.ProtocolPort;
 import org.opendaylight.defense4all.core.StatReport;
 import org.opendaylight.defense4all.core.TrafficTuple;
@@ -429,10 +430,10 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			TrafficTuple average;
 			if (pnStatSum.status == Status.WARMUP_PERIOD)
 				average = new TrafficTuple(); // Zeros
-			else if(pnStatSum.movingAverage.isZero())
+			else if(pnStatSum.average.isZero())
 				average = pnStatSum.latestRate; // 1st aggregation, all counters active - initial average set to latest
 			else
-				average = pnStatSum.movingAverage ;
+				average = pnStatSum.average ;
 
 			String averageStr = average.serialize();
 			pnUpdateCells.put(PN.AVERAGES, averageStr);
@@ -506,7 +507,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	protected List<ProtocolPort> checkAggrForAttacks(PNStatSum pnStatSum ) throws ExceptionControlApp {
 
 		ArrayList<ProtocolPort> attackedProtocolPorts = new ArrayList<ProtocolPort>();
-		List<ProtocolPort> suspectedProtocolPorts = pnStatSum.deviationExceeds(pnStatSum.movingAverage, 
+		List<ProtocolPort> suspectedProtocolPorts = pnStatSum.deviationExceeds(pnStatSum.average, 
 				lowerDetectionDeviationPercentage, upperDetectionDeviationPercentage );	
 		/* Can add as many attack detection mechanism here, adding to detected attackedProtocolPorts list */
 		log.debug("Detector :"+detectorInfo.label+" Suspicions "+((suspectedProtocolPorts!=null)?suspectedProtocolPorts.size():null));
@@ -745,7 +746,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			while(pnStatSumIter.hasNext()) {
 				entry = pnStatSumIter.next();
 				String pnKey = entry.getKey();
-				TrafficTuple average = entry.getValue().movingAverage;
+				TrafficTuple average = entry.getValue().average;
 
 				if(average.isZero()) continue;	
 
@@ -816,6 +817,16 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		if ( obj != null ) baselinesProcessingInterval = Long.valueOf(obj.toString());
 		obj = row.get(PN_SUSPICIONS_THRESHOLD); 
 		if ( obj != null ) pnSuspicionsThreshold = Integer.valueOf(obj.toString());
+	}
+
+	@Override
+	public PNStatReport getLatestPNStatReport(String pnKey) {
+
+		if(pnKey == null) return new PNStatReport();
+		
+		PNStatSum pnStatSum = pnStatSums.get(pnKey);
+		PNStatReport pnStatReport = new PNStatReport(pnStatSum);
+		return pnStatReport;
 	}
 
 	@Override

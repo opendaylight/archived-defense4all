@@ -14,7 +14,7 @@
   <parent>
     <groupId>org.opendaylight.defense4all</groupId>
     <artifactId>dfapp</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <relativePath>../dfapp/pom.xml</relativePath>
   </parent>
 
@@ -22,12 +22,12 @@
   	<dependency>
   		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>framework.core</artifactId>
-  		<version>1.0.2</version>
+  		<version>1.0.3</version>
   	</dependency>
   	<dependency>
   		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>defense4all.core.impl</artifactId>
-  		<version>1.0.2</version>
+  		<version>1.0.3</version>
   		<scope>runtime</scope>  		
   	</dependency>
 	<dependency>

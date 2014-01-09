@@ -41,6 +41,7 @@ public class Cli {
 		case help:
 			displayUsage(params); // Could be help for a Defense4AllCmd or a general help
 			System.exit(0);
+		/*****NetNodes**********/
 		case getnetnodes:
 			CliNetNode.handleGetNetNodes();
 			System.exit(0);
@@ -56,7 +57,7 @@ public class Cli {
 		case removenetnode:
 			CliNetNode.handleRemoveNetNode(params);
 			System.exit(0);
-			/*****OFC**********/			
+		/*****OFCs**********/			
 		case getofcs:
 			CliOfc.handleGetOfcs();
 			System.exit(0);
@@ -69,7 +70,7 @@ public class Cli {
 		case removeofc:
 			CliOfc.handleRemoveOfc(params);
 			System.exit(0);
-			
+		/*****AMSs**********/
 		case getamss:
 			CliAms.handleGetAms();
 			System.exit(0);
@@ -85,7 +86,7 @@ public class Cli {
 		case removeams:
 			CliAms.handleRemoveAms(params);
 			System.exit(0);
-/*****PNS**********/			
+		/*****PNS**********/			
 		case getpns:
 			CliPn.handleGetPns();
 			System.exit(0);
@@ -101,28 +102,30 @@ public class Cli {
 		case removepn:
 			CliPn.handleRemovePn(params);
 			System.exit(0);
-			
-		case cmdlist:
-			handleCmdList();
-			System.exit(0);
+		/*****Attacks**********/		
 		case getattacks:
-			CliAttack.handleGetAttack();
+			CliAttack.handleGetAttacks();
 			System.exit(0);
 		case getattack:
 			CliAttack.handleGetAttack(params);
 			System.exit(0);
+		/*****Mitigations**********/
 		case getmitigations:
-			CliMitigations.handleGetMitigation();
+			CliMitigation.handleGetMitigations();
 			break;
 		case getmitigation:
-			CliMitigations.handleGetMitigation(params);
+			CliMitigation.handleGetMitigation(params);
+			System.exit(0);
+		/*****Other**********/
+		case cmdlist:
+			handleCmdList();
 			System.exit(0);
 		default:
 			displayUsage();
 			System.exit(0);
 
 		}
-		
+
 	}
 
 	/**
@@ -192,7 +195,7 @@ public class Cli {
 		case removenetnode:
 			CliNetNode.displayUsageRemoveNetnode();
 			break;
-			
+
 			/*****OFC**********/
 		case getofcs:
 			CliOfc.displayUsageGetOfcs();
@@ -206,7 +209,7 @@ public class Cli {
 		case removeofc:
 			CliOfc.displayUsageRemoveOfc();
 			break;		
-			
+
 		case getamss:
 			CliAms.displayUsageGetAmss();
 			break;
@@ -222,7 +225,7 @@ public class Cli {
 		case removeams:
 			CliAms.displayUsageRemoveAms();
 			break;	
-			
+
 		case getpns:
 			CliPn.displayUsageGetPns();
 			System.exit(0);
@@ -238,22 +241,22 @@ public class Cli {
 		case removepn:
 			CliPn.displayUsageRemovePn();
 			System.exit(0);
-			
+
 		case getattacks:
-			CliAttack.displayUsageGetAttack();
+			CliAttack.displayUsageGetAttacks();
 			break;
 		case getattack:
 			CliAttack.displayUsageGetAttack();
 			break;
 		case getmitigations:
-			CliMitigations.displayUsageGetMitigation();
+			CliMitigation.displayUsageGetMitigations();
 			break;
 		case getmitigation:
-			CliMitigations.displayUsageGetMitigation();
+			CliMitigation.displayUsageGetMitigation();
 			break;
-			
+
 		case help: // Display general usage if no params. Display dfcmd specific
-					// usage if param is a dfcmd.
+			// usage if param is a dfcmd.
 			displayUsage(params);
 			break;
 		default:

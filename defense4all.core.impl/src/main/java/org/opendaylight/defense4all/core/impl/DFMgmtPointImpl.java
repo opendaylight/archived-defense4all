@@ -26,12 +26,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.opendaylight.defense4all.core.AMS;
 import org.opendaylight.defense4all.core.DFAppRoot;
+import org.opendaylight.defense4all.core.DFDetector;
 import org.opendaylight.defense4all.core.DFMgmtPoint;
 import org.opendaylight.defense4all.core.Detector;
 import org.opendaylight.defense4all.core.DetectorInfo;
 import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.core.OFC;
 import org.opendaylight.defense4all.core.PN;
+import org.opendaylight.defense4all.core.PNStatReport;
 import org.opendaylight.defense4all.core.PN.StatsCollectionStatus;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -354,7 +356,11 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void addOFC(OFC ofc) throws ExceptionControlApp {		
+	public void addOFC(OFC ofc) throws ExceptionControlApp, IllegalArgumentException {	
+
+		try {
+			ofc.validate();
+		} catch (Exception e1) {throw new IllegalArgumentException(e1);}	
 
 		List<String> keys;
 
@@ -484,7 +490,11 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void addNetNode(NetNode netNode) throws ExceptionControlApp {
+	public void addNetNode(NetNode netNode) throws ExceptionControlApp, IllegalArgumentException {
+
+		try {
+			netNode.validate();
+		} catch (Exception e1) {throw new IllegalArgumentException(e1);}	
 
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding NetNode " + netNode.toString());
 
@@ -556,7 +566,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 		boolean isError = false;
 
 		if(NetNode.isRemoved(netNodeLabel))	return; // Check if is already marked as removed.
-		
+
 		ExceptionControlApp concatException = new ExceptionControlApp("");
 		try {
 			dfAppRoot.netNodesRepo.setCell(netNodeLabel, NetNode.STATUS, NetNode.Status.REMOVED.name());
@@ -596,6 +606,10 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	@Override
 	public void addAMS(AMS ams) throws ExceptionControlApp, IllegalArgumentException {
 
+		try {
+			ams.validate();
+		} catch (Exception e1) {throw new IllegalArgumentException(e1);}
+		
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding AMS " + ams.toString());
 
 		Hashtable<String,Object> amsRow = dfAppRootFullImpl.amsRepo.getRow(ams.label);
@@ -674,7 +688,6 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 		}			
 	}
 
-
 	/**
 	 * Remove an external detector.
 	 * @param param_name param description
@@ -705,8 +718,12 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws Exception 
 	 * @throws ExceptionProtectionProfileNotFound If the protection profile specified in the protected object is not found in the system
 	 */
-	public void addPN(PN pn) throws ExceptionControlApp {
+	public void addPN(PN pn) throws Exception, IllegalArgumentException {
 
+		try {
+			pn.validate();
+		} catch (Exception e1) {throw new IllegalArgumentException(e1);}
+		
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding PN " + pn.toString());
 
 		Hashtable<String, Object> pnRow;
@@ -754,7 +771,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 		} catch (Throwable e) {
 			log.error("Failed to get detectorLabel from pNsRepo for pnKey "+pnKey, e );
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-			throw new ExceptionControlApp("Failed to update pNsRepo for pnKey "+pnKey, e );
+			throw new ExceptionControlApp("Failed to get detectorLabel from pNsRepo for pnKey "+pnKey, e);
 		}
 
 		try {
@@ -770,6 +787,47 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to add PN to detector and/or mitigation manager", e);
 		}
+	}
+
+	/** 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	@Override
+	public PNStatReport getLatestPNStatReport(String pnKey) throws ExceptionControlApp, IllegalArgumentException {
+		
+		if(pnKey == null || pnKey.isEmpty()) throw new IllegalArgumentException("Invalid pnkey " + pnKey);
+		
+		String detectorLabel; Detector detector; DFDetector dfDetector;
+		PNStatReport pnStatReport = new PNStatReport(); pnStatReport.pnKey = pnKey;
+		
+		/* Get the label of the detector processing stats for this PN. */
+		try {
+			detectorLabel = (String) dfAppRoot.pNsRepo.getCellValue(pnKey, PN.DETECTOR_LABEL);
+		} catch (Throwable e) {
+			log.error("Failed to get detectorLabel from pNsRepo for pnKey " + pnKey, e );
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to get detectorLabel from pNsRepo for pnKey " + pnKey, e);
+		}
+
+		/* Out of the detector label get the detector processing stats for this PN. */
+		try {		
+			detector = dfAppRootFullImpl.detectorMgrImpl.getDetector(detectorLabel);
+			if (detector == null) return pnStatReport;
+			boolean ofBasedDetector = detector.getDetectorInfo().ofBasedDetector;
+			if(!ofBasedDetector) return pnStatReport;
+			dfDetector = (DFDetector) detector;
+		} catch (Throwable e) {
+			log.error("Failed to get detector " + detectorLabel, e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to get detector " + detectorLabel, e);
+		}
+		
+		/* Retrieve and return the PN stats from that detector. */
+		pnStatReport = dfDetector.getLatestPNStatReport(pnKey);		
+		return pnStatReport;
 	}
 
 	/**

@@ -38,6 +38,7 @@ import org.opendaylight.defense4all.core.Mitigation;
 import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.core.OFC;
 import org.opendaylight.defense4all.core.PN;
+import org.opendaylight.defense4all.core.PNStatReport;
 import org.opendaylight.defense4all.framework.core.Repo;
 
 
@@ -45,12 +46,12 @@ import org.opendaylight.defense4all.framework.core.Repo;
 public class Defense4allRestService {
 
 	private static Log log = LogFactory.getLog(Defense4allRestService.class);
-	
+
 	@Context
 	UriInfo uriInfo;
 	@Context
 	Request request;
-	
+
 	@GET
 	@Path("pns")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -69,12 +70,12 @@ public class Defense4allRestService {
 			return pnList;
 		}
 	}
-	
+
 	@GET
 	@Path("pns/count")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getPNsCount() {
-		
+
 		try {
 			log.debug("getPNsCount: invoked");
 			Repo<String> pNsRepo = DFHolder.get().pNsRepo;
@@ -85,7 +86,7 @@ public class Defense4allRestService {
 			return null;
 		}
 	}
-	
+
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("pns/{pn}")
@@ -93,7 +94,7 @@ public class Defense4allRestService {
 		PNResource pnResource = new PNResource(uriInfo, request, pnLabel);
 		return pnResource.getPN();
 	}
-	
+
 	@POST
 	@Path("pns")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -124,7 +125,7 @@ public class Defense4allRestService {
 		PNResource pnResource = new PNResource(uriInfo, request, pnLabel);
 		pnResource.deletePN();
 	}
-	
+
 	@GET
 	@Path("amss")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -142,12 +143,12 @@ public class Defense4allRestService {
 		}
 		return amsList;
 	}
-	
+
 	@GET
 	@Path("amss/count")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getDPsCount() {
-		
+
 		try {
 			log.debug("getDPsCount: invoked");
 			Repo<String> dPsRepo = DFHolder.get().amsRepo;
@@ -171,7 +172,7 @@ public class Defense4allRestService {
 			return new AMS();
 		}
 	}
-	
+
 	@POST
 	@Path("amss")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -185,7 +186,7 @@ public class Defense4allRestService {
 			} else {
 				log.debug("addAms: adding " + ams.label);
 				DFHolder.get().getMgmtPoint().addAMS(ams);
-				
+
 			}
 		} catch (Throwable e) {
 			log.error("Failed to add AMS " );
@@ -195,9 +196,9 @@ public class Defense4allRestService {
 				log.error(e);
 			}
 		}
-		
+
 	}
-	
+
 	@DELETE
 	@Path("amss/{ams}")
 	public void deleteAms(@PathParam("ams") String amsLabel) {
@@ -222,12 +223,12 @@ public class Defense4allRestService {
 		}
 		return ofcList;
 	}
-	
+
 	@GET
 	@Path("ofcs/count")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getOFCsCount() {
-		
+
 		try {
 			log.debug("getOFCsCount: invoked");
 			Repo<String> oFCsRepo = DFHolder.get().oFCsRepo;
@@ -238,7 +239,7 @@ public class Defense4allRestService {
 			return null;
 		}
 	}
-	
+
 	@GET
 	@Path("ofcs/{ofc}")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -247,7 +248,7 @@ public class Defense4allRestService {
 		return ofcResource.getOFC();			
 
 	}
-	
+
 	@POST
 	@Path("ofcs")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -270,7 +271,6 @@ public class Defense4allRestService {
 				log.error(e1);
 			}
 		}
-		
 	}
 
 	@DELETE
@@ -279,8 +279,8 @@ public class Defense4allRestService {
 		OFCResource ofcResource = new OFCResource(uriInfo, request, ofcLabel);
 		ofcResource.deleteOFC();
 	}
-	
-	
+
+
 	@GET
 	@Path("netnodes")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -303,12 +303,12 @@ public class Defense4allRestService {
 			return null;
 		}
 	}
-	
+
 	@GET
 	@Path("netnodes/count")
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getNetnodesCount() {
-		
+
 		try {
 			log.debug("getOFCsCount: invoked");
 			Repo<String> netNodesRepo = DFHolder.get().netNodesRepo;
@@ -319,14 +319,14 @@ public class Defense4allRestService {
 			return null;
 		}
 	}
-	
+
 	@GET
 	@Path("netnodes/{netnode}")
 	public NetNode getNetNode(@PathParam("netnode") String netNodeLabel) {
 		NetNodeResource netNodeResource = new NetNodeResource(uriInfo, request, netNodeLabel);
 		return netNodeResource.getNetNode();
 	}
-	
+
 	@POST
 	@Path("netnodes")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -350,21 +350,14 @@ public class Defense4allRestService {
 			}
 		}
 	}
-	
+
 	@DELETE
 	@Path("netnodes/{netnode}")
 	public void deleteNetNode(@PathParam("netnode") String netNodeLabel) {
 		NetNodeResource netNodeResource = new NetNodeResource(uriInfo, request, netNodeLabel);
 		netNodeResource.deleteNetNode();
 	}
-		
-	@GET
-	@Path("mitigations/{mitigation}")
-	public Mitigation getMitigation(@PathParam("mitigation") String mitigationLabel) {
-		MitigationResource mitigationResource =  new MitigationResource(uriInfo, request, mitigationLabel);
-		return mitigationResource.getMitigation();
-	}
-	
+
 	@GET
 	@Path("mitigations")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -377,12 +370,28 @@ public class Defense4allRestService {
 			for(Iterator<Hashtable<String, Object>> i = mitigationsResList.iterator(); i.hasNext();)
 				mitigationsList.add(new Mitigation(i.next()));				
 		} catch (Throwable e) {
-			log.error("Failed to retrieve ofcs. ", e);
+			log.error("Failed to retrieve mitigations. ", e);
 			return null;
 		}
 		return mitigationsList;
 	}
-		
+
+	@GET
+	@Path("mitigations/{mitigation}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Mitigation getMitigation(@PathParam("mitigation") String mitigationLabel) {
+
+		try {
+			Repo<String> mitigationsRepo = DFHolder.get().mitigationsRepo;
+			Hashtable<String,Object> mitigationRow = mitigationsRepo.getRow(mitigationLabel);
+			Mitigation mitigation = new Mitigation(mitigationRow);
+			return mitigation;
+		} catch (Throwable e) {
+			log.error("Failed to retrieve mitigation " + mitigationLabel, e);
+			return null;
+		}
+	}
+
 	@GET
 	@Path("attacks")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -396,15 +405,45 @@ public class Defense4allRestService {
 			for(Iterator<Hashtable<String, Object>> i = attackResList.iterator(); i.hasNext();)
 				attackList.add(new Attack(i.next()));			
 		} catch (Throwable e) {
-			log.error("Failed to retrieve attacs. ", e);
+			log.error("Failed to retrieve attacks. ", e);
 			return null;
 		}
 		return attackList;
 	}
-	
+
 	@GET
 	@Path("attacks/{attack}")
-	public AttacksResource getAttacs(@PathParam("attac") String attacLabel) {
-		return new AttacksResource(uriInfo, request, attacLabel);
+	@Produces(MediaType.APPLICATION_JSON)
+	public Attack getAttack(@PathParam("attack") String attackLabel) {
+
+		try {
+			Repo<String> attacksRepo = DFHolder.get().attacksRepo;
+			Hashtable<String,Object> attackRow = attacksRepo.getRow(attackLabel);
+			Attack attack = new Attack(attackRow);
+			return attack;
+		} catch (Throwable e) {
+			log.error("Failed to retrieve attack " + attackLabel, e);
+			return null;
+		}
+	}
+
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("pnstats/{pn}")
+	public PNStatReport getPNStat(@PathParam("pn") String pnLabel, @Context HttpServletResponse servletResponse) {
+		
+		try {
+			PNStatReport pnStatReport = DFHolder.get().getMgmtPoint().getLatestPNStatReport(pnLabel);
+			return pnStatReport;
+		} catch (IllegalArgumentException e) {
+			try {
+				servletResponse.sendError(400, "get pnstat: Null or empty pnLabel.");
+			} catch (IOException e1) {log.error(e1);}
+		} catch (Throwable e1) {
+			try {
+				servletResponse.sendError(500, "Failed to get pnstat for pn " + pnLabel);
+			} catch (IOException e2) {log.error(e2);}
+		}
+		return null;
 	}
 }

@@ -399,7 +399,7 @@ public class PN {
 			/* Set all netNodes */
 			this.netNodeLabels = netNodeLabels;
 			if(netNodeLabels == null || netNodeLabels.isEmpty()) {
-				this.netNodeLabels = createFromAllNetNodes();		
+				this.netNodeLabels = createFromAllNetNodes();	
 			}
 
 			Iterator<Map.Entry<Object,Object>> iter = propsFromFile.entrySet().iterator();
@@ -592,7 +592,7 @@ public class PN {
 		return netNodeLabels;
 	}
 
-	protected List<String> createFromAllNetNodes() throws ExceptionControlApp {	
+	protected List<String> createFromAllNetNodes() throws ExceptionControlApp {
 
 		List<String> netNodeLabels; List<String> returnNetNodeLabels = new ArrayList<String>();
 		try {

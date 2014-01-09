@@ -14,17 +14,30 @@ import java.util.List;
 
 import org.codehaus.jackson.type.TypeReference;
 import org.opendaylight.defense4all.core.Mitigation;
-import org.opendaylight.defense4all.core.PN;
 
-public class CliMitigations {
+public class CliMitigation {
 
 	//TODO complete....
-	public static final String explanation = "A record containing information about the mitigation measures being taken to mitigate an attack. "
+	public static final String explanation = "Mitigation is a record containing information about the mitigation measures being taken to mitigate an attack. "
 			+ "Mitigation can take different forms, starting from mere reporting about the attack, "
 			+ "through diversion of attacked traffic (target address range, protocol and port) through AMS (Attack Mitigation Systems) "
 			+ "for cleansing, to blockage of traffic from attacking sources in network switches/routers. "
 			+ "A Mitigation record contains the type of mitigation, mitigator id, "
 			+ "as well as mitigation status and information (possibly collected from AMSs).";
+	
+	/**
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws exception_type circumstances description 
+	 */
+	protected static void displayUsageGetMitigations() {
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("Usage:  controlapps getmitigations\n");
+		sb.append("   Description - returns the current mitigations.\n");
+		System.out.println(sb.toString());
+	}
 	/**
 	 * #### method description ####
 	 * @param param_name param description
@@ -34,11 +47,10 @@ public class CliMitigations {
 	protected static void displayUsageGetMitigation() {
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("Usage:  controlapps getnetmitigation\n");
-		sb.append("   Description - returns the Mitigation known to DF.\n");
+		sb.append("Usage:  controlapps getmitigations mitigation_label\n");
+		sb.append("   Description - returns the mitigation info.\n");
 		System.out.println(sb.toString());
 	}
-
 
 	/**
 	 * #### method description ####
@@ -46,19 +58,19 @@ public class CliMitigations {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	protected static void handleGetMitigation() {
+	protected static void handleGetMitigations() {
 
 		List<Mitigation> mitigations;
 		try {
 			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);
-			TypeReference<?> typeRef = new TypeReference<List<PN>>(){};
+			TypeReference<?> typeRef = new TypeReference<List<Mitigation>>(){};
 			mitigations = connector.getFromControlApps("mitigations", typeRef);
 		} catch (Exception e) {
 			System.out.println("Could not get mitigations because " + e.getMessage());
 			return;
 		}
 		if(mitigations == null || mitigations.isEmpty()) {
-			System.out.println("DF has no pns configured.");
+			System.out.println("DF has no current mitigations.");
 			return;
 		}
 
@@ -91,16 +103,13 @@ public class CliMitigations {
 		Mitigation mitigation;
 		try {
 			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);
-			TypeReference<?> typeRef = new TypeReference<PN>(){};
-			mitigation = connector.getFromControlApps("attacks/" + label, typeRef);
+			TypeReference<?> typeRef = new TypeReference<Mitigation>(){};
+			mitigation = connector.getFromControlApps("mitigations/" + label, typeRef);
 			String printOut = (mitigation == null) ? "No mitigation " + label + " is known to DF.\n" : mitigation.toString();
 			System.out.println(printOut);
 		} catch (Exception e) {
-			System.out.println("Could not get attack " + label + " because " + e.getMessage());
+			System.out.println("Could not get mitigation " + label + " because " + e.getMessage());
 			return;
 		}		
-		
 	}
-
-
 }

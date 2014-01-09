@@ -139,4 +139,16 @@ public class Attack {
 		}		
 		return mAttacksRepoCDs;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Attack[key="); sb.append(key); sb.append(", ");
+		sb.append("mitigationKey="); sb.append(mitigationKey); sb.append(", ");
+		sb.append("protocolPort="); sb.append(protocolPort.toString()); sb.append(", ");
+		sb.append("status="); sb.append(status.name()); sb.append(", ");
+		sb.append("detectionKeys="); sb.append(detectionKeys);
+		sb.append("]");
+		return sb.toString();
+	}
 }

@@ -100,12 +100,12 @@ public class CliNetNode {
 		sb.append("           amsconnection::amslabel::netnodesouthport=port_value - [mandatory] number of the south (closer to server) port in the netnode connected to the ams.\n");
 		sb.append("           amsconnection::amslabel::amsnorthport=port_value - [mandatory] number of the north port in the ams connected to the north port in the netnode.\n");
 		sb.append("           amsconnection::amslabel::amssouthport=port_value - [mandatory] number of the south port in the ams connected to the south port in the netnode.\n");
-		sb.append("       traffic ports - ports through which traffic flows north-south and south-north. Must have at least one north-south port. Each traffic port is described through its fields, as follows:\n");
+		sb.append("       traffic ports - ports through which traffic flows north-south and south-north. Can be zero or more north-south ports. Each traffic port is described through its fields, as follows:\n");
 		sb.append("           trafficport::label=label_value - [mandatory] label of this traffic port.\n");
 		sb.append("           trafficport::label::number=number_value - [mandatory] number of the traffic port.\n");
 		sb.append("           trafficport::label::vlan=vlan_value - [mandatory] vlan to consider in this port.\n");
 		sb.append("           trafficport::label::location=location_value - [mandatory] Can be \"north\" (closer to client) or \"south\" (closer to server).\n");
-		sb.append("       protected links - links that should be considered for traffic protection. Must have at least one in sdnenablednative netnodes. Each protected link is described through its fields, as follows:\n");
+		sb.append("       protected links - links that should be considered for traffic protection. Can be zero or more protected links. Each protected link is described through its fields, as follows:\n");
 		sb.append("           protectedlink::label=label_value - [mandatory] label of this protected link.\n");
 		sb.append("           protectedlink::label::northport=port_value - [mandatory] number of the north traffic port.\n");
 		sb.append("           protectedlink::label::southport=port_value - [mandatory] number of the south traffic port.\n");
@@ -353,7 +353,7 @@ public class CliNetNode {
 		int port = Integer.valueOf(split[1]);
 		if(port == 0) throw new Exception("Invalid netnodenorthport (zero) for amsconnection " + label);
 		AMSConnection amsConnection = getCreateAmsConnection(netNode, label);
-		amsConnection.netNodeNorthPort = port;
+		amsConnection.netNodeNorthPort = split[1];
 	}
 
 	private static void addAmsConnectionNetnodeSouthPort(NetNode netNode,String label,String nameValStr) throws Exception {
@@ -361,7 +361,7 @@ public class CliNetNode {
 		int port = Integer.valueOf(split[1]);
 		if(port == 0) throw new Exception("Invalid netnodesouthport (zero) for amsconnection " + label);
 		AMSConnection amsConnection = getCreateAmsConnection(netNode, label);
-		amsConnection.netNodeSouthPort = port;
+		amsConnection.netNodeSouthPort = split[1];
 	}
 
 	private static void addAmsConnectionAmsNorthPort(NetNode netNode, String label, String nameValStr) throws Exception {

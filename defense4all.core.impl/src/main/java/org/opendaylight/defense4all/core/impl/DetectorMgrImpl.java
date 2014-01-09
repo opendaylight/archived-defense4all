@@ -28,8 +28,6 @@ import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
-
-
 public class DetectorMgrImpl extends DFAppCoreModule  implements DetectorMgr {
 
 	protected Detector detector0 = null;
@@ -200,7 +198,6 @@ public class DetectorMgrImpl extends DFAppCoreModule  implements DetectorMgr {
 			throw new ExceptionControlApp("Failed to process config properties file detectors.properties", e);		
 		}
 		return detectorRow;
-
 	}
 
 	/**
