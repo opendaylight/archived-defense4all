@@ -90,8 +90,6 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 	@Override
 	public List<StatsCountersPlacement> offerCounterPlacements(String pnKey) throws ExceptionControlApp {
 
-		pnOdlSpecific(pnKey);
-
 		ArrayList<String> statsCounterLocs = new ArrayList<String>();
 		PN pn = null;
 		try {
@@ -128,31 +126,6 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 		sb.setLength(sb.length() - 2); // Remove the last ", "
 		fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, sb.toString());
 		return statsCounterPlacements;
-	}
-
-	protected void pnOdlSpecific(String pnKey) throws ExceptionControlApp {		
-
-		Properties props;
-		try {
-			
-			props = (Properties) dfAppRoot.pNsRepo.getCellValue(pnKey, PN.PROPS);
-		} catch (Throwable e) {
-			log.error("Excepted trying to retrieve props from which to construct netNodes for " + pnKey, e);
-			return;
-		}		
-		Iterator<Map.Entry<Object,Object>> iter = props.entrySet().iterator();
-		Map.Entry<Object,Object> entry; String key; String value; 
-		Hashtable<String,Object> cells = new Hashtable<String,Object>();
-
-		while(iter.hasNext()) {
-			entry = iter.next();
-			key = (String) entry.getKey();
-			if(key.startsWith(PN.NETNODE_PREFIX)) {
-				value = (String) entry.getValue();
-				if(value != null) cells.put(PN.NETNODE_PREFIX + value, value);
-			}
-		}
-		dfAppRoot.pNsRepo.setRow(pnKey, cells); // Persist the pnRow added cells
 	}
 
 	/**
@@ -237,8 +210,6 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 			trafficFloorRow = dfAppRoot.trafficFloorsRepo.getRow(trafficFloorKey);
 			if(trafficFloorRow != null) return trafficFloorKey;
 
-			/* Add counter to its location (location == netNode label) */
-
 			netNode = new NetNode(netNodeRow);
 
 			configInfoCommon = new OdlFlowConfigInfo();
@@ -247,6 +218,7 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 			configInfoCommon.actions = new ArrayList<String>();
 			configInfoCommon.forRates = true; configInfoCommon.forTrafficLearning = true;	// Stats collection flow entry
 			configInfoCommon.direction = TrafficDirection.INBOUND;
+			configInfoCommon.trafficFloorKey = trafficFloorKey;
 
 		} catch (ExceptionControlApp e1) {
 			String msg = "Excepted most likely trying to retrieve elements from repos for " + pnKey + " " + location;

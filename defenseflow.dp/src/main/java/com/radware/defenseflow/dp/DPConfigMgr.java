@@ -4,7 +4,7 @@
  * 
  * ### class description ###
  *
- * @author Snir Cohen (6:14)
+ * @author Snir Cohen 
  * @author Gera Goft
  * @version 0.1
  */
@@ -79,11 +79,7 @@ import com.radware.defenseflow.dp.pojos.Security.Policy.Policy_PacketReportEnfor
 import com.radware.defenseflow.dp.pojos.Security.SynProtection.RsIDSSynProfilesEntry;
 import com.radware.defenseflow.dp.pojos.Security.SynProtection.RsIDSSynProfilesEntry_ProfileType;
 
-/**
- * 
- * @author snirc
- * 
- */
+
 public class DPConfigMgr extends DFAppModule {
 
 	public static final String SYN_PROTECTION_PROFILE_NAME = "SYNProt_Global";
@@ -526,9 +522,9 @@ public class DPConfigMgr extends DFAppModule {
 		String bdosProfileName = null;
 		String dnsProfileName = null;
 		String oosProfileName = null;
-		boolean bdosProfileCreated = false;
-		boolean dnsProfileCreated = false;
-		boolean oosProfileCreated = false;
+		//boolean bdosProfileCreated = false;
+		//boolean dnsProfileCreated = false;
+		//boolean oosProfileCreated = false;
 
 		try {
 
@@ -546,11 +542,11 @@ public class DPConfigMgr extends DFAppModule {
 
 			/* Set in DP all created profiles and policy for this attacked PN. */
 			connector.createBdosProfile(bdosProfile); 
-			bdosProfileCreated = true;
+			//bdosProfileCreated = true;
 			connector.createDnsProfile(dnsProfile);
-			dnsProfileCreated = true;
+			//dnsProfileCreated = true;
 			connector.createOOSProfile(oosProfile);
-			oosProfileCreated = true;
+			//oosProfileCreated = true;
 			connector.createPolicy(securityPolicy);
 
 		} catch (Throwable e) {

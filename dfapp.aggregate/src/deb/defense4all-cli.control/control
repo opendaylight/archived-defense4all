@@ -1,0 +1,9 @@
+Package: defense4all-cli
+Version: 1.0.4
+Architecture: all
+Section: net
+Priority: optional
+Depends:  java6-runtime | java7-runtime  
+Maintainer: Radware Ltd
+Description: Defense4all CLI
+Distribution: OpenDaylight

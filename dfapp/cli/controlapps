@@ -1,11 +1,16 @@
 #! /bin/bash
 #
-# Script for running defense4all cli
-# 
+# Copyright (c) <2013> <Radware Ltd.> and others.  All rights reserved.
+#
+# This program and the accompanying materials are made available under the terms of the Eclipse Public License
+# v1.0 which accompanies this distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+# @author Konstantin Pozdeev
+# @version 0.1
+#
 
 NAME=controllapps
 DEFENSE4ALL_NAME=defense4all
-VERSION=1.0.3
+VERSION=1.0.4
 CLI_LIST="framework defense4all"
 JAR_LIST="framework.cli defense4all.cli"
 DEFENSE4ALL_HOME=/usr/share/$DEFENSE4ALL_NAME

@@ -169,7 +169,6 @@ public class SNMPManager {
 				System.out.print(client.getAsString(DPOID.RSWSD_RESOURCE_UTILIZATION) + ", ");
 				Thread.sleep(Calendar.getInstance().getTime().getSeconds()*100);
 			}
-			System.out.println();
 			for(int i = 0; i < 55; i++){
 				System.out.print(client.getAsString(DPOID.RSWSD_RESOURCE_UTILIZATION) + ", ");
 				Thread.sleep(500);

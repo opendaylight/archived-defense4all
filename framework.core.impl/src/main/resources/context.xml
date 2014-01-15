@@ -17,7 +17,7 @@
 		<property name="stateClassPaths" value="org.opendaylight.defense4all.framework.core.impl" />
 		<property name="port" value="8086" />
 		<!-- next value is for eclipse running. should be different for single jar -->
-		<property name="restWarPath" value="../../../restservice/target/restservice-1.0.3.war" />
+		<property name="restWarPath" value="../../../restservice/target/restservice-1.0.4.war" />
 		<property name="restPath" value="/" />
 		<property name="appRoot" ref="appRoot" /> 	<!--	The actual integrated application -->
 		<property name="flightRecorderImpl" ref="flightRecorderImpl" />

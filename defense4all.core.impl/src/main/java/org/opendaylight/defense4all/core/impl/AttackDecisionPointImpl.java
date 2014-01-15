@@ -104,44 +104,43 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 		long start = System.currentTimeMillis() / 1000;
 		for(int i=0;i<10000;i++) {
 			int j = ((int) Math.random()) % 4;
-			//			System.out.println(i);
 			switch(j) {
 			case 0:
 				attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
 				attack.detectionKeys.setProperty("df_detectorpn1.TCP:0", "df_detectorpn1.TCP:0");
 				dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
 				check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-				if(attack.detectionKeys.size() != check.detectionKeys.size())
-					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
+//				if(attack.detectionKeys.size() != check.detectionKeys.size())
+//					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
 				break;
 			case 1:
 				attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
 				attack.detectionKeys.setProperty("dp_based_detectorpn1.TCP:0", "dp_based_detectorpn1.TCP:0");
 				dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
 				check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-				if(attack.detectionKeys.size() != check.detectionKeys.size())
-					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
+//				if(attack.detectionKeys.size() != check.detectionKeys.size())
+//					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
 				break;
 			case 2:
 				attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
 				attack.detectionKeys.setProperty("dp_based_detectorpn1.TCP:80", "dp_based_detectorpn1.TCP:80");
 				dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
 				check = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
-				if(attack.detectionKeys.size() != check.detectionKeys.size())
-					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
+//				if(attack.detectionKeys.size() != check.detectionKeys.size())
+//					System.out.println(attack.detectionKeys.toString() + "; " + check.detectionKeys.toString());
 				break;
 			case 3:
 				attack = new Attack(dfAppRootFullImpl.attacksRepo.getRow("pn1_TCP:0"));
 				attack.detectionKeys.clear();
 				dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
-				System.out.println("Cleared detectionKeys");
+//				System.out.println("Cleared detectionKeys");
 				break;
 			default:
 				break;
 			}
 		}
 		long end = System.currentTimeMillis() / 1000;
-		System.out.println("time = " + (end-start));
+//		System.out.println("time = " + (end-start));
 	}
 
 	/**

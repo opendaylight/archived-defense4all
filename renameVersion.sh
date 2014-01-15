@@ -1,7 +1,7 @@
 #!/bin/sh
 
-version_from="1\.0\.2"
-version_to="1\.0\.3"
+version_from="1\.0\.3"
+version_to="1\.0\.4"
 
 
 grep "$version_from" `find . -name "pom.xml"` | egrep "<version>|<location>|<src>" > /tmp/list
@@ -12,7 +12,7 @@ do
     sed -i -e "s/${version_from}/${version_to}/g" $ff
 done
 
-add_on_list="./dfapp.aggregate/src/deb/control/control ./framework.core.impl/src/main/resources/context.xml ./dfapp/cli/controlapps"
+add_on_list="./dfapp.aggregate/src/deb/defense4all.control/control ./dfapp.aggregate/src/deb/defense4all-cli.control/control ./framework.core.impl/src/main/resources/context.xml ./dfapp/cli/controlapps"
 grep "$version_from" $add_on_list  > /tmp/list
 ff_list=`cat /tmp/list | awk -F':' '{print $1}' | uniq`
 for ff in $ff_list
