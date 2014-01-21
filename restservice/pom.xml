@@ -11,7 +11,7 @@
   <parent>
     <groupId>org.opendaylight.defense4all</groupId>
     <artifactId>dfapp</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
     <relativePath>../dfapp/pom.xml</relativePath>
   </parent>
   
@@ -23,12 +23,12 @@
   	<dependency>
   		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>framework.restservice</artifactId>
-  		<version>1.0.4</version>
+  		<version>1.0.5</version>
   	</dependency>
   	<dependency>
   		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>defense4all.restservice</artifactId>
-  		<version>1.0.4</version>
+  		<version>1.0.5</version>
   	</dependency>
     <dependency>
       <groupId>junit</groupId>

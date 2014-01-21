@@ -8,6 +8,7 @@ package org.opendaylight.defense4all.odl;
  * @version 0.1
  */
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.mina.filter.firewall.Subnet;
 import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.core.NetNode.SDNNodeMode;
@@ -68,9 +70,9 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 	 * @throws ExceptionControlApp */
 	@Override
 	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
-		
+
 		super.reset(resetLevel);
-		
+
 		odl.reset(resetLevel);
 	}
 
@@ -192,7 +194,7 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 					+ " at " + location);
 			throw new ExceptionControlApp(msg, e1);
 		}		
-		
+
 		fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, "Adding peacetime counter traffic floor for " + pnKey
 				+ " at " + location);
 
@@ -213,14 +215,19 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 			netNode = new NetNode(netNodeRow);
 
 			configInfoCommon = new OdlFlowConfigInfo();
-			configInfoCommon.nodeLabel = location; configInfoCommon.etherType = 2048; 
-			configInfoCommon.nwDst = (String) dfAppRoot.pNsRepo.getCellValue(pnKey, PN.DST_ADDR);
+			configInfoCommon.nodeLabel = location; configInfoCommon.etherType = 2048;
+			
+			String dstAddrStr = (String) dfAppRoot.pNsRepo.getCellValue(pnKey, PN.DST_ADDR);
+			int dstAddrLen = (Integer) dfAppRoot.pNsRepo.getCellValue(pnKey, PN.DST_ADDR_PREFIX_LEN);
+			Subnet pnAddrSubnet = new Subnet(InetAddress.getByName(dstAddrStr), dstAddrLen);
+			configInfoCommon.nwDst = pnAddrSubnet.toString();
+			
 			configInfoCommon.actions = new ArrayList<String>();
 			configInfoCommon.forRates = true; configInfoCommon.forTrafficLearning = true;	// Stats collection flow entry
 			configInfoCommon.direction = TrafficDirection.INBOUND;
 			configInfoCommon.trafficFloorKey = trafficFloorKey;
 
-		} catch (ExceptionControlApp e1) {
+		} catch (Throwable e1) {
 			String msg = "Excepted most likely trying to retrieve elements from repos for " + pnKey + " " + location;
 			log.error(msg, e1);
 			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to add peacetime counter traffic floor for " + pnKey
@@ -249,9 +256,9 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 				configInfoClone.ingressPort = trafficPort.number;
 
 				fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, "Setting four flow entries for " + pnKey
-					+ " at SDN hybrid NetNode " + location + ", traffic port " + trafficPort.label);
+						+ " at SDN hybrid NetNode " + location + ", traffic port " + trafficPort.label);
 				success &= setFourFlowEntries(configInfoClone, trafficFloor, trafficFloor.floorBase);
-				
+
 				String msg = "setting flow entries for "+pnKey+" at NetNode "+location+", traffic port "+trafficPort.label;
 				if(!success)
 					fMain.getFR().logRecord(DFAppRoot.FR_OFC_FAILURE, "Failed " + msg);					
@@ -272,7 +279,7 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 				configInfoClone.actions.add(action);
 
 				fMain.getFR().logRecord(DFAppRoot.FR_OFC_OPERATIONAL, "Setting four flow entries for " + pnKey
-					+ " at SDN native NetNode " + location + ", north port of protected link " + protectedLink.label);
+						+ " at SDN native NetNode " + location + ", north port of protected link " + protectedLink.label);
 				success &= setFourFlowEntries(configInfoClone, trafficFloor, trafficFloor.floorBase);
 				String msg="setting flow entries for "+pnKey+" at NetNode "+location+", north port of "+protectedLink.label;
 				if(!success)

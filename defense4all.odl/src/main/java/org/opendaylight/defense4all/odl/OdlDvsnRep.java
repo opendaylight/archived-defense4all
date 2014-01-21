@@ -9,6 +9,7 @@
 
 package org.opendaylight.defense4all.odl;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -17,6 +18,7 @@ import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.mina.filter.firewall.Subnet;
 import org.opendaylight.defense4all.core.AMSConnection;
 import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.Mitigation;
@@ -433,18 +435,21 @@ public class OdlDvsnRep extends DvsnRep {
 		StringBuilder sb = new StringBuilder();
 
 		/* Set the pnAddr filter - either as destination match or as source match - depending on traffic direction */
-		String pnAddr;
 		try {
-			pnAddr = (String) dfAppRoot.pNsRepo.getCellValue(pn.label, PN.DST_ADDR);
-		} catch (ExceptionControlApp e) {
+			String dstAddrStr = (String) dfAppRoot.pNsRepo.getCellValue(pn.label, PN.DST_ADDR);
+			int dstAddrLen = (Integer) dfAppRoot.pNsRepo.getCellValue(pn.label, PN.DST_ADDR_PREFIX_LEN);
+			Subnet pnAddrSubnet = new Subnet(InetAddress.getByName(dstAddrStr), dstAddrLen);
+			if(inBoundTraffic)
+				configInfoTemplate.nwDst = pnAddrSubnet.toString();
+			else
+				configInfoTemplate.nwSrc = pnAddrSubnet.toString();
+		} catch (Throwable e) { 
 			log.error("Excepted trying to get PN destination address from repo for " + pn.label);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			return false;
 		}
-		if(inBoundTraffic)
-			configInfoTemplate.nwDst = pnAddr;
-		else
-			configInfoTemplate.nwSrc = pnAddr;
+		
+		
 
 		String portStr = (inBoundTraffic ? amsConn.netNodeNorthPort : amsConn.netNodeSouthPort);
 		int portToAms = Short.valueOf(portStr);

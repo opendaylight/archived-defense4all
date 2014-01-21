@@ -10,7 +10,7 @@
 
 NAME=controllapps
 DEFENSE4ALL_NAME=defense4all
-VERSION=1.0.4
+VERSION=1.0.5
 CLI_LIST="framework defense4all"
 JAR_LIST="framework.cli defense4all.cli"
 DEFENSE4ALL_HOME=/usr/share/$DEFENSE4ALL_NAME
