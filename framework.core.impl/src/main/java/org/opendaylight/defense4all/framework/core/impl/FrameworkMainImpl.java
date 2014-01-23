@@ -10,7 +10,6 @@
 
 package org.opendaylight.defense4all.framework.core.impl;
 
-import java.nio.ByteBuffer;
 import java.security.ProtectionDomain;
 import java.util.Properties;
 
@@ -27,7 +26,6 @@ import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.FR;
 import org.opendaylight.defense4all.framework.core.FrameworkMain;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
-import org.opendaylight.defense4all.framework.core.PropertiesSerializer;
 import org.opendaylight.defense4all.framework.core.Repo;
 import org.opendaylight.defense4all.framework.core.RepoFactory;
 import org.slf4j.Logger;
@@ -177,29 +175,6 @@ public class FrameworkMainImpl implements FrameworkMain {
 
 	protected void test() {
 	}
-
-	protected void testPropertiesSerializer() {
-
-		PropertiesSerializer pSerializer = PropertiesSerializer.get();
-		Properties props1 = new Properties();
-		props1.put("key1", "value1");
-		props1.put("key2", "value2");
-		props1.put("key3", "value3");
-		System.out.println("1" + props1);
-
-		ByteBuffer byteBuffer = pSerializer.toByteBuffer(props1);
-		Properties props2 = pSerializer.fromByteBuffer(byteBuffer);
-		System.out.println("2" + props2);
-
-		byte[] bytes = pSerializer.convertObjTypeToCassType(props1);
-		Properties props3 = pSerializer.convertCassTypeToObjType(null, bytes);
-		System.out.println("3" + props3);
-
-		String s = pSerializer.toString(props1);
-		Properties props4 = pSerializer.fromString(s);
-		System.out.println("4" + props4);		
-	}
-
 
 	/**
 	 * Initializes all modules after construction bottom-up. First, registers the provided ShutdownHookThread object 

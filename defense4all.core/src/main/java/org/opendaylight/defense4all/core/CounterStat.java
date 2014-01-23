@@ -233,11 +233,6 @@ public class CounterStat {
 			numofAttackSuspicions = getAttackSuspicions (6,0);
 			attacked = isAttacked(6,0);
 		}
-
-//		System.out.println("Counter    for " + trafficFloorKey + ":\tlatest=" + (int)Math.ceil(latestTcpbytes) + "/" + 
-//				(int)Math.ceil(latestTcppackets) + ",\t" + "averages=" + (int)Math.ceil(averageTcpbytes) + "/" + 
-//				(int)Math.ceil(averageTcppackets) + ";\t"+"suspicions=" + numofAttackSuspicions + ";\t" + status  +
-//				";\tattacked stat=" + attacked );
 	}
 
 	public Hashtable<Integer,CounterStatusData> loadStatusData (String counterStatusStr) throws ExceptionControlApp {

@@ -154,32 +154,4 @@ public class SNMPManager {
 		return target;
 	}
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		/**
-		 * Port 161 is used for Read and Other operations Port 162 is used for
-		 * the trap generation
-		 */
-		SNMPManager client = new SNMPManager("udp:10.206.167.52/161");
-		try {
-
-			for(int i = 0; i < 55; i++){
-				System.out.print(client.getAsString(DPOID.RSWSD_RESOURCE_UTILIZATION) + ", ");
-				Thread.sleep(Calendar.getInstance().getTime().getSeconds()*100);
-			}
-			for(int i = 0; i < 55; i++){
-				System.out.print(client.getAsString(DPOID.RSWSD_RESOURCE_UTILIZATION) + ", ");
-				Thread.sleep(500);
-			}
-
-			
-		} catch (Throwable e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-	}
-
 }

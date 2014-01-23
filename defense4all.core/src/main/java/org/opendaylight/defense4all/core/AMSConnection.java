@@ -32,6 +32,11 @@ public class AMSConnection {
 		this.amsNorthPort = amsNorthPort; this.amsSouthPort = amsSouthPort;
 	}
 
+	public AMSConnection(AMSConnection other) {
+		this.amsLabel = other.amsLabel; this.netNodeNorthPort = other.netNodeNorthPort; this.netNodeSouthPort = other.netNodeSouthPort;
+		this.amsNorthPort = other.amsNorthPort; this.amsSouthPort = other.amsSouthPort;
+	}
+
 	public AMSConnection(String s) throws IllegalArgumentException {
 
 		String[] split = s.split(NetNode.ITEMS_DELIMITER);
@@ -50,7 +55,7 @@ public class AMSConnection {
 			throw new IllegalArgumentException("Invalid param s " + s + "." + e.getLocalizedMessage());
 		}
 	}
-
+	
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(amsLabel);  
