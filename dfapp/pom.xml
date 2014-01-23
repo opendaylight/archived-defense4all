@@ -5,7 +5,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>dfapp</artifactId>
-	<version>1.0.5</version>
+	<version>1.0.6</version>
 	<packaging>pom</packaging>
 	<name>dfapp</name>
 	<url>http://maven.apache.org</url>
@@ -16,8 +16,15 @@
 		<nexusdeploy>http://nexus.opendaylight.org/content</nexusdeploy>
 		<sitedeploy>http://nexus.opendaylight.org/content/sites/site</sitedeploy>
 		<releaseplugin.version>2.3.2</releaseplugin.version>
-
 	</properties>
+
+	<scm>
+		<connection>scm:git:ssh://git.opendaylight.org:29418/defense4all.git</connection>
+		<developerConnection>scm:git:ssh://git.opendaylight.org:29418/defense4all.git</developerConnection>
+		<url>https://wiki.opendaylight.org/view/Project_Proposals:Defense4All</url>
+		<tag>HEAD</tag>
+	</scm>
+
 
 	<modules>
 		<module>../framework.core</module>
