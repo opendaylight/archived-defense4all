@@ -490,9 +490,6 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				continue; // Occasionally may fail to obtain stats
 			}
-
-			//			System.out.println("StatsCollector: delivering " + statReport.stats.tcpbytes + ", " + 
-			//							statReport.qualifiedCounterName);
 			try {
 				dfAppRootFullImpl.detectorMgrImpl.handleStatReport(pnRow, statReport);
 			} catch (Throwable e) {/* Ignore */}

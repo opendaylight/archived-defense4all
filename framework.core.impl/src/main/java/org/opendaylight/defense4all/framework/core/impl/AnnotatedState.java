@@ -15,9 +15,13 @@ import me.prettyprint.hom.annotations.Id;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Entity
 @Table(name="ASTable")
 public class AnnotatedState {
+	static Logger log = LoggerFactory.getLogger(AnnotatedState.class);
 
 	@Id
 	public String rowKey;
@@ -56,10 +60,10 @@ public class AnnotatedState {
 	
 	public void printObject() {
 
-        System.out.print("rowKey = " + rowKey + "; ");
-        System.out.print("a = " + a + "; ");
-        System.out.print("b = " + b + "; ");
-        System.out.println(getC());
+        log.debug("rowKey = " + rowKey + "; ");
+        log.debug("a = " + a + "; ");
+        log.debug("b = " + b + "; ");
+        log.debug(getC());
 	}
 }
 

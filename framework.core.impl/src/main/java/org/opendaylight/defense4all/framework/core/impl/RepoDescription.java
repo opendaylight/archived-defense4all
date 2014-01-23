@@ -71,16 +71,16 @@ public class RepoDescription {
 	public void printObject(Logger log) {
 		try {
 			SerializersSerializer sSerializer = SerializersSerializer.getInstance();
-			System.out.print("rowKey = " + repoName + "; ");
-			System.out.println("KeySerializerClassName = " + keySerializerClassName + "; ");
-			System.out.println("ImmediateFlush = " + immediateFlush + "; ");;
-			System.out.println("DescribedColumns are: ");
+			log.debug("rowKey = " + repoName + "; ");
+			log.debug("KeySerializerClassName = " + keySerializerClassName + "; ");
+			log.debug("ImmediateFlush = " + immediateFlush + "; ");;
+			log.debug("DescribedColumns are: ");
 			for (RepoCD colDesc : describedColumnSet) {
-				System.out.print("Column name = " + colDesc.columnName + "; ");
-				System.out.print("Value serializer class name = " + sSerializer.toString(colDesc.columnValueSerializer) + "; ");
-				System.out.print("Column properties = " + colDesc.columnProperties + "; ");
+				log.debug("Column name = " + colDesc.columnName + "; ");
+				log.debug("Value serializer class name = " + sSerializer.toString(colDesc.columnValueSerializer) + "; ");
+				log.debug("Column properties = " + colDesc.columnProperties + "; ");
 			}
-			System.out.println();
+			
 		} catch (Exception e) {
 			log.error("Failed to print object." + e.getLocalizedMessage());
 		}

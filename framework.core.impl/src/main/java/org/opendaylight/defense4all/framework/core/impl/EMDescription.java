@@ -15,12 +15,15 @@ import me.prettyprint.hom.annotations.Id;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 //Repo name corresponds to FrameworkMain.RepoMajor.REPO_FACTORY + "_" + RepoFactoryImpl.RepoMinor.EM_DESCRIPTIONS
 
 @Entity
 @Table(name= "FWORK_REPO_FACTORY_EMDescriptions")
 public class EMDescription {
-	
+	static Logger log = LoggerFactory.getLogger(EMDescription.class);
 	
 	/** Empty constructor to be used by Hector EntityManager when inflating and populating fields from Cassandra. */
 	public EMDescription() {}
@@ -43,7 +46,7 @@ public class EMDescription {
 	public void setClassPathsDelimitedByColon(String classPathsDelimitedByColon) {this.classPathsDelimitedByColon = classPathsDelimitedByColon;}
 	
 	public void printObject() {
-        System.out.print("rowKey = " + key + "; ");
-        System.out.println("classPathsDelimitedByColon = " + classPathsDelimitedByColon + "; ");   	
+        log.debug("rowKey = " + key + "; ");
+        log.debug("classPathsDelimitedByColon = " + classPathsDelimitedByColon + "; ");   	
 	}
 }

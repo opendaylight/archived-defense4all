@@ -18,7 +18,11 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Utils {
+	static Logger log = LoggerFactory.getLogger(Utils.class);
 
 	/** 
 	 * Returns 4 bytes string that is with very high probability unique mapping of the inputed string. 
@@ -60,7 +64,7 @@ public class Utils {
 			entry = iter.next();
 			key = entry.getKey();
 			row = entry.getValue();
-			System.out.println("row " + key + ": " + row.toString());
+			log.debug("row " + key + ": " + row.toString());
 		}
 	}
 

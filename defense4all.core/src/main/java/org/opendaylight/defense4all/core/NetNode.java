@@ -457,11 +457,20 @@ public class NetNode {
 		}
 	}
 
-
 	public static boolean isRemoved(String netNodeLabel) {
 
 		try {
 			String netNodeStatusStr = (String) DFHolder.get().netNodesRepo.getCellValue(netNodeLabel, NetNode.STATUS);
+			Status netNodeStatus = Status.valueOf(netNodeStatusStr);
+			if(netNodeStatus == Status.REMOVED) return true;
+			return false;
+		} catch (Throwable e) {return false;}
+	}
+
+	public static boolean isRemoved(Hashtable<String,Object> netNodeRow) {
+
+		try {
+			String netNodeStatusStr = (String) netNodeRow.get(STATUS);
 			Status netNodeStatus = Status.valueOf(netNodeStatusStr);
 			if(netNodeStatus == Status.REMOVED) return true;
 			return false;
