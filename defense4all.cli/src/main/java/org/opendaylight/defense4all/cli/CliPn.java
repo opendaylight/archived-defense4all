@@ -104,11 +104,11 @@ public class CliPn {
 	protected static void displayUsageAddPn() {
 
 	
-		String displayUsage = "Usage:  controlapps addofc param1 param2 ... \n"
-				+"   Description - adds the ofc described through the params.\n"
+		String displayUsage = "Usage:  controlapps addpn param1 param2 ... \n"
+				+"   Description - adds the pn described through the params.\n"
 				+"   A params is formed -- field_name=field_value.\n"
 				+"   A composite field is formed -- composite_field::sub_composite_field=sub_composite_field_value.\n"
-				+"   I field in composite list element -- list_name::list_element_label::composite_field::sub_composite_field=value.\n"
+				+"   A field in composite list element -- list_name::list_element_label::composite_field::sub_composite_field=value.\n"
 				+"   The params are\n"
 				+"       label -                      [mandatory] user provided unique textual name (starts with a letter) to this pn.\n"
 				+"       ipVersion -                  [mandatory] ip version (IPV4, IPV6).\n"

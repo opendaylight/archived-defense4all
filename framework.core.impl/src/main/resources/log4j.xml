@@ -8,7 +8,7 @@
 			<param name="ConversionPattern" value="%-4r [%t] %-5p %c %x - %m%n" />
 		</layout>
 	</appender>
- 	<!-- <appender name="CA" class="org.apache.log4j.ConsoleAppender">
+ 	<appender name="CA" class="org.apache.log4j.ConsoleAppender">
 		<layout class="org.apache.log4j.PatternLayout">
 			<param name="ConversionPattern" value="%-4r [%t] %-5p %m - %l%n" />
 		</layout>
@@ -16,12 +16,12 @@
 	<logger name="org.opendaylight.defense4all" additivity="false">
 		<level value="debug" />
 		<appender-ref ref="CA" />
-	</logger>  -->
+	</logger> 
 	
 	<root>
 		<level value="INFO" />
 		<appender-ref ref="FA" />
-		<!-- <appender-ref ref="CA" />  -->
+		<appender-ref ref="CA" /> 
 	</root>
 </log4j:configuration>
 

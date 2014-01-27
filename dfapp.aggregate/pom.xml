@@ -4,7 +4,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>df.aggregate</artifactId>
-	<version>1.0.6</version>
+	<version>1.0.7</version>
 	<packaging>pom</packaging>
 	<name>df</name>
 	<url>http://maven.apache.org</url>
@@ -17,17 +17,17 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>framework.aggregate</artifactId>
-			<version>1.0.6</version>
+			<version>1.0.7</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.aggregate</artifactId>
-			<version>1.0.6</version>
+			<version>1.0.7</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>restservice</artifactId>
-			<version>1.0.6</version>
+			<version>1.0.7</version>
 			<type>war</type>
 		</dependency>
 	</dependencies>
@@ -69,9 +69,11 @@
 					<execution>
 						<id>generate-rpm-server</id>
 						<goals>
-							<goal>rpm</goal>
+							<goal>attached-rpm</goal>
 						</goals>
+
 						<configuration>
+							<classifier>defense4all</classifier>
 							<name>defense4all</name>
 							<copyright>2014, Radware Ltd.</copyright>
 							<distribution>OpenDaylight</distribution>
@@ -96,10 +98,10 @@
 									<groupname>defense4all</groupname>
 									<sources>
 										<source>
-											<location>../dfapp.aggregate/target/df.aggregate-1.0.6.jar</location>
+											<location>../dfapp.aggregate/target/df.aggregate-1.0.7.jar</location>
 										</source>
 										<source>
-											<location>../restservice/target/restservice-1.0.6.war</location>
+											<location>../restservice/target/restservice-1.0.7.war</location>
 										</source>
 									</sources>
 								</mapping>
@@ -155,9 +157,10 @@
 					<execution>
 						<id>generate-rpm-cli</id>
 						<goals>
-							<goal>rpm</goal>
+							<goal>attached-rpm</goal>
 						</goals>
 						<configuration>
+							<classifier>defense4all-cli</classifier>
 							<name>defense4all-cli</name>
 							<copyright>2014, Radware Ltd.</copyright>
 							<distribution>OpenDaylight</distribution>
@@ -181,10 +184,10 @@
 									<groupname>defense4all</groupname>
 									<sources>
 										<source>
-											<location>../defense4all.cli/target/defense4all.cli-1.0.6.jar</location>
+											<location>../defense4all.cli/target/defense4all.cli-1.0.7.jar</location>
 										</source>
 										<source>
-											<location>../framework.cli/target/framework.cli-1.0.6.jar</location>
+											<location>../framework.cli/target/framework.cli-1.0.7.jar</location>
 										</source>
 									</sources>
 								</mapping>
@@ -240,7 +243,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../dfapp.aggregate/target/df.aggregate-1.0.6.jar</src>
+									<src>../dfapp.aggregate/target/df.aggregate-1.0.7.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -251,7 +254,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../restservice/target/restservice-1.0.6.war</src>
+									<src>../restservice/target/restservice-1.0.7.war</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -311,7 +314,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../defense4all.cli/target/defense4all.cli-1.0.6.jar</src>
+									<src>../defense4all.cli/target/defense4all.cli-1.0.7.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -322,7 +325,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../framework.cli/target/framework.cli-1.0.6.jar</src>
+									<src>../framework.cli/target/framework.cli-1.0.7.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -349,6 +352,39 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>attach-artifacts</id>
+						<phase>package</phase>
+						<goals>
+							<goal>attach-artifact</goal>
+						</goals>
+						<configuration>
+							<artifacts>
+								<artifact>
+									<!-- <artifactId> defense4all-cli_1.0.7 </artifactId> -->
+									<file>../dfapp.aggregate/target/defense4all-cli_1.0.7.deb</file>
+									<type>deb</type>
+									<classifier>
+										defense4all-cli
+									</classifier>
+								</artifact>
+								<artifact>
+									<file>../dfapp.aggregate/target/defense4all_1.0.7.deb</file>
+									<type>deb</type>
+									<classifier>
+										defense4all
+									</classifier>
+								</artifact>
+							</artifacts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 		</plugins>
 	</build>
 </project>
