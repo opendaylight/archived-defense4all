@@ -83,8 +83,9 @@ public class CliOfc {
 				+"       mgmtPassword -       [mandatory] Management password.\n"
 				+"       forStatsCollection - is for stats sollection (true/false default=false).\n"
 				+"       forDiversion -       is for diversion (true/false default=false).\n"
+				+"       statsCollectionInterval - [optinal] StatsCollection interval in seconds.\n"
 				+"       props - 	          {}.\n"	
-				+"Example: controlapps addofc hostname=odl_controller mgmtPort=8080 mgmtUsername=admin mgmtPassword=admin forStatsCollection=true forDiversion=true\n";
+				+"Example: controlapps addofc hostname=odl_controller mgmtPort=8080 mgmtUsername=admin mgmtPassword=admin forStatsCollection=true forDiversion=true statsCollectionInterval=120\n";
 		System.out.println(displayUsage);
 	}
 
@@ -181,10 +182,11 @@ public class CliOfc {
 				else if(param.startsWith("mgmtPassword"))
 					addPasswd(ofc, param);			
 				else if(param.startsWith("forStatsCollection"))
-					addForStatsCollection(ofc, param);
-				
+					addForStatsCollection(ofc, param);	
 				else if(param.startsWith("forDiversion"))
 					addForDiversion(ofc, param);
+				else if(param.startsWith("statsCollectionInterval"))
+					addStatsCollectionInterval(ofc, param);	
 				else if(param.startsWith("props"))
 					addProp(ofc, param);
 			}
@@ -200,11 +202,11 @@ public class CliOfc {
 
 		try {
 			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);	
+			System.out.println("Adding ofc " + ofc.hostname);
 			connector.postToControlApps("ofcs", ofc);
 		} catch (Exception e) {
 			System.out.println("Could not add ofc because " + e.getMessage());
 		}
-		System.out.println("Adding ofc " + ofc.hostname);
 	}
 
 	protected static void addHostname(OFC ofc, String param) throws Exception {
@@ -219,7 +221,7 @@ public class CliOfc {
 
 	protected static void addPort(OFC ofc, String param) throws Exception {
 		String[] split = Cli.splitAndAssertSize(param, "=");
-		ofc.port = new Integer(split[1]); // Split "type=OF"
+		ofc.port = Integer.valueOf(split[1]); // Split "type=OF"
 	}
 
 	protected static void addUsername(OFC ofc, String param) throws Exception {
@@ -234,7 +236,7 @@ public class CliOfc {
 
 	protected static void addForStatsCollection(OFC ofc, String param) throws Exception {
 		String[] split = Cli.splitAndAssertSize(param, "=");
-		ofc.forStatsCollection = new Boolean(split[1]);  
+		ofc.forStatsCollection = Boolean.valueOf(split[1]);
 	}
 
 	protected static void addProp(OFC ofc, String param) throws Exception {
@@ -248,7 +250,12 @@ public class CliOfc {
 
 	protected static void addForDiversion(OFC ofc, String param) throws Exception {
 		String[] split = Cli.splitAndAssertSize(param, "=");
-		ofc.forDiversion = new Boolean(split[1]);  
+		ofc.forDiversion = Boolean.valueOf(split[1]);  
+	}
+	
+	protected static void addStatsCollectionInterval(OFC ofc, String param) throws Exception {
+		String[] split = Cli.splitAndAssertSize(param, "=");
+		ofc.ofcStatsCollectionInterval = Integer.valueOf(split[1]);  
 	}
 
 	/**
@@ -260,12 +267,12 @@ public class CliOfc {
 	protected static void handleRemoveOfc(ArrayList<String> params) {
 
 		if(params == null || params.isEmpty()) {
-			displayUsageAddOfc();;
+			displayUsageRemoveOfc();;
 			return;
 		}
 		String ofcHostName = params.get(0);
 		if(ofcHostName == null || ofcHostName.isEmpty()) {
-			displayUsageAddOfc();
+			displayUsageRemoveOfc();
 			return;
 		}
 
@@ -284,7 +291,7 @@ public class CliOfc {
 
 	public static void displayUsageRemoveOfc() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Usage: controlapps removenetnode ofc_hostname\n");
+		sb.append("Usage: controlapps removeofc ofc_hostname\n");
 		sb.append("   Description - removes the ofc corresponding to the ofc_hostname.");
 		System.out.println(sb.toString());
 		

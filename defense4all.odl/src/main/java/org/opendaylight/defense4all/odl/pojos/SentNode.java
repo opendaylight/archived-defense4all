@@ -31,6 +31,6 @@ public class SentNode {
 
     @Override
     public String toString() {
-    	return "Node [" + id.toString() + ":" + type.toString() + "]";
+    	return "Node [" + id.toString() + ":" + type + "]";
     }
 }

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"	
 	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	   xsi:schemaLocation="http://www.springframework.org/schema/beans 
-	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+	   classpath:spring-beans-3.0.xsd">
 	
 	<import resource="classpath*:defense4all_context.xml"/>
 	
 	<!-- Framework main -->
 	<bean id="frameworkMain" class="org.opendaylight.defense4all.framework.core.impl.FrameworkMainImpl" >
-		<constructor-arg index="0" name="configProperties"> <null/> </constructor-arg>
+		<constructor-arg index="0"> <null/> </constructor-arg> <!-- name="configProperties" -->
 		<property name="repoFactoryImpl" ref="repoFactoryImpl" />
 		<property name="clusterMgrImpl" ref="clusterMgrImpl" />
 		<property name="peerCommunicatorImpl" ref="peerCommunicatorImpl" />
@@ -17,11 +17,14 @@
 		<property name="stateClassPaths" value="org.opendaylight.defense4all.framework.core.impl" />
 		<property name="port" value="8086" />
 		<!-- next value is for eclipse running. should be different for single jar -->
-		<property name="restWarPath" value="../../../restservice/target/restservice-1.0.7.war" />
+		<property name="restWarPath" value="../../../restservice/target/restservice-1.0.12.war" />
+		<property name="guiWarPath" value="../../../webgui/target/webgui-1.0.12.war" />
 		<property name="restPath" value="/" />
+		<property name="guiPath" value="/controlapps" />
 		<property name="appRoot" ref="appRoot" /> 	<!--	The actual integrated application -->
 		<property name="flightRecorderImpl" ref="flightRecorderImpl" />
 		<property name="healthTrackerImpl" ref="healthTrackerImpl" />
+		<property name="demoRun" value="0" />  <!--	1==true; 0==false -->
 	</bean>
 	
 	<!-- Framework core modules  -->

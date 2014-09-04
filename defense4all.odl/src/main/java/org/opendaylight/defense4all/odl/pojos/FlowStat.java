@@ -10,6 +10,7 @@
 package org.opendaylight.defense4all.odl.pojos;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Represents the flow that is installed on the network node
@@ -24,6 +25,7 @@ public class FlowStat {
 
     public FlowStat () {}
 
+//    @JsonProperty("flowStatistic")
     public Flow getFlow() {return flow;}
     public void setFlow(Flow flow) {this.flow = flow;}
 

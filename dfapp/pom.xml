@@ -5,7 +5,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>dfapp</artifactId>
-	<version>1.0.7</version>
+	<version>1.0.12</version>
 	<packaging>pom</packaging>
 	<name>dfapp</name>
 	<url>http://maven.apache.org</url>
@@ -33,7 +33,10 @@
 		<module>../framework.cli</module>
 		<module>../defense4all.core</module>
 		<module>../defense4all.core.impl</module>
-		<module>../defense4all.odl</module>
+
+        <module>../defense4all.odl</module>
+<!-- 		<module>../../defenseflow/defenseflow.hp/</module>
+	-->	
 		<module>../defenseflow.dp</module>
 		<module>../defense4all.mitigationdriver.local</module>
 		<module>../defense4all.restservice</module>
@@ -64,7 +67,7 @@
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
 				</configuration>
 			</plugin>
-			<plugin>
+		<!-- 	<plugin>
 				<inherited>true</inherited>
 				<artifactId>maven-source-plugin</artifactId>
 				<version>2.1.2</version>
@@ -76,7 +79,7 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin> -->
 		</plugins>
 	</build>
 
@@ -101,6 +104,14 @@
 
 
 	<dependencies>
+	
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.3.1</version> <!-- same as spring 4.0.0 -->
+ 			<!-- <version>4.3.4</version> --> 			
+ 			<!-- <version>4.1.3</version> -->
+ 		</dependency>	
 
 		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
@@ -110,7 +121,8 @@
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpcore</artifactId>
-			<version>4.1.4</version>
+			<version>4.3.2</version> 			
+ 			<!-- <version>4.1.4</version> -->
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

@@ -3,65 +3,139 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<artifactId>webgui</artifactId>
-	<packaging>jar</packaging>
+	<packaging>war</packaging>
 	<name>webgui</name>
 	<url>http://maven.apache.org</url>
-
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<jersey.version>1.12</jersey.version>
-	</properties>
 
 	<parent>
 		<groupId>org.opendaylight.defense4all</groupId>
 		<artifactId>dfapp</artifactId>
-		<version>1.0.7</version>
+		<version>1.0.12</version>
 		<relativePath>../dfapp/pom.xml</relativePath>
 	</parent>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.opendaylight.defense4all</groupId>
-			<artifactId>framework.core</artifactId>
-			<version>1.0.7</version>
-		</dependency>
-		<dependency>
-			<groupId>org.opendaylight.defense4all</groupId>
-			<artifactId>defense4all.core</artifactId>
-			<version>1.0.7</version>
-		</dependency>
-		<dependency>
-			<groupId>com.sun.jersey</groupId>
-			<artifactId>jersey-client</artifactId>
-			<version>1.8</version>
-		</dependency>
-		<dependency>
-			<groupId>com.sun.jersey</groupId>
-			<artifactId>jersey-json</artifactId>
-			<version>${jersey.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.sun.jersey.contribs</groupId>
-			<artifactId>jersey-spring</artifactId>
-			<version>${jersey.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.sun.jersey.contribs</groupId>
-			<artifactId>jersey-apache-client</artifactId>
-			<version>1.17</version>
-			<exclusions>
-				<exclusion>
-					<groupId>commons-logging</groupId>
-					<artifactId>commons-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-	</dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <!-- NB! Set <version> to the latest released version of frontend-maven-plugin, like in README.md -->
+                <!--<version>0.0.17-SNAPSHOT</version>-->
+                <!-- optional -->
+                <configuration>
+                    <workingDirectory>src/main/webapp</workingDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install node and npm</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>v0.10.30</nodeVersion>
+                            <npmVersion>1.4.21</npmVersion>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>npm install grunt --save-dev</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <!-- Optional configuration which provides for running any npm command -->
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!--<plugin>-->
+                <!--<groupId>com.github.skwakman.nodejs-maven-plugin</groupId>-->
+                <!--<artifactId>nodejs-maven-plugin</artifactId>-->
+                <!--<version>1.0.5-node-0.10.25</version>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<phase>-->
+                            <!--validate-->
+                        <!--</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>extract</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+                <!--<configuration>-->
+                    <!-- target directory for node binaries -->
+                    <!--<targetDirectory>-->
+                        <!--${basedir}/target/nodejs/-->
+                    <!--</targetDirectory>-->
+                <!--</configuration>-->
+            <!--</plugin>-->
+            <plugin>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.3</version>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <directory>${basedir}/target-grunt/dist</directory>
+                        </resource>
+                    </webResources>
+                </configuration>
+            </plugin>
+	    <plugin> 
+  		<groupId>org.apache.maven.plugins</groupId> 
+  		<artifactId>maven-surefire-plugin</artifactId> 
+  		<configuration> 
+    			<environmentVariables> 
+      				<PATH>${basedir}/node/node:${env.PATH}</PATH> 
+    			</environmentVariables> 
+  		</configuration> 
+	</plugin> 
+        <plugin>
+            <groupId>pl.allegro</groupId>
+            <artifactId>grunt-maven-plugin</artifactId>
+            <version>1.4.1</version>
+            <configuration>
+                <!-- relative to src/main/webapp/, default: static -->
+                <sourceDirectory>src/main</sourceDirectory>
+                <jsSourceDirectory>webapp</jsSourceDirectory>
+                <!--<gruntBuildDirectory></gruntBuildDirectory>-->
+                <!-- example options usage to get verbose output in logs -->
+
+                <nodeExecutable>${basedir}/src/main/webapp/node/node</nodeExecutable>
+                <npmExecutable>${basedir}/node/node ${basedir}/node/npm/bin/npm-cli.js</npmExecutable>
+                <bowerExecutable>${basedir}/src/main/webapp/bower.sh</bowerExecutable>
+                <gruntExecutable>${basedir}/src/main/webapp/grunt.sh</gruntExecutable>
+                <gruntOptions>
+                    <gruntOption>--verbose</gruntOption>
+                    <gruntOption>--force</gruntOption>
+                </gruntOptions>
+
+                <!-- example npm install env variable -->
+                <npmEnvironmentVar>
+                    <PHANTOMJS_CDNURL>http://cnpmjs.org/downloads</PHANTOMJS_CDNURL>
+                </npmEnvironmentVar>
+
+                <!-- example options usage to filter variables in given resource -->
+                <filteredResources>
+                    <filteredResource>maven-properties.json</filteredResource>
+                </filteredResources>
+
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>create-resources</goal>
+                        <!--<goal>npm</goal>-->
+                        <!-- or npm-offline if npm failure is not an option -->
+                        <goal>bower</goal>
+                        <goal>grunt</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+    </build>
 
 </project>

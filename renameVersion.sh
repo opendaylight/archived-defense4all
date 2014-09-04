@@ -1,7 +1,7 @@
 #!/bin/sh
 
-version_from="1\.0\.5"
-version_to="1\.0\.6"
+version_from="1\.0\.11"
+version_to="1\.0\.12"
 
 
 grep "$version_from" `find . -name "pom.xml"` | egrep "<version>|<location>|<src>" > /tmp/list

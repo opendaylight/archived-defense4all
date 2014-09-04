@@ -18,14 +18,16 @@ import java.util.Map;
 
 import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.PN;
-import org.opendaylight.defense4all.core.StatReport;
 import org.opendaylight.defense4all.core.StatsCollectionRep;
 import org.opendaylight.defense4all.core.StatsCollector;
-import org.opendaylight.defense4all.core.StatsCountersPlacement;
+import org.opendaylight.defense4all.core.PN.OperationalStatus;
 import org.opendaylight.defense4all.core.PN.StatsCollectionStatus;
+import org.opendaylight.defense4all.core.interactionstructures.StatReport;
+import org.opendaylight.defense4all.core.interactionstructures.StatsCountersPlacement;
 import org.opendaylight.defense4all.core.TrafficFloor;
 import org.opendaylight.defense4all.framework.core.Asserter;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.ExternalComponentException;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 
@@ -52,30 +54,43 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 	}
 
 	/** Post-constructor initialization	 */
-	public void init() throws ExceptionControlApp {
+	public void init() throws ExceptionControlApp {		
+		log.info( "StatsCollector is starting.");
 
-		fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, "StatsCollector is starting.");
-		
 		super.init();
-
-		// start periodically collecting stats for all protected objects. 
-		// Later can use the param to specify which stats to collect in each cycle - based on SLA.
-		int interval = ( mCollectStatsIntervalInSecs > dfAppRootFullImpl.controllerStatsCollectionIntervalInSecs) ?
-				mCollectStatsIntervalInSecs : dfAppRootFullImpl.controllerStatsCollectionIntervalInSecs;
-		addPeriodicExecution(ACTION_COLLECT_STATS, null, (long) interval);
 		initialized = true;
+	}
+
+	public void startCollection(long interval ) throws ExceptionControlApp {
+		try {
+			// start periodically collecting stats for all protected objects. 
+			// Later can use the param to specify which stats to collect in each cycle - based on SLA.
+			long setInterval;
+			if ( !fMain.isDemo() )
+				setInterval = ( mCollectStatsIntervalInSecs > interval) ?
+						mCollectStatsIntervalInSecs : interval;
+			else 
+				setInterval = ( mCollectStatsIntervalInSecs < interval) ?
+						mCollectStatsIntervalInSecs : interval;
+			addPeriodicExecution(ACTION_COLLECT_STATS, null, setInterval);	
+		} catch ( Throwable e ) {
+			String msg = "Failed to start periodic statistics collection.";
+			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, msg);
+			log.error(msg, e);
+			throw new ExceptionControlApp(msg)	;
+		}
 	}
 
 	/** Pre-shutdown cleanup */
 	public void finit() {
-		fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, "StatsCollector is stopping.");
+		log.info( "StatsCollector is stopping.");
 		super.finit();
 	}
 
 	/** Reset 
 	 * @throws ExceptionControlApp */
 	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
-		fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, "StatsCollector is resetting to level " + resetLevel);
+		log.info(  "StatsCollector is resetting to level " + resetLevel);
 		super.reset(resetLevel);
 	}
 
@@ -98,7 +113,6 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 		// If removed - remove the stats counter if one was put solely for this server (in the first implementation the answer is always yes).
 		// If migrated - perform the remove and add.
 
-
 		//		String pnKey = ""; // just to compile
 		//		
 		//		try {
@@ -117,32 +131,35 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 	 * @param param_name param description
 	 * @return return description
 	 * @throws ExceptionControlApp 
+	 * @throws ExternalComponentException 
 	 * @throws exception_type circumstances description 
 	 */
-	protected boolean selectAndSetStatsCounters(String pnKey) throws ExceptionControlApp {		
+	protected boolean selectAndSetStatsCounters(String pnKey) throws ExceptionControlApp, ExternalComponentException {		
 
-		fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, "Checking possible counter placement locations for " + pnKey);
-		
+		log.info( "Checking possible counter placement locations for " + pnKey);
+
 		List<StatsCountersPlacement> placements = dfAppRootFullImpl.statsCollectionRep.offerCounterPlacements(pnKey);
 		List<String> newLocations = selectPlacement(placements); // Select a set of counter locations
 		if(newLocations == null) {
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "No possible counter placement locations for " + pnKey);
+			log.error("No possible counter placement locations for " + pnKey);
 			return false;
 		}
-		
+
 		StringBuilder sb = new StringBuilder();
 		sb.append("adding stats counters in selected locations for "); sb.append(pnKey); sb.append(". Locations: ");
 		for(String newLocation : newLocations) {
 			sb.append(newLocation); sb.append(", ");
 		}
 		sb.setLength(sb.length() - 2); // Remove last ", "
-		fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, sb.toString());
-		
+		log.info( sb.toString());
+
 		boolean succeeded = setStatsCounters(pnKey, newLocations);
-		
-		if(!succeeded)
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed " + sb.toString());
-			
+
+		if(!succeeded) {
+			log.error( "Failed " + sb.toString());
+			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Statistics collection failed for PO " + PN.getPrintableKey(pnKey));
+		}
+
 		return succeeded;
 	}
 
@@ -174,7 +191,12 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 			oldTrafficFloorKey = (String) (entry.getValue());
 			if(oldTrafficFloorKey == null) continue;
 
-			oldTrafficFloor = (Short) dfAppRoot.trafficFloorsRepo.getCellValue(oldTrafficFloorKey, TrafficFloor.FLOOR_BASE);
+			try {
+				oldTrafficFloor = (Short) dfAppRoot.trafficFloorsRepo.getCellValue(oldTrafficFloorKey, TrafficFloor.FLOOR_BASE);
+			} catch ( Throwable e ) {
+				// Ignore. Partially deleted traffic floor
+				continue;
+			}
 			if(oldTrafficFloor != TrafficFloor.FLOOR_PEACETIME_START) continue; // Account only peace time floor in each loc
 
 			try {
@@ -191,13 +213,16 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 				numofLocs++;
 			} else {
 				try {
-					fMain.getFR().logRecord(DFAppRoot.FR_DF_OPERATIONAL, "Removing old traffic floor " + oldTrafficFloorKey);
+					log.info( "Removing old traffic floor " + oldTrafficFloorKey);
 					statsCollectionRep.removeTrafficFloor(oldTrafficFloorKey);
+				} catch (ExternalComponentException e) {
+					log.error("Failed to remove old traffic floor " + oldTrafficFloorKey, e);
+					///fMain.getFR().logRecord(DFAppRoot.FR_OFC_FAILURE,"Failed removing traffic floor "+oldTrafficFloorKey);
 				} catch (ExceptionControlApp e) {
 					log.error("Failed to remove old traffic floor " + oldTrafficFloorKey, e);
-					fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing traffic floor "+oldTrafficFloorKey);
+					//fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing traffic floor "+oldTrafficFloorKey);
 					fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-				}
+				} 
 				iter.remove();
 			}
 		}
@@ -206,7 +231,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 		for (String newTrafficFloorLoc : newTrafficFloorLocs) {
 
 			try {
-				newTrafficFloorKey = statsCollectionRep.addPeacetimeCounterTrafficFloor(pnKey, newTrafficFloorLoc);
+				newTrafficFloorKey = statsCollectionRep.addPeacetimeCounterTrafficFloorSetPNStatus(pnKey, newTrafficFloorLoc);
 				if(newTrafficFloorKey == null) continue;  // Failed to add peacetime traffic floor at this location
 				//pnRow.put(PN.TRAFFIC_FLOOR_KEY_PREFIX + newTrafficFloorKey, newTrafficFloorKey);
 				newPnCells.put(PN.TRAFFIC_FLOOR_KEY_PREFIX + newTrafficFloorKey, newTrafficFloorKey);
@@ -214,29 +239,34 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 				numofLocs++;
 			} catch (ExceptionControlApp e) {
 				log.error("Failed to add peacetime counter traffic floor for "+pnKey+" at location "+newTrafficFloorLoc,e);
-				fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed adding peacetime counter traffic floor at "
-						+ newTrafficFloorLoc + " for PN " + pnKey);
+				fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Statistics collection failed for PO " + PN.getPrintableKey(pnKey));
+
+				
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);			
 			}
 		}
-		
+
 		try {
 			dfAppRoot.pNsRepo.setRow(pnKey, newPnCells);
 		} catch (Exception e) {
 			log.error("Failed to record in repo PN updates with peacetime floor for " + pnKey, e);
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed adding peacetime counter traffic floors for PN "
-					+ pnKey + ", removing partially installed counters");
-			for(String key : newTrafficFloorKeys) {
-				try {
-					statsCollectionRep.removeTrafficFloor(key);
-				} catch (ExceptionControlApp e1) {
-					log.error("Excepted trying to remove new traffic floor during cleanup after failure to update PN " + 
-							"repo with new floors - for " + pnKey, e);
-					fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing partially installed counters for "+pnKey);
-					fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-					continue;
-				}
-			}
+			//fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed adding peacetime counter traffic floors for PN "
+			//		+ pnKey + ", removing partially installed counters");
+			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Statistics collection failed for PO " + PN.getPrintableKey(pnKey));
+
+			// TODO: check if this is the right recovery - to leave flows in PFC rather than remove them - in case repo
+			// setRow fails.
+			//			for(String key : newTrafficFloorKeys) {
+			//				try {
+			//					statsCollectionRep.removeTrafficFloor(key);
+			//				} catch (ExceptionControlApp e1) {
+			//					log.error("Excepted trying to remove new traffic floor during cleanup after failure to update PN " + 
+			//							"repo with new floors - for " + pnKey, e);
+			//					fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing partially installed counters for "+pnKey);
+			//					fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
+			//					continue;
+			//				}
+			//			}
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 		}		
 		return (numofLocs > 0);
@@ -269,7 +299,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 			pnRow = dfAppRoot.pNsRepo.getRow(pnKey);
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to get pnRow from repo for " + pnKey, e);
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing peacetime counter traffic floors for PN "+pnKey);
+			//fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing peacetime counter traffic floors for PN "+pnKey);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			return;
 		}
@@ -286,30 +316,34 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 				floor = (Short) dfAppRootFullImpl.trafficFloorsRepo.getCellValue(trafficFloorKey, TrafficFloor.FLOOR_BASE);
 			} catch (ExceptionControlApp e1) {
 				log.error("Failed to get floor from trafficFloorRepo for " + trafficFloorKey, e1);
-				fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing peacetime counter traffic floor " 
-						+ trafficFloorKey + " for PN " + pnKey);
+				//fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing peacetime counter traffic floor " 
+				//		+ trafficFloorKey + " for PN " + pnKey);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				continue;
 			}
 			if(floor != TrafficFloor.FLOOR_PEACETIME_START) continue;
 			try {
 				statsCollectionRep.removeTrafficFloor(trafficFloorKey);
+			} catch (ExternalComponentException e) {
+				log.error("Excepted trying to remove traffic floor for " + trafficFloorKey, e);
+				//fMain.getFR().logRecord(DFAppRoot.FR_OFC_FAILURE,"Failed removing peacetime counter traffic floor " 
+				//		+ trafficFloorKey + " for PN " + pnKey);
 			} catch (ExceptionControlApp e) {
 				log.error("Excepted trying to remove traffic floor for " + trafficFloorKey, e);
-				fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing peacetime counter traffic floor " 
-						+ trafficFloorKey + " for PN " + pnKey);
+				//fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed removing peacetime counter traffic floor " 
+				//		+ trafficFloorKey + " for PN " + pnKey);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-			}
+			} 
 			iter.remove();	
-			
+
 			// Remove traffic floor cell from PN row
 			// Do it on cell level to avoid synchronization conflicts
 			try {
 				dfAppRoot.pNsRepo.deleteCell(pnKey, entry.getKey());
 			} catch (ExceptionControlApp e) {
 				log.error("Excepted trying to set pnRow for " + pnKey, e);
-				fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to properly remove peacetime counter traffic floors "
-						+ "for PN " + pnKey);
+				//fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to properly remove peacetime counter traffic floors "
+				//		+ "for PN " + pnKey);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 			}				
 		}		
@@ -341,22 +375,17 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 				succeeded = selectAndSetStatsCounters(pnKey);
 				if (succeeded) {
 					dfAppRoot.pNsRepo.setCell(pnKey, PN.STATS_COLLECTION_STATUS, StatsCollectionStatus.ACTIVE.name());
+					dfAppRoot.pNsRepo.setCell(pnKey, PN.OPERATIONAL_STATUS, OperationalStatus.ACTIVE.name());
 					return;
 				}
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				log.error("Excepted trying to addPN " + pnKey, e);
-				try {
-					dfAppRoot.pNsRepo.setCell(pnKey, PN.STATS_COLLECTION_STATUS, StatsCollectionStatus.INVALID.name());
-				} catch (ExceptionControlApp e1) {
-					log.error("Excepted in marking statsCollectionstatus in pn " + pnKey +
-							" as invalid following exception in setting stats counters ", e);
-				}
-				return;
 			}
 		}
 
 		try {
 			dfAppRoot.pNsRepo.setCell(pnKey, PN.STATS_COLLECTION_STATUS, StatsCollectionStatus.NONE.name());
+			dfAppRoot.pNsRepo.setCell(pnKey, PN.OPERATIONAL_STATUS, OperationalStatus.FAILED.name());
 		} catch (ExceptionControlApp e) {
 			log.error("Excepted in marking statsCollectionstatus in pn " + pnKey + " as none. ", e);
 		}
@@ -412,11 +441,11 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 	protected synchronized void periodicCollectStats() {
 
 		if(!fMain.isOpenForBusiness()) return; // Operate only after everything is initialized and is not terminating
-		
+
 		Hashtable<String,Hashtable<String,Object>> table = dfAppRoot.pNsRepo.getTable();
 		if(table == null) {
 			log.error("Received null pns table");
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to collect statistics for all PNs");
+			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to collect statistics for all POs");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
 			return;
 		}
@@ -430,6 +459,9 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 			pnKey = entry.getKey();
 			pnRow = entry.getValue();
 			collectStatsForPN(pnKey, pnRow);
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {/* */}
 		}
 	}
 
@@ -444,7 +476,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 		if(pnKey == null || pnKey.isEmpty() || pnRow == null || pnRow.isEmpty()) {
 			String pnRowMsg = (pnRow == null) ? "null pnRow" : pnRow.toString();
 			log.error("Received bad params for collectstatsForPN: pnKey = " + pnKey + ", pnRow = " + pnRowMsg);
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to collect statistics for PN " + pnKey);
+			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to collect statistics for PO " + PN.getPrintableKey(pnKey));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			return;			
 		}
@@ -453,7 +485,14 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 		boolean ofBasedDetection = (Boolean) pnRow.get(PN.OF_BASED_DETECTION);
 		if(!ofBasedDetection) return;
 
-		/* Ignore protected networks not having OFC stats collection or collection state not active. */
+		/* Ignore protected networks that are canceled, failed, 
+		 * or not having OFC stats collection or collection state not active. */
+		OperationalStatus operationalStatus = OperationalStatus.INVALID;
+		try {
+			Object obj = dfAppRootFullImpl.pNsRepo.getCellValue(pnKey, PN.OPERATIONAL_STATUS);
+			if(obj != null)	operationalStatus = OperationalStatus.valueOf((String) obj);
+		} catch (Throwable e) {	}
+		if(operationalStatus == OperationalStatus.CANCELED || operationalStatus == OperationalStatus.FAILED) return;
 		String s = (String) pnRow.get(PN.STATS_COLLECTION_STATUS);
 		if(s == null) return;
 		if(StatsCollectionStatus.valueOf(s) != StatsCollectionStatus.ACTIVE) return;
@@ -485,9 +524,7 @@ public class StatsCollectorImpl extends DFAppCoreModule implements StatsCollecto
 				}
 			}			
 			if(statReport == null || statReport.stats == null) {
-				fMain.getFR().logRecord(DFAppRoot.FR_OFC_FAILURE, "Failed to collect statistics for PN " + pnKey + " at "
-						+ trafficFloorKey);
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+				fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to collect statistics for PO " + PN.getPrintableKey(pnKey));
 				continue; // Occasionally may fail to obtain stats
 			}
 			try {

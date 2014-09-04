@@ -45,6 +45,15 @@ public class ProtocolPort {
 			else if(this == DFProtocol.IP) return ipCounter;
 			else return invalidCounter;
 		}
+		
+		public static short getProtocolNumber(DFProtocol protocol) {
+			if(protocol == DFProtocol.TCP) return tcpCounter;
+			else if(protocol == DFProtocol.UDP) return udpCounter;
+			else if(protocol == DFProtocol.ICMP) return icmpCounter;
+			else if(protocol == DFProtocol.IP) return ipCounter;
+			else return invalidCounter;
+		}
+		
 	}
 	
 	public DFProtocol protocol;
@@ -70,4 +79,11 @@ public class ProtocolPort {
 	public String toString() {return protocol.name() + ":" + port;}
 
 	public ProtocolPort clone() {return new ProtocolPort(protocol, port);}
+	
+	public String toPrintableString() {
+		if ( port != 0 )
+			return protocol.name() + ":" + port;
+		else
+			return protocol.name();
+	}
 }

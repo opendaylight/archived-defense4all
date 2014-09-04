@@ -1,0 +1,28 @@
+{
+  "name": "webapp",
+  "version": "1.0.12",
+  "description": "Defense Flow Web UI",
+  "keywords": [
+    "DF",
+    "DefenseFlow"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "angular-bootstrap": "~0.10.0",
+    "angular-loader": "1.2.x",
+    "angular-resource": "~1.2.16",
+    "angular-mocks": "~1.2.15",
+    "bootstrap": "~3.1.1",
+    "angular-route": "1.2.x",
+    "ng-tags-input": "2.0.1"
+  }
+}

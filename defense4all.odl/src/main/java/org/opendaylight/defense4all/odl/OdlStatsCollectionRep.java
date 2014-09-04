@@ -21,14 +21,15 @@ import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.core.NetNode.SDNNodeMode;
 import org.opendaylight.defense4all.core.NetNode.Status;
+import org.opendaylight.defense4all.core.OFC;
 import org.opendaylight.defense4all.core.PN;
 import org.opendaylight.defense4all.core.ProtectedLink;
 import org.opendaylight.defense4all.core.StatsCollectionRep;
-import org.opendaylight.defense4all.core.StatsCountersPlacement;
 import org.opendaylight.defense4all.core.Traffic.TrafficDirection;
 import org.opendaylight.defense4all.core.TrafficFloor;
 import org.opendaylight.defense4all.core.TrafficPort;
 import org.opendaylight.defense4all.core.TrafficPort.PortLocation;
+import org.opendaylight.defense4all.core.interactionstructures.StatsCountersPlacement;
 import org.opendaylight.defense4all.core.TrafficTuple;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
@@ -42,6 +43,8 @@ import org.slf4j.LoggerFactory;
 public class OdlStatsCollectionRep extends StatsCollectionRep {
 
 	public Odl odl = null;
+	public int odlStatsCollectionInterval;
+	public int defaultOdlStatsCollectionInterval;
 	Logger log = LoggerFactory.getLogger(this.getClass());
 
 	/* Constructor for Spring */
@@ -51,6 +54,9 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 
 	/* Setters for Spring */
 	public void setOdl(Odl odl) {this.odl = odl;}
+	public void setDefaultOdlStatsCollectionInterval ( int defaultOdlStatsCollectionInterval) {
+		this.defaultOdlStatsCollectionInterval = defaultOdlStatsCollectionInterval;
+	}
 
 	/** Post-constructor initialization	 */
 	@Override
@@ -288,10 +294,8 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 		}		
 
 		dfAppRoot.trafficFloorsRepo.setRow(trafficFloorKey, trafficFloor.toRow());
-		if(!success) {
-			odl.removeTrafficFloor(trafficFloor);
-			return null;
-		}
+		if(!success) {return null;}
+		
 		return trafficFloorKey;
 	}
 
@@ -442,5 +446,29 @@ public class OdlStatsCollectionRep extends StatsCollectionRep {
 
 	public void test(Properties props) {
 		odl.test(props);
+	}
+
+	@Override
+	public int getStatsCollectionInterval() {
+		return odlStatsCollectionInterval;
+	}
+
+	@Override
+	public void setStatsCollectionInterval(String ofcKey) throws ExceptionControlApp {
+		int ofcStatsIntervalInSecs = 0;
+		try {
+			Object obj = dfAppRoot.oFCsRepo.getCellValue(ofcKey, OFC.STATS_INTERVAL);
+			if(obj != null) ofcStatsIntervalInSecs = (Integer) obj;	
+
+			if ( ofcStatsIntervalInSecs == 0 ) {
+				log.info("Setting StatsCollectionInterval to default value "+defaultOdlStatsCollectionInterval);
+				odlStatsCollectionInterval = defaultOdlStatsCollectionInterval;
+			}
+
+			odlStatsCollectionInterval = ofcStatsIntervalInSecs;
+			dfAppRoot.oFCsRepo.setCell(ofcKey, OFC.STATS_INTERVAL,odlStatsCollectionInterval);	
+		} catch ( Throwable e) {
+			throw new ExceptionControlApp("Fail to set StatCollectionInterval", e);
+		}
 	}
 }

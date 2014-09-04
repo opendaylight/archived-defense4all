@@ -13,17 +13,23 @@ package org.opendaylight.defense4all.core;
 import java.util.List;
 import java.util.Properties;
 
+import javax.transaction.NotSupportedException;
+
+import org.opendaylight.defense4all.core.PN.OperationalStatus;
+import org.opendaylight.defense4all.core.interactionstructures.StatReport;
+import org.opendaylight.defense4all.core.interactionstructures.StatsCountersPlacement;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.ExternalComponentException;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
 
 public abstract class StatsCollectionRep extends DFAppModule {
-	
+
 	/* Constructor for Spring */
 	public StatsCollectionRep() {
 		super();
 	}
-	
+
 	/** Post-constructor initialization	 
 	 * @throws ExceptionControlApp */
 	public void init() throws ExceptionControlApp {	
@@ -40,10 +46,10 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 		super.reset(resetLevel);
 	}
-	
+
 	public void test(Properties props) {
 	}		
-	
+
 	/**
 	 * #### method description ####
 	 * @param param_name param description
@@ -51,7 +57,8 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addOFC(String ofcKey) throws ExceptionControlApp {		
+	public void addOFC(String ofcKey) throws ExceptionControlApp {	
+		setStatsCollectionInterval( ofcKey);
 		initConnectionToOFC(ofcKey);
 	}
 
@@ -72,18 +79,20 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @param param_name param description
 	 * @return return description
 	 * @throws ExceptionControlApp 
+	 * @throws NotSupportedException 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void addNetNode(String netNodeKey) throws ExceptionControlApp;
+	public abstract void addNetNode(String netNodeKey) throws ExceptionControlApp, NotSupportedException;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
 	 * @throws ExceptionControlApp 
+	 * @throws NotSupportedException 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void removeNetNode(String netNodeLabel) throws ExceptionControlApp;
+	public abstract void removeNetNode(String netNodeLabel) throws ExceptionControlApp, NotSupportedException;
 
 	/**
 	 * Offer all possible placements of stats counters that monitor the traffic to protected object denoted by the passed in pNKey param. 
@@ -93,17 +102,19 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * of multiple traffics into a single one monitoring only the sum of all traffics, time sharing counter placement, Qos degradation to other 
 	 * traffics monitoring (if location is preempted by these counters).
 	 * @throws ExceptionControlApp 
+	 * @throws ExternalComponentException 
 	 * @throws exception_type circumstances description 
 	 */
-	public List<StatsCountersPlacement> offerCounterPlacements(String pNKey) throws ExceptionControlApp {
+	public List<StatsCountersPlacement> offerCounterPlacements(String pNKey) 
+			throws ExceptionControlApp, ExternalComponentException {
 		// Initial implementation can ignore traffic monitoring merges and preemption.
 		return null;
 	}
-	
+
 	protected void notifyTopologyChanged() {
 		dfAppRoot.getStatsCollector().statsCollectionTopologyChanged();
 	}
-	
+
 	// TODO: need also a method to replace OFC?	
 
 	/**
@@ -113,15 +124,27 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @throws Exception 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract String addPeacetimeCounterTrafficFloor(String pnKey, String newTrafficFloorLoc) throws ExceptionControlApp;
+	public String addPeacetimeCounterTrafficFloorSetPNStatus(String pnKey, String newTrafficFloorLoc) throws ExceptionControlApp {
+
+		try {
+			String trafficFloor = addPeacetimeCounterTrafficFloor(pnKey, newTrafficFloorLoc);
+			return trafficFloor;
+		} catch (Throwable e) {
+			DFHolder.get().pNsRepo.setCell(pnKey, PN.OPERATIONAL_STATUS, OperationalStatus.FAILED.name());
+			return null;
+		}
+	}
+
+	protected abstract String addPeacetimeCounterTrafficFloor(String pnKey, String newTrafficFloorLoc) throws ExceptionControlApp;
 
 	/**
 	 * Remove counter from OFSs.
 	 * @param param_name param description
 	 * @return return description
+	 * @throws Exception 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void removeTrafficFloor(String trafficFloorKey) throws ExceptionControlApp;
+	public abstract void removeTrafficFloor(String trafficFloorKey) throws ExceptionControlApp, ExternalComponentException;
 
 	/**
 	 * #### method description ####
@@ -131,16 +154,27 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @throws exception_type circumstances description 
 	 */
 	public StatReport getStatsReport(String pnKey, String trafficFloorKey) throws ExceptionControlApp {
-		
+
+		TrafficFloor.Status status;
+		try {
+			String statusStr = 
+					(String) dfAppRoot.trafficFloorsRepo.getCellValue(trafficFloorKey, TrafficFloor.STATUS);
+			status = TrafficFloor.Status.valueOf(statusStr);
+		} catch ( Throwable e ) {
+			return null;
+		}
+
+		if ( status != TrafficFloor.Status.ACTIVE ) return null;
+
 		TrafficTuple stats = getStats(trafficFloorKey); // Controller specific implementation obtains stats
 		if(stats == null) stats = new TrafficTuple();
-		
+
 		StatReport statReport = new StatReport();
 		statReport.stats = stats;
 		statReport.pnKey = pnKey;
 		statReport.trafficFloorKey = trafficFloorKey;
 		statReport.readingTime = System.currentTimeMillis() / 1000; // Keep time in seconds
-		
+
 		return statReport;
 	}
 
@@ -158,6 +192,16 @@ public abstract class StatsCollectionRep extends DFAppModule {
 	 * @throws ExceptionControlApp 
 	 */
 	public abstract String getTrafficFloorLocation(String trafficFloorKey) throws ExceptionControlApp;
+
+	/**
+	 * #### method description ####
+	 */
+	public abstract int getStatsCollectionInterval();
+	/**
+	 * #### method description ####
+	 * @throws ExceptionControlApp 
+	 */
+	public abstract void setStatsCollectionInterval(String ofcKey) throws ExceptionControlApp;
 
 	@Override
 	protected void actionSwitcher(int actionCode, Object param) {

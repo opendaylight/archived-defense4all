@@ -33,14 +33,14 @@ import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
 public class Mitigation {
-	
+
 	public enum Status {
 		INVALID,
 		ACTIVE,
 		NO_RESOURCES,
 		ENDED
 	}
-	
+
 	/* MitigationRepo column names */
 	public static final String KEY 	= "key";
 	public static final String ATTACK_KEY = "attack_key";
@@ -71,9 +71,9 @@ public class Mitigation {
 	public List<String> trafficFloorKeys; // used to indicate traffic floors created for mitigation
 	public List<String> dvsnInfoKeys;
 	public Properties mitigationExecutionProps;
-	
+
 	public static String generateKey(String s) {return s + "_" + System.currentTimeMillis() / 1000;}
-	
+
 	protected static ArrayList<RepoCD> mitigationRepoCDs = null;
 
 	/** ### Description ###
@@ -87,7 +87,7 @@ public class Mitigation {
 		dvsnInfoKeys = new ArrayList<String>(); 
 		mitigationExecutionProps = new Properties();
 	}
-	
+
 	/** ### Description ###
 	 * @param param_name 
 	 * @throws 
@@ -136,7 +136,7 @@ public class Mitigation {
 		collectStats= (Boolean) mitigationRow.get(COLLECT_STATS);
 		mitigationDriverLabel = (String) mitigationRow.get(MITIGATION_DRIVER);
 		mitigationExecutionProps = (Properties) mitigationRow.get(MITIGATION_EXECUTION_PROPS);
-		
+
 		Iterator<Map.Entry<String,Object>> iter = mitigationRow.entrySet().iterator();
 		Map.Entry<String,Object> entry; String key;
 		while(iter.hasNext()) {
@@ -150,7 +150,7 @@ public class Mitigation {
 	}
 
 	public Hashtable<String, Object> toRow() {
-		
+
 		/* Change any null value to empty, otherwise Hashtable.put() will throw an exception */
 		if(key == null) key = "";
 		if(attackKey == null) attackKey = "";
@@ -158,7 +158,7 @@ public class Mitigation {
 		if(monitoredTrafficKey == null) monitoredTrafficKey = "";
 		if(mitigationDriverLabel == null) mitigationDriverLabel = "";
 		if(protocolPort == null) protocolPort = new ProtocolPort();
-		
+
 		Hashtable<String, Object> row = new Hashtable<String, Object>();
 		row.put(KEY, key);
 		row.put(ATTACK_KEY, attackKey);
@@ -177,16 +177,16 @@ public class Mitigation {
 			row.put(trafficFloorKey, trafficFloorKey);
 		return row;
 	}
-	
+
 	public String getKey() {return key;}
 	public void setKey(String key) {this.key = key;}
-	
+
 	public String getAttackKey() {return attackKey;}
 	public void setAttackKey(String attackKey) {this.attackKey = attackKey;}
-	
+
 	public String getMonitoredTraffickey() {return monitoredTrafficKey;}
 	public void setMonitoredTraffickey(String monitoredTrafficKey) {this.monitoredTrafficKey = monitoredTrafficKey;}
-	
+
 	public String getPnkey() {return pnKey;}
 	public void setPnkey(String pnKey) {this.pnKey = pnKey;}
 
@@ -201,16 +201,16 @@ public class Mitigation {
 
 	public Status getStatus() {return status;}
 	public void setStatus(Status status) {this.status = status;}
-	
+
 	public Boolean getCollectStats() {return collectStats;}
 	public void setCollectStats(Boolean collectStats) {this.collectStats = collectStats;}
-	
+
 	public String getMitigationDriverLabel() {return mitigationDriverLabel;}
 	public void setMitigationDriverLabel(String label) {this.mitigationDriverLabel = label;}
-	
+
 	public List<String> getTrafficFlowKeys() {return trafficFloorKeys;}
 	public void setTrafficFlowKeys(List<String> trafficFloorKeys) {this.trafficFloorKeys = trafficFloorKeys;}
-	
+
 	public List<String> getDvsnInfoKeys() {return dvsnInfoKeys;}
 	public void setDvsnInfoKeys(List<String> dvsnInfoKeys) {this.dvsnInfoKeys = dvsnInfoKeys;}	
 
@@ -236,7 +236,7 @@ public class Mitigation {
 		}		
 		return mitigationRepoCDs;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -250,4 +250,57 @@ public class Mitigation {
 		sb.append("]");
 		return sb.toString();
 	}
+
+	public static boolean hasActiveDvsns(String mitigationKey) {
+
+		Mitigation mitigation = getMitigation(mitigationKey);
+		boolean active;
+		DFAppRoot dfAppRoot = DFHolder.get();		
+		for(String dvsnInfoKey : mitigation.dvsnInfoKeys) {
+			try {
+				active = (Boolean) dfAppRoot.dvsnInfosRepo.getCellValue(dvsnInfoKey, DvsnInfo.TRAFFIC_DIVERTED);
+				if(active) return true;
+			} catch (Throwable e) {
+				log.error("Failed to retrieve dvsnInfo status from repo for " + dvsnInfoKey);
+				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			}
+		}
+		return false;
+	}
+
+	public static Mitigation getMitigation(String mitigationKey) {
+		try {
+			Hashtable<String, Object> mitigationRow = DFHolder.get().mitigationsRepo.getRow(mitigationKey); 
+			if(mitigationRow == null) { 
+				log.error("Got null mitigationRow for key " + mitigationKey);
+				return null;
+			}
+			Mitigation mitigation = new Mitigation(mitigationRow); 
+			return mitigation;
+		} catch (Throwable e) {
+			log.error("Failed to get Mitigation : "+mitigationKey, e);
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return null;
+		}
+	}
+
+	public static String getPrintableMitigationTarget(String mitigationKey) {
+
+		Mitigation mitigation = getMitigation(mitigationKey);
+		if ( mitigation == null ) return "";
+		return 	mitigation.getPrintableMitigationTarget();		
+	}
+
+	public String getPrintableMitigationTarget() {
+
+		StringBuilder sb = new StringBuilder();
+		if (protocolPort != null ) 
+			sb.append( protocolPort.toPrintableString());
+		sb.append(" traffic for PO " );
+		sb.append(PN.getPrintableKey(pnKey));
+
+		return sb.toString();
+	}
+
+
 }

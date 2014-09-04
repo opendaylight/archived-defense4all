@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.IllegalArgumentException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
@@ -22,9 +23,12 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 
+import javax.transaction.NotSupportedException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.opendaylight.defense4all.core.AMS;
+import org.opendaylight.defense4all.core.Attack;
 import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.DFDetector;
 import org.opendaylight.defense4all.core.DFMgmtPoint;
@@ -33,8 +37,9 @@ import org.opendaylight.defense4all.core.DetectorInfo;
 import org.opendaylight.defense4all.core.NetNode;
 import org.opendaylight.defense4all.core.OFC;
 import org.opendaylight.defense4all.core.PN;
-import org.opendaylight.defense4all.core.PNStatReport;
+import org.opendaylight.defense4all.core.PN.OperationalStatus;
 import org.opendaylight.defense4all.core.PN.StatsCollectionStatus;
+import org.opendaylight.defense4all.core.interactionstructures.PNStatReport;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
@@ -67,7 +72,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 
 		super.init();
 
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "DFMgmtPoint is starting.");
+		log.info("DefenseFlow management failed in initialize.");
 
 		/* OFC related initializations. */
 		List<String> ofcKeys = null;
@@ -75,19 +80,24 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			ofcKeys = dfAppRoot.oFCsRepo.getKeys();
 		} catch (Throwable e) {
 			log.error("Failed to get keys from oFCsRepo ", e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get keys from oFCsRepo ", e );
 		}
 		if ( ofcKeys == null) {
 			log.error("Invalid null oFCsRepo");
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Invalid null oFCsRepo");
 		}
 
 		if(ofcKeys.size() > 0) {
-			addOFC(ofcKeys.get(0));
+			try {
+				addOFC(ofcKeys.get(0));
+			} catch (Throwable e) {
+				// TODO Currently Ignore, but need to account for regular init vs. reset init
+				log.error("Failed to re-add OFC " + ofcKeys.get(0), e);
+			}
 		}
 
 		/* AMS related initializations. */
@@ -96,13 +106,13 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			amsKeys = dfAppRoot.amsRepo.getKeys();
 		} catch (Exception e1) {
 			log.error("Failed to get keys from amsRepo ", e1 );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get keys from amsRepo ", e1 );
 		}
 		if ( amsKeys == null) {
 			log.debug ("Invalid null amsRepo");
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Invalid null oFCsRepo");
 		}
@@ -116,13 +126,13 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			netNodeKeys = dfAppRoot.netNodesRepo.getKeys();
 		} catch (Throwable e3) {
 			log.error("Failed to get keys from amsRepo ", e3 );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get keys from netNodesRepo ", e3);
 		}
 		if ( netNodeKeys == null) {
 			log.debug ("Invalid null netNodesRepo");
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Invalid null netNodesRepo");
 		}
@@ -144,19 +154,24 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			pnKeys = dfAppRoot.pNsRepo.getKeys();
 		} catch (Throwable e5) {
 			log.error("Failed to get keys from pNsRepo ", e5 );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get keys from pNsRepo ", e5 );
 		}
 		if ( pnKeys == null) {
 			log.debug ("Invalid null pNsRepo");
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Invalid null oFCsRepo");
 		}
 
-		for(int i=0; i<pnKeys.size();i++) // Re-register all protected networks in controller if not there yet
-			addPN(pnKeys.get(i));
+		for(int i=0; i<pnKeys.size();i++) { // Re-register all protected networks in controller if not there yet
+			try {
+				addPN(pnKeys.get(i));
+			} catch (Throwable e) {
+				log.error("Failed to re-add PN " + pnKeys.get(i), e);
+			}
+		}
 
 		try {
 			if(pnKeys.size() == 0) { // Add PN if one set through properties file. Next time PN will be in repo.
@@ -164,7 +179,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			}
 		} catch (Throwable e6) { 
 			log.error("Failed to create PN from default parameters ", e6);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DFMgmtPoint failed to start.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow management failed in initialize.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to create PN from default parameters ", e6 );
 		}
@@ -175,7 +190,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	public void finit() {
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "DFMgmtPoint is stopping.");		
+		log.info("DFMgmtPoint is stopping.");		
 		super.finit();
 	}
 
@@ -183,7 +198,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws ExceptionControlApp */
 	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "DFMgmtPoint is resetting to level " + resetLevel);	
+		log.info("DFMgmtPoint is resetting to level " + resetLevel);	
 		super.reset(resetLevel);
 		resetPns(resetLevel);
 	}
@@ -197,10 +212,15 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 		try {
 			propsFromFile.load(is);
 		} catch(IOException ioExc) {
-			log.warn(ioExc);
-			fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "DF failed to instantiate PN from properties file.");
+			log.warn("DF failed to instantiate PN from properties file.", ioExc);
+			try {
+				is.close();
+			} catch (IOException e) {/* Ignore */}
 			return;
 		}
+		try {
+			is.close();
+		} catch (IOException e) {/* Ignore */}
 
 		String pnLabels = propsFromFile.getProperty("PN.pns");
 		if(pnLabels == null || pnLabels.isEmpty()) return;
@@ -219,7 +239,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			pnLabelsSplit =  pnLabels.split(",");
 		} catch (Exception e) {
 			log.error("Invalid lead line(PN.pns) in pns.properties file", e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to instantiate PN from properties file.");
+			//fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to instantiate PN from properties file.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Invalid lead line(PN.pns) in pns.properties file", e);
 		}
@@ -257,7 +277,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 				addPN(pn);
 			} catch (Exception e) {
 				log.error("Failed to create PN from pns.properties file", e);
-				fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to instantiate PN from properties file.");
+				//fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to instantiate PN from properties file.");
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				continue;	
 			}
@@ -311,39 +331,35 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	}
 
 	protected void removeCanceledPns() throws ExceptionControlApp {
-		Hashtable<String, Hashtable<String, Object>> pnTable;
+
+		List<String> pnkeys;
 		try {
-			pnTable = dfAppRootFullImpl.pNsRepo.getTable();
+			pnkeys = dfAppRootFullImpl.pNsRepo.getKeys();
+			if(pnkeys == null) return;
 		} catch (Throwable e) {
-			log.error("Failed to get pNsRepo table", e);
+			log.error("Failed to get pNsRepo keys", e);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-			throw new ExceptionControlApp("Failed to get pNsRepo table", e);
+			throw new ExceptionControlApp("Failed to get pNsRepo keys", e);
 		}
-		Set<Entry<String, Hashtable<String, Object>>> pnTableEntrySet = pnTable.entrySet();
-		if (pnTableEntrySet == null ) return;
 
-		Map.Entry<String,Hashtable<String,Object>> entry; Hashtable<String,Object> pnRow; boolean canceled;
-		Iterator<Map.Entry<String,Hashtable<String,Object>>> iter = pnTableEntrySet.iterator();
-
-		while(iter.hasNext()) {
-
+		for(String pnkey : pnkeys) {
 			try {
-				entry = iter.next();
-				pnRow = entry.getValue();
-			} catch (Exception e1) {
-				log.error("Invalid entry in pNsRepo table", e1);
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-				continue;
-			}  
+				removePnIfCanceled(pnkey);
+			} catch (Throwable e1) {continue;}  
+		}
+	}
 
-			canceled = (Boolean) pnRow.get(PN.PN_CANCELED);
-			try {
-				if(canceled) dfAppRootFullImpl.pNsRepo.deleteRow(entry.getKey());
-			} catch (Throwable e) {
-				log.error("Failed to delete pnRow in pNsRepo table "+entry.getKey(), e);
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-				continue;
-			}
+	protected void removePnIfCanceled (String pnkey) throws ExceptionControlApp {
+
+		try {
+			Object obj = dfAppRootFullImpl.pNsRepo.getCellValue(pnkey, PN.OPERATIONAL_STATUS);
+			OperationalStatus operationalStatus = OperationalStatus.INVALID;
+			if(obj != null)	operationalStatus = OperationalStatus.valueOf((String) obj);
+			if(operationalStatus == OperationalStatus.CANCELED) dfAppRootFullImpl.pNsRepo.deleteRow(pnkey);
+		} catch (Throwable e) {
+			log.error("Failed to delete pnRow in pNsRepo table "+pnkey, e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to remove canceled PN " + pnkey, e);
 		}
 	}
 
@@ -364,24 +380,25 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 
 		List<String> keys;
 
-		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding OFC " + ofc.toString());
+		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow adding a controller. ");
 		try {
 			keys = dfAppRootFullImpl.oFCsRepo.getKeys();
 		} catch (Throwable e) {
 			log.error("Failed to get keys from oFCsRepo.",e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process addition of OFC " + ofc.hostname);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add controller " + ofc.hostname);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get keys from oFCsRepo." , e );
 		}
 		if(keys.size() != 0) {
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF currently supports one OFC. OFC " + ofc.hostname + " is not added.");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow currently supports only one controller. Controller "
+					+ ofc.hostname + " was not added.");
 			return;	// Already have a set OFC. Currently there can be only one OFC in the system.
 		}	
 		try {
 			dfAppRootFullImpl.oFCsRepo.setRow(ofc.hostname, ofc.toRow()); // Record ofc in ofcs repo.		
 		} catch  (Throwable e) {
 			log.error("Failed to set row to oFCsRepo. "+ ofc.hostname,e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process addition of OFC " + ofc.hostname);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add controller " + ofc.hostname);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to set row to oFCsRepo. "+ ofc.hostname,e);
 		}
@@ -417,6 +434,8 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 		if(forStatsCollection) {
 			try {
 				dfAppRootFullImpl.getStatsCollectionRep().addOFC(ofcKey);
+				int interval = dfAppRootFullImpl.getStatsCollectionRep().getStatsCollectionInterval();
+				dfAppRootFullImpl.statsCollectorImpl.startCollection(interval);
 			} catch (Throwable e1) {
 				log.error("Failed to add OFC to StatsCollectionRep. ofcKey : "+ ofcKey,e1);
 				concatException = new ExceptionControlApp ("Failed to add OFC to StatsCollectionRep. ofcKey : "+ ofcKey,concatException);
@@ -444,7 +463,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	@Override
 	public void removeOFC(String ofcLabel) throws ExceptionControlApp {
 
-		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is removing OFC " + ofcLabel);
+		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow removing controller " + ofcLabel);
 
 		String ofcKey=ofcLabel; // get from repo
 		boolean forStatsCollection = false; // retrieve from repo
@@ -457,7 +476,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			forDvsn = (Boolean) dfAppRootFullImpl.oFCsRepo.getCellValue(ofcKey, OFC.FOR_DIVERSION);
 		} catch (Throwable e) {
 			log.error("Failed to get cells from oFCsRepo. ofcKey : "+ ofcKey,e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process removal of OFC " + ofcLabel);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove controller " + ofcLabel);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get cells from oFCsRepo. ofcKey : " +ofcKey, e );
 		}
@@ -467,7 +486,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 				dfAppRootFullImpl.getStatsCollectionRep().removeOFC(ofcKey);
 			} catch (Throwable e1) {
 				log.error("Failed to remove OFC from StatsCollectionRep. ofcKey : "+ ofcKey,e1);
-				fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove OFC " + ofcLabel);
+				fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove controller " + ofcLabel);
 				concatException = new ExceptionControlApp ("Failed to remove OFC from StatsCollectionRep. ofcKey : "+ ofcKey,concatException);
 			}
 		}
@@ -476,7 +495,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 				dfAppRootFullImpl.getDvsnRep().removeOFC(ofcKey);
 			} catch (Throwable e2) {
 				log.error("Failed to remove OFC from DvsnRep. ofcKey : "+ ofcKey,e2);
-				fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove OFC " + ofcLabel);
+				fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove controller " + ofcLabel);
 				concatException = new ExceptionControlApp ("Failed to remove OFC from DvsnRep. ofcKey : "+ ofcKey,concatException);		
 			}
 		}
@@ -487,22 +506,52 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * Add netNode. Notify statsCollectionRep and DvsnRep.
 	 * @param param_name param description
 	 * @return return description
+	 * @throws NotSupportedException 
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void addNetNode(NetNode netNode) throws ExceptionControlApp, IllegalArgumentException {
+	public void addNetNode(NetNode netNode) throws ExceptionControlApp, IllegalArgumentException, IllegalStateException,
+	NotSupportedException { 
 
 		try {
 			netNode.validate();
-		} catch (Exception e1) {throw new IllegalArgumentException(e1);}	
+		} catch (Exception e1) {throw new IllegalArgumentException(e1);}
 
-		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding NetNode " + netNode.toString());
+		Hashtable<String, Object> netNodeRow;
+		try {
+			netNodeRow = dfAppRootFullImpl.pNsRepo.getRow(netNode.label);
+		} catch (Throwable e) {
+			log.error("Failed to get netNodeRow from netNodesRepo ", e );
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add NetNode " + netNode.label);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("DF Failed to process addition of netNode " + netNode.label, e );
+		}
+
+		if(netNodeRow != null) {
+			NetNode.Status netNodeStatus = NetNode.Status.valueOf((String) netNodeRow.get(NetNode.STATUS));
+			if(netNodeStatus == NetNode.Status.REMOVED) {
+				try {
+					dfAppRootFullImpl.netNodesRepo.deleteRow(netNode.label);
+				} catch(Throwable e1) {
+					log.error("Failed to delete netNodeRow from netNodesRepo ", e1 );
+					fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add NetNode " + netNode.label);
+					fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+					throw new ExceptionControlApp("Failed to delete netNodeRow from netNodesRepo ", e1 );
+				}
+			} else {
+				String msg = "NetNode " + netNode.label + " is already defined. Need to delete it first";
+				fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow failed to add NetNode "+netNode.label+". Illegal argument(s).");
+				throw new IllegalStateException(msg);
+			}
+		}
+
+		fr.logRecord(DFAppRoot.FR_DF_CONFIG,  "DefenseFlow adding NetNode " + netNode.label);
 
 		try {
 			dfAppRootFullImpl.netNodesRepo.setRow(netNode.label, netNode.toRow()); // Record netNode in netNodes repo.		
 		} catch (Exception e) {
 			log.error("Failed to setRow in netNodesRepo "+netNode.label, e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process addition of NetNode " + netNode.label);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add NetNode " + netNode.label);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to setRow in netNodesRepo "+netNode.label, e );
 		}
@@ -513,14 +562,17 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * Add netNode that has already been recorded in netNodes repo. Notify statsCollectionRep and DvsnRep.
 	 * @param param_name param description
 	 * @return return description
+	 * @throws NotSupportedException 
 	 * @throws exception_type circumstances description 
 	 */
-	protected void addNetNode(String netNodeKey) throws ExceptionControlApp{		
+	protected void addNetNode(String netNodeKey) throws ExceptionControlApp, NotSupportedException {		
 		boolean isError = false;
 		ExceptionControlApp concatException = new ExceptionControlApp("");
 
 		try {
 			dfAppRootFullImpl.getStatsCollectionRep().addNetNode(netNodeKey);
+		} catch (NotSupportedException e) {
+			throw e; // Not supported so abort addNetNode processing and throw this exception
 		} catch (Throwable e) {
 			log.error("Failed to update StatsCollectionRep", e);
 			concatException = new ExceptionControlApp ("Failed to update StatsCollectionRep", concatException );
@@ -528,6 +580,11 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 		}		
 		try {
 			dfAppRootFullImpl.getDvsnRep().addNetNode(netNodeKey);
+		} catch (NotSupportedException e) {
+			try {
+				dfAppRootFullImpl.getStatsCollectionRep().removeNetNode(netNodeKey);
+			} catch (Throwable e1) {/* Ignore */}
+			throw e; // Not supported so abort addNetNode processing and throw this exception
 		} catch (Throwable e) {
 			log.error("Failed to update DvsnRep", e);
 			concatException = new ExceptionControlApp ("Failed to update DvsnRep", concatException );
@@ -549,7 +606,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			isError = true;
 		}
 
-		if (isError) throw concatException;
+		if (isError) throw concatException; // TODO: Need to undo completed actions
 	}
 
 	/**
@@ -559,9 +616,9 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void removeNetNode(String netNodeLabel) throws ExceptionControlApp {
+	public void removeNetNode(String netNodeLabel) throws ExceptionControlApp, NotSupportedException {
 
-		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is removing NetNode " + netNodeLabel);
+		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow removing NetNode " + netNodeLabel);
 
 		boolean isError = false;
 
@@ -569,31 +626,38 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 
 		ExceptionControlApp concatException = new ExceptionControlApp("");
 		try {
-			dfAppRoot.netNodesRepo.setCell(netNodeLabel, NetNode.STATUS, NetNode.Status.REMOVED.name());
-		} catch (Throwable e) {
-			log.error("Failed to update netNodesRepo", e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process removal of NetNode " + netNodeLabel);
-			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-			throw  new ExceptionControlApp ("Failed to update netNodesRepo", e );		
-		}	
-		try {
 			dfAppRootFullImpl.getDvsnRep().removeNetNode(netNodeLabel);
-		} catch (Throwable e) {
-			log.error("Failed to update DvsnRep", e);
+		} catch (NotSupportedException e) {
+			throw e; // Not supported so abort removeNetNode processing and throw this exception
+		} catch (IllegalStateException e1) {
+			throw e1; // NetNode cannot be removed at this time/state - abort removeNetNode processing and throw this exception
+		} catch (Throwable e2) {
+			log.error("Failed to update DvsnRep", e2);
 			concatException = new ExceptionControlApp ("Failed to update DvsnRep", concatException );
 			isError = true;
 		}
 		try {
 			dfAppRootFullImpl.getStatsCollectionRep().removeNetNode(netNodeLabel);
+		} catch (NotSupportedException e) {
+			throw e; // Not supported so abort removeNetNode processing and throw this exception
 		} catch (Throwable e) {
 			log.error("Failed to update StatsCollectionRep", e);
 			concatException = new ExceptionControlApp ("Failed to update StatsCollectionRep", concatException );
 			isError = true;
 		}	
 		if (isError) {
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process removal of NetNode " + netNodeLabel);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove NetNode " + netNodeLabel);
 			throw concatException;
 		}
+
+		try {
+			dfAppRoot.netNodesRepo.setCell(netNodeLabel, NetNode.STATUS, NetNode.Status.REMOVED.name());
+		} catch (Throwable e) {
+			log.error("Failed to update netNodesRepo", e);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove NetNode " + netNodeLabel);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw  new ExceptionControlApp ("Failed to update netNodesRepo", e );		
+		}	
 	}
 
 	/**
@@ -609,24 +673,41 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 		try {
 			ams.validate();
 		} catch (Exception e1) {throw new IllegalArgumentException(e1);}
-		
-		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding AMS " + ams.toString());
+
+		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow adding AMS " + ams.label);
 
 		Hashtable<String,Object> amsRow = dfAppRootFullImpl.amsRepo.getRow(ams.label);
 		if(amsRow != null) {
-			String msg = "AMS " + ams.label + " is already defined. Need to delete it first";
-			fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF rejected adding AMS "+ams.label+". AMS with by label already exists.");
-			throw new IllegalArgumentException(msg);
+			AMS.Status status = AMS.Status.valueOf((String) amsRow.get(AMS.STATUS));
+			if(status == AMS.Status.REMOVED) {
+				try {
+					dfAppRootFullImpl.amsRepo.deleteRow(ams.label);
+				} catch (Throwable e) {
+					log.error("Failed to delete amsRow from amsRepo ", e );
+					fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add AMS " + ams.label);
+					fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+					throw new ExceptionControlApp("Failed to delete pnRow from pNsRepo ", e );
+				}
+			} else {
+				String msg = "AMS " + ams.label + " is already defined. Need to delete it first";
+				fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow failed to add AMS "+ams.label+". An AMS with the same label already exists.");
+				throw new IllegalArgumentException(msg);
+			}
 		}
 		try {
 			dfAppRootFullImpl.amsRepo.setRow(ams.label, ams.toRow());
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to row to amsRepo "+ams.label, e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process addition of AMS " + ams.label);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add AMS " + ams.label);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to add AMS "+ams.label, e );
-		}			
-		addAMS(ams.label);
+		}
+        if("Other".equalsIgnoreCase(ams.getBrand())){//Value from GUI
+            dfAppRootFullImpl.setAmsRepByType("DefaultAms");//default from Spring xml
+        } else {
+            dfAppRootFullImpl.setAmsRepByType("DP");//DP configuration from Spring xml
+        }
+        addAMS(ams.label);
 	}
 
 	/**
@@ -636,6 +717,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	protected void addAMS(String amsKey)  throws ExceptionControlApp  {
+
 		try {
 			dfAppRootFullImpl.amsRep.addAMS(amsKey);
 		} catch (ExceptionControlApp e) {
@@ -652,20 +734,36 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void removeAMS(String amsLabel) throws ExceptionControlApp  {
+	public boolean removeAMS(String amsLabel) throws ExceptionControlApp  {
 
 		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is removing AMS " + amsLabel);
+
+		if(AMS.isRemoved(amsLabel))	return true; // Check if is already marked as removed.
+
+		boolean success = dfAppRootFullImpl.mitigationMgrImpl.removeAMS(amsLabel);
+		if(!success) return false;
+
 		try {
 			dfAppRootFullImpl.amsRep.removeAMS(amsLabel);
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to remove AMS "+amsLabel, e );
 			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove AMS " + amsLabel);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-			throw new ExceptionControlApp("Failed to remove AMS "+amsLabel, e );
+			throw new ExceptionControlApp("DefenseFlow failed to remove AMS "+amsLabel, e );
 		}
+
+		try {
+			dfAppRoot.amsRepo.setCell(amsLabel, AMS.STATUS, AMS.Status.REMOVED.name());
+		} catch (Throwable e) {
+			log.error("Failed to update netNodesRepo", e);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove AMS " + amsLabel);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp ("Failed to update netNodesRepo", e );		
+		}
+		return true;
 	}
 
-	/**
+	/**through
 	 * Add an external detector.
 	 * @param param_name param description
 	 * @return return description
@@ -673,7 +771,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 */	
 	public void addDetector(DetectorInfo detectorInfo) throws ExceptionControlApp {
 
-		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding detector " + detectorInfo.toString());
+		fr.logRecord(DFAppRoot.FR_DF_CONFIG, " DefenseFlow adding "+detectorInfo.label+" detector ");
 
 		try {
 			if ( detectorInfo.getExternalDetector() == true) {
@@ -682,7 +780,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			}
 		} catch (Throwable e) {
 			log.error("Failed to add detector "+detectorInfo.label, e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process addition of Detector " + detectorInfo.label);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add "+detectorInfo.label+" detector ");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to add detector "+detectorInfo.label, e );
 		}			
@@ -701,7 +799,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			dfAppRootFullImpl.detectorMgrImpl.removeDetector(detectorLabel);
 		} catch (Throwable e) {
 			log.error("Failed to remove detector "+detectorLabel, e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove Detector " + detectorLabel);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove "+detectorLabel+" detector "); 
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to remove detector "+detectorLabel, e );
 		}
@@ -718,34 +816,42 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws Exception 
 	 * @throws ExceptionProtectionProfileNotFound If the protection profile specified in the protected object is not found in the system
 	 */
-	public void addPN(PN pn) throws Exception, IllegalArgumentException {
+	public void addPN(PN pn) throws Exception, IllegalArgumentException, IllegalStateException {
 
 		try {
 			pn.validate();
 		} catch (Exception e1) {throw new IllegalArgumentException(e1);}
-		
-		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is adding PN " + pn.toString());
 
 		Hashtable<String, Object> pnRow;
 		try {
 			pnRow = dfAppRootFullImpl.pNsRepo.getRow(pn.label);
 		} catch (Throwable e) {
 			log.error("Failed to get pnRow from pNsRepo ", e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process addition of PN " + pn.label);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add PO " + PN.getPrintableKey(pn.label));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get pnRow from pNsRepo ", e );
 		}
 
 		if(pnRow != null) {
-			String msg = "Protected network " + pn.label + " is already defined. Need to delete it first";
-			fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF rejected addition of PN " + pn.label + ". Illegal argument(s).");
-			throw new IllegalArgumentException(msg);
+			PN existingPn = new PN(pnRow);
+			if(existingPn.operationalStatus == OperationalStatus.CANCELED) {
+				try {
+					removePnIfCanceled(existingPn.label);
+				} catch(ExceptionControlApp e1) {throw e1;}
+			} else {
+				String msg = "Protected network " + pn.label + " is already defined. Need to delete it first";
+				fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow failed to add PO " + PN.getPrintableKey(pn.label));
+				throw new IllegalStateException(msg);
+			}
 		}
+
+		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow adding PO " + PN.getPrintableKey(pn.label));
+
 		try {
 			dfAppRootFullImpl.pNsRepo.setRow(pn.label, pn.toRow());
 		} catch (Throwable e) {
 			log.error("Failed to create pnRow from pNsRepo. pn label "+pn.label, e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process addition of PN " + pn.label);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to add PO " + PN.getPrintableKey(pn.label));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to create pnRow from pNsRepo. pn label "+pn.label, e );
 		}			
@@ -764,6 +870,27 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @throws ExceptionProtectionProfileNotFound If the protection profile specified in the protected object is not found in the system
 	 */
 	protected void addPN(String pnKey) throws ExceptionControlApp {
+
+		/* Don't try to add cancelled PN */
+		try {
+			Object obj = dfAppRootFullImpl.pNsRepo.getCellValue(pnKey, PN.OPERATIONAL_STATUS);
+			OperationalStatus operationalStatus = OperationalStatus.INVALID;
+			if(obj != null)	operationalStatus = OperationalStatus.valueOf((String) obj);
+			if(operationalStatus == OperationalStatus.CANCELED ) return;
+		} catch (Throwable e) {
+			log.error("Failed to retrieve operational status value for " + pnKey, e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return;
+		}
+
+		/* Reset the PN status to INVALID - to re-attempt its installation after restarts. */
+		try {
+			dfAppRootFullImpl.pNsRepo.setCell(pnKey, PN.OPERATIONAL_STATUS, PN.OperationalStatus.INVALID.name());
+		} catch (Throwable e) {
+			log.error("Failed to set PN operational status for "+pnKey, e );
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to set PN operational status for "+pnKey, e);
+		}
 
 		String detectorLabel;
 		try {
@@ -790,22 +917,54 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	}
 
 	/** 
-		 * #### method description ####
-		 * @param param_name param description
-		 * @return return description
-		 * @throws exception_type circumstances description
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws exception_type circumstances description
+	 */
+	@Override
+	public Collection<PNStatReport> getLatestPNStatReports() throws ExceptionControlApp {
+
+		DFDetector dfDetector;
+		Collection<PNStatReport> pnStatReports = new ArrayList<PNStatReport>();
+		Collection<PNStatReport> detectorPnStatReports = new ArrayList<PNStatReport>();
+
+		/* Add pnStatReports from all OF detectors. */
+		try {		
+			List<Detector> detectors = dfAppRootFullImpl.detectorMgrImpl.getDetectors();
+			for(Detector detector : detectors) {
+				if (!detector.getDetectorInfo().ofBasedDetector) continue;
+				dfDetector = (DFDetector) detector;
+				detectorPnStatReports = dfDetector.getLatestPNStatReports();
+				pnStatReports.addAll(detectorPnStatReports);
+			}
+		} catch (Throwable e) {
+			log.error("Failed to getLatestPNStatReports ", e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to getLatestPNStatReports ", e);
+		}
+
+		return pnStatReports;
+	}
+
+	/** 
+	 * #### method description ####
+	 * @param param_name param description
+	 * @return return description
+	 * @throws exception_type circumstances description
 	 */
 	@Override
 	public PNStatReport getLatestPNStatReport(String pnKey) throws ExceptionControlApp, IllegalArgumentException {
-		
+
 		if(pnKey == null || pnKey.isEmpty()) throw new IllegalArgumentException("Invalid pnkey " + pnKey);
-		
+
 		String detectorLabel; Detector detector; DFDetector dfDetector;
 		PNStatReport pnStatReport = new PNStatReport(); pnStatReport.pnKey = pnKey;
-		
+
 		/* Get the label of the detector processing stats for this PN. */
 		try {
 			detectorLabel = (String) dfAppRoot.pNsRepo.getCellValue(pnKey, PN.DETECTOR_LABEL);
+			if (detectorLabel == null) return pnStatReport;
 		} catch (Throwable e) {
 			log.error("Failed to get detectorLabel from pNsRepo for pnKey " + pnKey, e );
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
@@ -824,7 +983,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get detector " + detectorLabel, e);
 		}
-		
+
 		/* Retrieve and return the PN stats from that detector. */
 		pnStatReport = dfDetector.getLatestPNStatReport(pnKey);		
 		return pnStatReport;
@@ -846,9 +1005,9 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
-	public void removePN(String pnLabel) throws ExceptionControlApp {
+	public boolean removePN(String pnLabel) throws ExceptionControlApp {
 
-		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DF is removing PN " + pnLabel);
+		fr.logRecord(DFAppRoot.FR_DF_CONFIG, "DefenseFlow removing PO " + PN.getPrintableKey(pnLabel));
 
 		String pnKey = pnLabel;
 		boolean isError = false;
@@ -859,15 +1018,20 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			pnRow = dfAppRootFullImpl.pNsRepo.getRow(pnKey);
 		} catch (ExceptionControlApp e1) {
 			log.error("Failed to get pnRow from pNsRepo for pnKey "+pnKey, e1 );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove PN " + pnLabel);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove PO " + PN.getPrintableKey(pnLabel));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to get pnRow from pNsRepo for pnKey "+pnKey, e1 );
 		}
 
 		if (pnRow == null ) {
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove PN " + pnLabel);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove PO " + PN.getPrintableKey(pnLabel));
 			throw new ExceptionControlApp("Protected network " + pnLabel + " is unknown.");
 		}
+
+		Object obj = pnRow.get(PN.OPERATIONAL_STATUS);
+		OperationalStatus operationalStatus = OperationalStatus.INVALID; 
+		if(obj != null)	operationalStatus = OperationalStatus.valueOf((String) obj);
+		if(operationalStatus == OperationalStatus.CANCELED) return true;
 
 		try {
 			String detectorLabel = (String) dfAppRoot.pNsRepo.getCellValue(pnKey, PN.DETECTOR_LABEL);
@@ -882,7 +1046,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 
 		try {
 			dfAppRootFullImpl.attackDecisionPointImpl.removePN(pnKey);
-		} catch (Exception e1) {
+		} catch (Throwable e1) {
 			String msg = "Failed to remove PN from attackDecisionPointImpl. PN key "+pnKey;
 			log.error(msg, e1);
 			concatException = new ExceptionControlApp (msg, concatException);
@@ -891,26 +1055,51 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 
 		try {
 			dfAppRootFullImpl.mitigationMgrImpl.removePN(pnKey);
-		} catch (Exception e1) {
+		} catch (Throwable e1) {
 			log.error("Failed to remove PN from mitigationMgr. PN key "+pnKey, e1);
 			concatException = new ExceptionControlApp ("Failed to remove PN from mitigationMgr. PN key "+pnKey, concatException);
 			isError = true;
 		}
 
 		try {
-			dfAppRoot.pNsRepo.setCell(pnKey, PN.PN_CANCELED, true);
+			dfAppRoot.pNsRepo.setCell(pnKey, PN.OPERATIONAL_STATUS, PN.OperationalStatus.CANCELED.name());
 		} catch (Throwable e) {
 			log.error("Failed to update pNsRepo for pnKey "+pnKey, e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove PN " + pnLabel);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove PO " + PN.getPrintableKey(pnLabel));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to update pNsRepo for pnKey "+pnKey, e );
 		} 
 
 		if (isError) {
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove PN " + pnLabel);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove PO " + PN.getPrintableKey(pnLabel));
 			throw concatException;
 		}
 		// Cannot remove the PN yet because the above methods are asynchronous
+		return true;
+	}
+
+	protected boolean hasActiveAttacks(String pnKey) {
+
+		List<String> attackKeys = null;
+		try {
+			attackKeys = dfAppRootFullImpl.attacksRepo.getKeys();
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to get keys from attacksRepo", e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+		}
+		if ( attackKeys == null ) return false;
+
+		String attackPnKey;
+		for(String attackKey : attackKeys) {
+			try {
+				attackPnKey = (String) dfAppRootFullImpl.attacksRepo.getCellValue(attackKey, Attack.PNKEY);
+				if(attackPnKey.equals(pnKey)) return true; // Found attack on this PN
+			} catch (ExceptionControlApp e) {
+				log.error("Failed in hasActiveAttacks. Attack key: "+attackKey);
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			}
+		}
+		return false;
 	}
 
 	@Override

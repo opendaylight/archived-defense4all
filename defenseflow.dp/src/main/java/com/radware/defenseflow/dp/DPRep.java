@@ -12,9 +12,11 @@ package com.radware.defenseflow.dp;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.opendaylight.defense4all.core.AMS;
 import org.opendaylight.defense4all.core.AMSRep;
 import org.opendaylight.defense4all.core.DFAppModule;
 import org.opendaylight.defense4all.core.DFAppRoot;
+import org.opendaylight.defense4all.core.PN;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
@@ -31,8 +33,6 @@ public class DPRep extends DFAppModule implements AMSRep {
 	private static final int   ACTION_REMOVE_AMS = 2;
 	private static final int   ACTION_ADD_PN = 3;
 	private static final int   ACTION_REMOVE_PN = 4;
-	private static final int   ACTION_ADD_SECURITY_CONFIGURATION = 5;
-	private static final int   ACTION_REMOVE_SECURITY_CONFIGURATION = 6;
 	private static final int   ACTION_START_MONITORING = 7;
 	private static final int   ACTION_STOP_MONITORING = 8;
 
@@ -51,6 +51,7 @@ public class DPRep extends DFAppModule implements AMSRep {
 		INVALID,
 		MONITORED_TRAFFIC,
 		CONFIGURED_NETWORKS,
+		CONFIGURED_VLANS,
 		SECURITY_CONFIGURATIONS
 	}
 
@@ -116,8 +117,7 @@ public class DPRep extends DFAppModule implements AMSRep {
 	 */
 	@Override
 	public void addAMS(String amsKey) throws ExceptionControlApp {
-
-		try {
+		try {	
 			invokeDecoupledSerially(ACTION_ADD_AMS, amsKey);
 		} catch (ExceptionControlApp e) {
 			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_ADD_AMS + " " + amsKey, e);
@@ -126,13 +126,17 @@ public class DPRep extends DFAppModule implements AMSRep {
 	}
 
 	protected void decoupledAddAMS (String amsKey) {
-		FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_CONFIG, "DPRep is adding DP " + amsKey);
+		log.info( "DPRep is adding DP " + amsKey);
+		
 		try {
+			AMS.Status status = AMS.Status.valueOf((String)dfAppRoot.amsRepo.getCellValue(amsKey, AMS.STATUS));
+			if ( status == AMS.Status.REMOVED ) return;
 			dpConfigMgr.addAMS(amsKey);
 			dpHealthMgr.addAMS(amsKey);
+			dpEventMgr.addAMS(amsKey);
 		} catch (Throwable e) {
 			log.error("Excepted adding AMS to either dpConfigMgr or dpHealthMgr" + e.getMessage());
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep has failed to add DP " + amsKey);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to add AMS " + amsKey);
 			return;
 		}
 	}
@@ -156,12 +160,12 @@ public class DPRep extends DFAppModule implements AMSRep {
 
 	protected void decoupledRemoveAMS (String amsKey) {
 		try {
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_CONFIG, "DPRep is removing DP " + amsKey);
+			log.info("DPRep is removing DP " + amsKey);
 			dpConfigMgr.removeAMS(amsKey);
+			dpHealthMgr.removeAMS(amsKey);	
 		} catch (ExceptionControlApp e) {
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep has failed to properly remove DP " + amsKey);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to Remove AMS " + amsKey);
 		}
-		dpHealthMgr.removeAMS(amsKey);	
 	}
 
 	/**
@@ -184,10 +188,10 @@ public class DPRep extends DFAppModule implements AMSRep {
 
 	protected void decoupledAddPN (String pnKey) {
 		try {
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_CONFIG, "DPRep is adding PN " + pnKey);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_CONFIG, "Adding PO " + PN.getPrintableKey(pnKey));
 			dpConfigMgr.addPN(pnKey);
 		} catch (ExceptionControlApp e) {
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep has failed to add PN" + pnKey);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to add PO " + PN.getPrintableKey(pnKey));
 			return;
 		}
 		dpEventMgr.addPN(pnKey);
@@ -230,17 +234,8 @@ public class DPRep extends DFAppModule implements AMSRep {
 	public void addSecurityConfiguration(String dvsnInfoKey) throws ExceptionControlApp {
 
 		try {
-			invokeDecoupledSerially(ACTION_ADD_SECURITY_CONFIGURATION, dvsnInfoKey);
-		} catch (ExceptionControlApp e) {
-			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_ADD_SECURITY_CONFIGURATION + " " + dvsnInfoKey, e);
-			throw e;
-		}
-	}
-
-	protected void decoupledAddSecurityConfiguration (String dvsnInfoKey) {
-		try {
 			dpConfigMgr.addSecurityConfiguration(dvsnInfoKey);
-		} catch (ExceptionControlApp e) { /* Ignore */}
+		} catch (ExceptionControlApp e) {}
 	}
 
 	/**
@@ -251,16 +246,6 @@ public class DPRep extends DFAppModule implements AMSRep {
 	 */
 	@Override
 	public void removeSecurityConfiguration(String dvsnInfoKey) throws ExceptionControlApp {
-
-		try {
-			invokeDecoupledSerially(ACTION_REMOVE_SECURITY_CONFIGURATION, dvsnInfoKey);
-		} catch (ExceptionControlApp e) {
-			log.error("Excepted trying to invokeDecoupledSerialiy "+ACTION_REMOVE_SECURITY_CONFIGURATION+" "+dvsnInfoKey,e);
-			throw e;
-		}
-	}
-
-	protected void decoupledRemoveSecurityConfiguration(String dvsnInfoKey) {
 		dpConfigMgr.removeSecurityConfiguration(dvsnInfoKey);
 	}
 
@@ -286,8 +271,7 @@ public class DPRep extends DFAppModule implements AMSRep {
 	 * will translate dpEventMgr notifications into DP originated "attack detections". Notify DPEventMgr to
 	 * start monitoring for security events related to this mitigation and notify dpBasedDetector. */
 	protected void decoupledStartMonitoring(String mitigationKey) {
-		FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Starting to monitor through DPs traffic for mitigation "
-				+ mitigationKey);
+		log.info("Starting to monitor through DPs traffic for mitigation "+ mitigationKey);
 		dpBasedDetector.addMonitoredAttack(mitigationKey);
 		dpEventMgr.startMonitoring(mitigationKey);
 	}
@@ -313,8 +297,7 @@ public class DPRep extends DFAppModule implements AMSRep {
 	/* Notify DPEventMgr to stop monitoring for security events related to this mitigation, dpBasedDetector
 	 * to stop acting as DP based detector for this mitigated traffic. */
 	protected void decoupledStopMonitoring(String mitigationKey) {
-		FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Stopping to monitor through DPs traffic for mitigation "
-				+ mitigationKey);
+		log.info( "Stopping to monitor through DPs traffic for mitigation " + mitigationKey);
 		dpEventMgr.stopMonitoring(mitigationKey);
 		dpBasedDetector.removeMonitoredAttack(mitigationKey);
 	}
@@ -347,12 +330,6 @@ public class DPRep extends DFAppModule implements AMSRep {
 			break;
 		case ACTION_REMOVE_PN:
 			decoupledRemovePN((String) param); 
-			break;
-		case ACTION_ADD_SECURITY_CONFIGURATION:
-			decoupledAddSecurityConfiguration((String) param); 
-			break;
-		case ACTION_REMOVE_SECURITY_CONFIGURATION:
-			decoupledRemoveSecurityConfiguration((String) param); 
 			break;
 		case ACTION_START_MONITORING:
 			decoupledStartMonitoring((String) param); 

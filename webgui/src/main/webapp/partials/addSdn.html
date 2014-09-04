@@ -1,0 +1,90 @@
+<div class="container">
+<div class="row">
+
+    <div class="col-md-8 col-md-offset-2">
+    <div class="header-template">
+        <h1>Add SDN Controller</h1>
+
+        <alert ng-repeat="alert in SDNFormAlerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+        <form role="form" name="addSDNForm" class="form-horizontal" valid-submit="save()" novalidate>
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.hostname.$dirty && addSDNForm.hostname.$invalid]">
+                <label class="col-sm-4 control-label" for="hostname">Hostname</label>
+                <div class="col-sm-8">
+                    <input name="hostname" ng-model="ofc.hostname" ng-maxlength="64" type="text" class="form-control" id="hostname" placeholder="SDN Controller Hostname" required>
+                    <span class="help-block" ng-show="addSDNForm.hostname.$dirty && addSDNForm.hostname.$error.required">SDN name is required.</span>
+                    <span class="help-block" ng-show="addSDNForm.hostname.$dirty && addSDNForm.hostname.$error.maxlength">Can't be more than 64 characters long.</span>
+                </div>
+            </div>
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.ipAddrString.$dirty && addSDNForm.ipAddrString.$invalid]">
+                <label class="col-sm-4 control-label" for="ipAddrString">IP Address</label>
+                <div class="col-sm-8">
+                    <input name="ipAddrString" ng-model="ofc.ipAddrString" ng-maxlength="64" ng-pattern="/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/" type="text" class="form-control" id="ipAddrString" placeholder="100.100.100.100" required>
+                    <span class="help-block" ng-show="addSDNForm.ipAddrString.$dirty && addSDNForm.ipAddrString.$error.required">IP Address name is required.</span>
+                    <span class="help-block" ng-show="addSDNForm.ipAddrString.$dirty && addSDNForm.ipAddrString.$error.pattern">Invalid IP Address Format.</span>
+                    <span class="help-block" ng-show="addSDNForm.ipAddrString.$dirty && addSDNForm.ipAddrString.$error.maxlength">Can't be more than 64 characters long.</span>
+                </div>
+            </div>
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.port.$dirty && addSDNForm.port.$invalid]">
+                <label class="col-sm-4 control-label" for="port">Port</label>
+                <div class="col-sm-8">
+                    <input name="port" ng-model="ofc.port" ng-maxlength="64" type="number" min="0" class="form-control" id="port" placeholder="8443" required>
+                    <span class="help-block" ng-show="addSDNForm.port.$dirty && addSDNForm.port.$error.required">Port is required.</span>
+                    <span class="help-block" ng-show="addSDNForm.port.$dirty && addSDNForm.port.$error.maxlength">Can't be more than 64 characters long.</span>
+                </div>
+            </div>
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$invalid]">
+                <label class="col-sm-4 control-label" for="port">Statistics Polling Interval</label>
+                <div class="col-sm-8">
+                    <input name="ofcStatsCollectionInterval" ng-model="ofc.ofcStatsCollectionInterval" ng-maxlength="64" type="number" min="60" class="form-control" id="ofcStatsCollectionInterval" placeholder="120" ng-init="ofc.ofcStatsCollectionInterval=120" required>
+                    <span class="help-block" ng-show="addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$error.required">Statistics Polling Interval is required.</span>
+                    <span class="help-block" ng-show="addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$error.maxlength">Can't be more than 64 characters long.</span>
+                    <span class="help-block" ng-show="addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$error.min">Minimum value is 60.</span>
+                </div>
+            </div>
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.username.$dirty && addSDNForm.username.$invalid]">
+                <label class="col-sm-4 control-label" for="username">Username</label>
+                <div class="col-sm-8">
+                    <input name="username" ng-model="ofc.username" type="text" class="form-control" id="username" placeholder="admin" required>
+                    <span class="help-block" ng-show="addSDNForm.username.$dirty && addSDNForm.username.$error.required">Username is required.</span>
+                    <span class="help-block" ng-show="addSDNForm.username.$dirty && addSDNForm.username.$error.maxlength">Can't be more than 64 characters long.</span>
+                </div>
+            </div>
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.password.$dirty && addSDNForm.password.$invalid]">
+                <label class="col-sm-4 control-label" for="password">Password</label>
+                <div class="col-sm-8">
+                    <input name="password" ng-model="ofc.password" type="password" class="form-control" id="password" required>
+                    <span class="help-block" ng-show="addSDNForm.password.$dirty && addSDNForm.password.$error.required">Password is required.</span>
+                    <span class="help-block" ng-show="addSDNForm.password.$dirty && addSDNForm.password.$error.maxlength">Can't be more than 64 characters long.</span>
+                </div>
+            </div>
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.confirmpassword.$dirty && addSDNForm.confirmpassword.$invalid]">
+                <label class="col-sm-4 control-label" for="confirmpassword">Confirm Password</label>
+                <div class="col-sm-8">
+                    <input ng-model="confirmpassword" name="confirmpassword" type="password" class="form-control" id="confirmpassword" data-password-verify="addSDNForm.password" required>
+                    <span class="help-block" ng-show="addSDNForm.confirmpassword.$dirty && addSDNForm.confirmpassword.$error.required">Confirmation Password is required.</span>
+                    <span class="help-block" ng-show="addSDNForm.confirmpassword.$dirty && addSDNForm.confirmpassword.$error.passwordVerify">Passwords are not equal!</span>
+                    <span class="help-block" ng-show="confirmpassword.$dirty && confirmpassword.$error.maxlength">Can't be more than 64 characters long.</span>
+                </div>
+            </div>
+
+            <div class="form-group pull-right">
+                <button type="button" class="btn btn-warning" ng-click="cancel()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+
+    </div>
+    </div> <!-- col -->
+    </div> <!-- row -->
+</div> <!-- container -->
+
+
+

@@ -15,8 +15,9 @@ import java.util.Properties;
 
 import org.codehaus.jackson.type.TypeReference;
 import org.opendaylight.defense4all.core.PN;
-import org.opendaylight.defense4all.core.PN.IpVersion;
+import org.opendaylight.defense4all.core.PO.IpVersion;
 import org.opendaylight.defense4all.core.PN.MitigationScope;
+import org.opendaylight.defense4all.core.PN.OperationalStatus;
 import org.opendaylight.defense4all.core.ProtectionSLA;
 import org.opendaylight.defense4all.framework.core.Utils;
 
@@ -156,6 +157,8 @@ public class CliPn {
 
 		System.out.println("pns:\n");
 		for(PN pn : pns) {
+			if ( pn.operationalStatus == OperationalStatus.CANCELED )
+				continue;
 			System.out.println(pn.toString());
 			System.out.println("=================================");
 		}
@@ -258,11 +261,11 @@ public class CliPn {
 
 		try {
 			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);	
+			System.out.println("Adding pn " + pn.label);
 			connector.postToControlApps("pns", pn);
 		} catch (Exception e) {
 			System.out.println("Could not add pn because " + e.getMessage());
 		}
-		System.out.println("Adding pn " + pn.label);
 	}
 
 	protected static void addLabel(PN pn, String param) throws Exception {

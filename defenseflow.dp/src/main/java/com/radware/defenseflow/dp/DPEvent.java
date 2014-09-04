@@ -11,9 +11,11 @@
 
 package com.radware.defenseflow.dp;
 
+import java.net.UnknownHostException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.opendaylight.defense4all.core.Traffic;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -49,7 +51,7 @@ public class DPEvent {
 		super();
 	}
 
-	public static DPEvent fromString(String s) throws ExceptionControlApp {
+	public static DPEvent fromString(String s) throws ExceptionControlApp, UnknownHostException {
 
 		if(syslogPfxRegex == null) {
 			try {
@@ -66,6 +68,8 @@ public class DPEvent {
 
 		DPEvent dpEvent = new DPEvent();
 		dpEvent.dpAddrStr = matcher.group(4);
+		
+		dpEvent.dpAddrStr =  Traffic.NameHash.getHostAddr(dpEvent.dpAddrStr).getHostAddress();
 		dpEvent.dpName = dpEvent.dpAddrStr; // To be used if no name is set from outside
 		dpEvent.msg = matcher.group(5);
 		return dpEvent;	

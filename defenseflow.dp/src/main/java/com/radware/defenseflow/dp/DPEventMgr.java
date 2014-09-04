@@ -10,10 +10,7 @@
 
 package com.radware.defenseflow.dp;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.defense4all.core.AMS;
 import org.opendaylight.defense4all.core.DFAppModule;
 import org.opendaylight.defense4all.core.DFAppRoot;
-import org.opendaylight.defense4all.core.DFHolder;
 import org.opendaylight.defense4all.core.Mitigation;
 import org.opendaylight.defense4all.core.PN;
 import org.opendaylight.defense4all.core.Traffic;
@@ -113,7 +109,7 @@ public class DPEventMgr extends DFAppModule {
 		if(fMain.isDebugRun()) {
 			try {
 				Runtime runtime = Runtime.getRuntime();
-//				runtime.exec("dd if=" + rsyslogDFPipe + " iflag=nonblock of=/dev/null > /dev/null");
+				//				runtime.exec("dd if=" + rsyslogDFPipe + " iflag=nonblock of=/dev/null > /dev/null");
 				runtime.exec("mkfifo " + rsyslogDFPipe);
 				runtime.exec("sudo service rsyslog restart"); // Make sure rsyslogd picks up the latest creation of DF syslog pipe
 			} catch (Throwable e1) {}
@@ -174,7 +170,7 @@ public class DPEventMgr extends DFAppModule {
 				dpNames.put(dpAddrStr, dpLabel);
 		} catch (Throwable e) {
 			log.error("Failed to retrieve from amsRepo dpAddr or dpLabel for " + amsKey);
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep failed to add DP " + amsKey);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to add AMS " + amsKey);
 		}
 	}
 
@@ -192,7 +188,7 @@ public class DPEventMgr extends DFAppModule {
 				dpNames.remove(dpAddrStr);
 		} catch (Throwable e) {
 			log.error("Failed to retrieve from amsRepo dpAddr for " + amsKey);
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep failed to properly remove DP " + amsKey);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to remove AMS " + amsKey);
 		}
 	}
 
@@ -228,19 +224,22 @@ public class DPEventMgr extends DFAppModule {
 
 			Hashtable<String,Object> mitigationRow = dfAppRoot.mitigationsRepo.getRow(mitigationKey);
 			mitigation = new Mitigation(mitigationRow);
-
-			/* Construct monitoredTraffic and register it in monitoredTraffics and monitoredTrafficsRepo */
-			int dstAddrPrefixLen = (Integer) DFHolder.get().pNsRepo.getCellValue(mitigation.pnKey, PN.DST_ADDR_PREFIX_LEN);
-			Traffic traffic = new Traffic(mitigation.dstAddr, dstAddrPrefixLen);
+			
+			/* Construct PN and retrieve the vlan from it */
+			Hashtable<String,Object> pnRow = dfAppRoot.pNsRepo.getRow(mitigation.pnKey);
+			PN pn = new PN(pnRow);
+			int vlan = pn.retrieveVlanFromProps();
+			
+			Traffic traffic = new Traffic(vlan, mitigation.dstAddr, pn.dstAddrPrefixLen);
 			traffic.addProtocolPort(mitigation.protocolPort.protocol, mitigation.protocolPort.port);
-			key = MonitoredTraffic.generateKey(mitigation.dstAddr.getHostName());	
+			key = MonitoredTraffic.generateKey(mitigation.dstAddr.getHostName(), mitigation.protocolPort);	
 			MonitoredTraffic monitoredTraffic = new MonitoredTraffic(key, mitigation.pnKey, mitigationKey, traffic);
 			monitoredTraffics.put(key, monitoredTraffic);
 			monitoredTrafficsSet = true;
 			monitoredTrafficRepo.setRow(key, monitoredTraffic.toRow());
 			monitoredTrafficRowSet = true;
 
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_SECURITY, "Starting to monitor security events from DefensePros " +
+			log.debug( "Starting to monitor security events from DefensePros " +
 					"for traffic " + monitoredTraffic.toString());
 
 			/* Remember the key of the monitoredTraffic (to be used in removal of this monitoredTraffic) */
@@ -249,16 +248,14 @@ public class DPEventMgr extends DFAppModule {
 
 		} catch (Throwable e) {
 			log.error("Excepted starting monitoring for " + mitigationKey, e);
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep failed to start monitoring through DPs for "
-					+ "mitigated traffic " + mitigationKey);
+			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to start monitoring AMS for mitigated traffic.");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			try {
 				if(key != null && monitoredTrafficsSet) monitoredTraffics.remove(key);
 				if(key != null && monitoredTrafficRowSet) monitoredTrafficRepo.deleteRow(key);
 			} catch (Throwable e2) { 
 				log.error("Failed to clean up after excepting trying to start monitoring " + mitigationKey, e2);
-				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep failed to properly stop monitoring "
-						+ "through DPs for mitigated traffic " + mitigationKey);
+				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to stop monitoring AMS for mitigated traffic.");
 			}
 		}
 	}
@@ -276,14 +273,13 @@ public class DPEventMgr extends DFAppModule {
 			String key = (String) dfAppRoot.mitigationsRepo.getCellValue(mitigationKey,Mitigation.MONITORED_TRAFFIC_KEY);		
 			MonitoredTraffic monitoredTraffic = monitoredTraffics.remove(key);
 			if(monitoredTraffic != null)
-				fMain.getFR().logRecord(DFAppRoot.FR_DF_SECURITY, "Stopping to monitor security events from DefensePros " +
-						"for traffic " + monitoredTraffic.toString());
-
+				log.debug( "Stopping to monitor security events from DefensePros " + "for traffic " + monitoredTraffic.toString());
+			
 			monitoredTrafficRepo.deleteRow(key);
 		} catch (Throwable e) {
 			log.error("Failed to stopMonitoring.", e);
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep failed to properly stop monitoring through "
-					+ "DPs for mitigated traffic " + mitigationKey);
+		//	FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "DPRep failed to properly stop monitoring through "
+		//			+ "DPs for mitigated traffic " + mitigationKey);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 		}			
 	}
@@ -305,15 +301,15 @@ public class DPEventMgr extends DFAppModule {
 	 */
 	protected void backgroundProcessSyslogs() {
 
-		BufferedReader bufferedReader;	String syslogMsg;
-
+		/*BufferedReader bufferedReader = null;*/	String syslogMsg;
+		RandomAccessFile pipeReader = null;
+		
 		while(true) {
-
 			try {
-				bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(rsyslogDFPipe)));
+				pipeReader = new RandomAccessFile(rsyslogDFPipe, "r");
 			} catch (Throwable e) {
 				log.error("Failed to open rsyslog pipe.", e);
-				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to read DP syslogs from pipe "+rsyslogDFPipe);
+				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to read AMS syslogs. ");
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 				try {
 					Thread.sleep(10000);
@@ -321,52 +317,61 @@ public class DPEventMgr extends DFAppModule {
 				continue;
 			}
 
+
 			try {
-				syslogMsg = bufferedReader.readLine();
-				log.info("DP SYSLOG msg: " + syslogMsg);
-				bufferedReader.close();
-			} catch (IOException e) {
+				while ( null != (syslogMsg = pipeReader.readLine()) ) {
+					log.debug("DP SYSLOG msg: " + syslogMsg);
+					
+					if (syslogMsg == null || syslogMsg.length() == 0) continue;
+					DPEvent dpEvent;
+					try {
+						dpEvent = DPEvent.fromString(syslogMsg);
+						log.debug("DP SYSLOG Event: " + (dpEvent == null ? "null dp event" : dpEvent.toString()));
+					} catch (ExceptionControlApp e) {
+						log.error("Failed to parse syslogMsg into dpEvent.", e);
+						FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to parse AMS syslog message: " + syslogMsg);
+						fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
+						continue;
+					}
+					if (dpEvent == null) continue; // Not a DP message
+
+					/* Strive to associate dp names to returned addresses */
+					String dpName = dpNames.get(dpEvent.dpAddrStr);
+					if(dpName == null) continue;		// Not a monitored DP
+					dpEvent.dpName = dpName;
+
+					/* Check if it is a security event */
+					DPSecEvent dpSecurityEvent = null;
+					try {
+						dpSecurityEvent = DPSecEvent.fromString(dpEvent.msg);
+						if(dpSecurityEvent != null)
+							log.info("DP SYSLOG Event: " + dpSecurityEvent.toString());
+					} catch (ExceptionControlApp e) {
+						log.error("Failed to process syslogMsg into dpEvent.", e);
+						FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to parse AMS syslog security message: "+syslogMsg);
+						fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
+						continue;
+					}
+					if (dpSecurityEvent == null) {
+						fMain.getFR().logRecord(DFAppRoot.FR_AMS_OPERATIONAL, dpEvent.toString()); // Record as operational event
+					} else { // Process security event
+						try {
+							processSecEvent(dpSecurityEvent);
+						} catch (Throwable e) {
+							continue; /* Ignore*/
+						} 
+					}
+				} 
+				pipeReader.close();
+			} catch (Throwable e) {
 				log.error("Failed to read from rsyslog pipe.", e);
-				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to read DP syslogs from pipe "+rsyslogDFPipe);
+				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to read AMS syslogs.");
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				try {
 					Thread.sleep(1000);
+					pipeReader.close();
 				} catch (Throwable e1) {/* Ignore */}
 				continue;
-			}
-			if (syslogMsg == null || syslogMsg.length() == 0) continue;
-			DPEvent dpEvent;
-			try {
-				dpEvent = DPEvent.fromString(syslogMsg);
-				log.info("DP SYSLOG Event: " + (dpEvent == null ? "null dp event" : dpEvent.toString()));
-			} catch (ExceptionControlApp e) {
-				log.error("Failed to parse syslogMsg into dpEvent.", e);
-				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to parse DP syslog msg " + syslogMsg);
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-				return;
-			}
-			if (dpEvent == null) continue; // Not a DP message
-
-			/* Strive to associate dp names to returned addresses */
-			String dpName = dpNames.get(dpEvent.dpAddrStr);
-			if(dpName != null) dpEvent.dpName = dpName;
-
-			/* Check if it is a security event */
-			DPSecEvent dpSecurityEvent = null;
-			try {
-				dpSecurityEvent = DPSecEvent.fromString(dpEvent.msg);
-				if(dpSecurityEvent != null)
-					log.info("DP SYSLOG Event: " + dpSecurityEvent.toString());
-			} catch (ExceptionControlApp e) {
-				log.error("Failed to process syslogMsg into dpEvent.", e);
-				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE,"Failed to parse DP syslog security msg "+syslogMsg);
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-				return;
-			}
-			if (dpSecurityEvent == null) {
-				fMain.getFR().logRecord(DFAppRoot.FR_AMS_OPERATIONAL, dpEvent.toString()); // Record as operational event
-			} else { // Process security event
-				processSecEvent(dpSecurityEvent); 
 			}
 		}
 	}
@@ -388,10 +393,9 @@ public class DPEventMgr extends DFAppModule {
 
 			/* Check if this is a monitored security event - dst_addr, protocol, dst_port */
 			try {
-				trafficMatch = monitoredTraffic.traffic.match(secEvent.dstAddress,secEvent.dpProtocol.toDFProtocol(),secEvent.dstPort);
+				trafficMatch = monitoredTraffic.traffic.match(secEvent.vlan, secEvent.dstAddress,secEvent.dpProtocol.toDFProtocol(),secEvent.dstPort);
 			} catch (ExceptionControlApp e) {
-				String msg = "Failed to match DP security syslog message to monitored traffics - " + secEvent.dstAddress
-						+ secEvent.dpProtocol.toDFProtocol() + secEvent.dstPort;
+				String msg = "Failed to match AMS security syslog message to monitored traffic.";
 				log.error(msg,e);
 				FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, msg);
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
@@ -400,7 +404,7 @@ public class DPEventMgr extends DFAppModule {
 			if(trafficMatch == TrafficMatch.NO) continue;
 
 			/* Record this security event. */
-			fMain.getFR().logRecord(DFAppRoot.FR_AMS_SECURITY,secEvent.toString());
+			//fMain.getFR().logRecord(DFAppRoot.FR_AMS_SECURITY,secEvent.toString());
 
 			/* Construct AttackReport and deliver to the DPBasedDetector. */
 			/* TODO: Refine attack reporting when TrafficMatch.CONTAIN, so as to allow diversion refinements accordingly */

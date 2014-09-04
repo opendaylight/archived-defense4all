@@ -20,6 +20,8 @@ import me.prettyprint.cassandra.serializers.StringSerializer;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.PropertiesSerializer;
 import org.opendaylight.defense4all.framework.core.RepoCD;
 import org.slf4j.Logger;
@@ -103,6 +105,8 @@ public class NetNode {
 		this.protectedLinks = fromProtectedLinksStr(protectedLinksStr);
 	}
 
+	public static String generateAMSConnColName(String amsConnLabel) {return AMS_CONNECTION_PREFIX + amsConnLabel; }
+
 	/* ### Description ###
 	 * @param param_name 
 	 */
@@ -134,9 +138,12 @@ public class NetNode {
 			int healthCheckFrequency, String amsConnectionsStr, String trafficPortsStr, String protectedLinksStr) {
 
 		this(label, id, type, mgmtAddr, port, sdnNodeMode, healthCheckFrequency);
-		this.amsConnections = fromAmsConnectionsStr(amsConnectionsStr); 
-		this.trafficPorts = fromTrafficPortsStr(trafficPortsStr); 
-		this.protectedLinks = fromProtectedLinksStr(protectedLinksStr);
+		if ( amsConnections != null && ! amsConnections.isEmpty())
+			this.amsConnections = fromAmsConnectionsStr(amsConnectionsStr); 
+		if ( trafficPorts != null && ! trafficPorts.isEmpty())
+			this.trafficPorts = fromTrafficPortsStr(trafficPortsStr);
+		if ( protectedLinks != null && ! protectedLinks.isEmpty())
+			this.protectedLinks = fromProtectedLinksStr(protectedLinksStr);
 	}
 
 	public void toJacksonFriendly() {		
@@ -153,8 +160,10 @@ public class NetNode {
 		Hashtable<String, AMSConnection> inflatedAmsConnections = new Hashtable<String, AMSConnection>();
 		AMSConnection amsConnection;
 		for(int i=0;i<split.length;i++) {
-			amsConnection = new AMSConnection(split[i]);
-			inflatedAmsConnections.put(amsConnection.amsLabel, amsConnection);
+			try {
+				amsConnection = new AMSConnection(split[i]);
+				inflatedAmsConnections.put(amsConnection.label, amsConnection);
+			} catch ( Throwable e) {continue;}
 		}
 
 		return inflatedAmsConnections;
@@ -189,8 +198,10 @@ public class NetNode {
 		Hashtable<String, TrafficPort> InflatedTrafficPorts = new Hashtable<String, TrafficPort>();
 		TrafficPort trafficPort;
 		for(int i=0;i<split.length;i++) {
-			trafficPort = new TrafficPort(split[i]);
-			InflatedTrafficPorts.put(trafficPort.label, trafficPort);
+			try {
+				trafficPort = new TrafficPort(split[i]);
+				InflatedTrafficPorts.put(trafficPort.label, trafficPort);
+			} catch ( Throwable e) {continue;}
 		}
 
 		return InflatedTrafficPorts;
@@ -276,7 +287,7 @@ public class NetNode {
 			if(columnName.startsWith(AMS_CONNECTION_PREFIX)) {
 				try {
 					amsConnection = new AMSConnection((String) entry.getValue());
-					amsConnections.put(amsConnection.amsLabel, amsConnection);
+					amsConnections.put(amsConnection.label, amsConnection);
 				} catch (Throwable e) { 
 					log.error("Failed to instantiate AMSConnection using " + entry.getValue().toString());
 					throw new ExceptionControlApp("Failed to instantiate AMSConnection using "+entry.getValue().toString(),e);					
@@ -326,7 +337,7 @@ public class NetNode {
 		Map.Entry<String,AMSConnection> amsConnectionEntry; 
 		while(amdConnectionIter.hasNext()) {
 			amsConnectionEntry = amdConnectionIter.next();
-			columnName = AMS_CONNECTION_PREFIX + (String) amsConnectionEntry.getKey();
+			columnName = generateAMSConnColName( amsConnectionEntry.getKey());
 			cellValue = amsConnectionEntry.getValue().toString();
 			row.put(columnName, cellValue);
 		}
@@ -475,5 +486,29 @@ public class NetNode {
 			if(netNodeStatus == Status.REMOVED) return true;
 			return false;
 		} catch (Throwable e) {return false;}
+	}
+	
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	public static NetNode getNetNode(String netNodeKey) {
+		
+		try {
+			Hashtable<String, Object> netNodeRow = DFHolder.get().netNodesRepo.getRow(netNodeKey); 
+			if(netNodeRow == null) { 
+				log.error("Got null netNodeRow for key " + netNodeKey);
+				return null;
+			}
+			NetNode netNode = new NetNode(netNodeRow); 
+			return netNode;
+		} catch (Throwable e) {
+			log.error("Failed to getNetNode : "+netNodeKey, e);
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return null;
+		}
 	}
 }

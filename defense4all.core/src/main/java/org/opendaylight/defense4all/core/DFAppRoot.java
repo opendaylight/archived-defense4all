@@ -52,6 +52,7 @@ public abstract class DFAppRoot extends AppRoot {
 		AMS,
 		NETNODES,
 		PNS,
+		POS,
 		ATTACKS,
 		DETECTORS,
 		DETECTIONS,
@@ -64,7 +65,22 @@ public abstract class DFAppRoot extends AppRoot {
 		COUNTERS_STATS,
 	}
 	
-	public static final String DF_APP = "Defense4All";
+	public enum HealthStatus {
+		DOWN,
+		UP;
+		
+		public static HealthStatus fromBoolean(boolean bool) {
+			if(bool) return UP;
+			return DOWN;
+		}
+		
+		public static boolean toBoolean(HealthStatus status) {
+			if ( status == UP) return true;
+			return false;
+		}
+	}
+	
+	public static final String DF_APP = "DefenseFlow";
 
 	/* Defense4All flight recorder event types */
 	public static final String FR_DF_CONFIG = "DF_config";
@@ -77,8 +93,7 @@ public abstract class DFAppRoot extends AppRoot {
 	public static final String FR_OFC_FAILURE = "OFC_failure";
 	public static final String FR_OFC_OPERATIONAL = "OFC_operational";
 	
-	
-	public static final int  CONTROLLER_STATS_COLLECTION_INTERVAL = 15; 
+	public long controllerStatsCollectionIntervalInSecs; 
 	public long baselineRecordingIntervalInSecs;
 	
 	public static final String OF_RATE_BASED_DETECTOR_LABEL = "of_rate_based_detector";
@@ -89,7 +104,8 @@ public abstract class DFAppRoot extends AppRoot {
 	public Repo<String> oFCsRepo = null;	
 	public Repo<String> amsRepo = null;		
 	public Repo<String> netNodesRepo = null;		
-	public Repo<String> pNsRepo = null;		
+	public Repo<String> pNsRepo = null;			
+	public Repo<String> posRepo = null;		
 	public Repo<String> attacksRepo = null;	
 	public Repo<String> detectorsRepo = null;	
 	public Repo<String> detectionsRepo = null;	
@@ -108,8 +124,8 @@ public abstract class DFAppRoot extends AppRoot {
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void init() throws ExceptionControlApp {	
-		super.init();
+	public void init(boolean bestEffort) throws ExceptionControlApp {	
+		super.init(bestEffort);
 	}
 
 	/**
@@ -148,4 +164,8 @@ public abstract class DFAppRoot extends AppRoot {
 	public abstract DetectorMgr getDetectorMgr();
 	public abstract AttackDecisionPoint getAttackDecisionPoint();
 	public abstract ArrayList<MitigationDriver> getMitigationDrivers();
+	
+	public abstract void notifyAMSStatusChange(String amsLabel, HealthStatus healthStatus);
+
+	public abstract void netNodeStatusChanged(String logicalNetNodeLabel, HealthStatus healthStatus);
 }

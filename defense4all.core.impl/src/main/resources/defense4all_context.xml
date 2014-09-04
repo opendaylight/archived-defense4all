@@ -2,18 +2,26 @@
 <beans xmlns="http://www.springframework.org/schema/beans"	
 	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	   xsi:schemaLocation="http://www.springframework.org/schema/beans 
-	   http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+	   classpath:spring-beans-3.0.xsd">
 	
 	<import resource="classpath*:defense4all_odl_context.xml"/>
 	<import resource="classpath*:defense4all_detector_context.xml"/>
 	<import resource="classpath*:defense4all_mgmt_point_context.xml"/>
 	<import resource="classpath*:defenseflow_dp_context.xml"/>
+    <import resource="classpath*:defenseflow_ams_context.xml"/>
+
 	<import resource="classpath*:defense4all_mitigationdriverlocal_context.xml"/>
 	
 	<bean id="appRoot" class="org.opendaylight.defense4all.core.impl.DFAppRootFullImpl" >
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="attackDecisionPoint" ref="attackDecisionPoint" />
-		<property name="amsRep" ref="amsRep" />
+        <property name="amsRep" ref="defaultAmsRep" />
+        <property name="amsRepMap" >
+           <map>
+               <entry key="DefaultAms" value-ref="defaultAmsRep"/>
+               <entry key="DP" value-ref="dpAmsRep"/>
+            </map>
+        </property>
 		<property name="statsCollectorImpl" ref="statsCollectorImpl" />
 		<property name="mitigationMgrImpl" ref="mitigationMgrImpl" />
 		<property name="detectorMgrImpl" ref="detectorMgrImpl" />
@@ -23,7 +31,8 @@
 		<property name="classPaths" value="org.opendaylight.defense4all.core.impl" />
 		<property name="mitigationDriver0" ref="mitigationDriver0" />
 		<property name="controllerStatsCollectionIntervalInSecs" value="15" />
-		<property name="baselineRecordingIntervalInSecs" value="30" />	
+		<property name="baselineRecordingIntervalInSecs" value="30" /> <!-- was 120 -->	
+
 		
 		<!-- Uncomment when adding mitigators -->
 <!-- 		<property name="mitigationDriver1" ref="mitigationDriver1" /> -->
@@ -41,7 +50,7 @@
 		<property name="processAttacksPeriod" value="20" />
 	</bean>	
 	<bean id="statsCollectorImpl" class="org.opendaylight.defense4all.core.impl.StatsCollectorImpl">
-		<constructor-arg index="0" name="collectStatsIntervalInSecs" value="3" /> <!-- debug time interval -->
+		<constructor-arg index="0" value="3" /> <!-- debug time interval --> <!-- name="collectStatsIntervalInSecs" -->
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="dfAppRoot" ref="appRoot" />
 	</bean>	

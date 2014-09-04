@@ -48,8 +48,15 @@ public class MonitoredTraffic {
 	public String mitigationKey;
 	public Traffic traffic;
 	
-	public static String generateKey(String dstAddr) {
-		return "mt_" + dstAddr;
+	public static String generateKey(String dstAddr, ProtocolPort protocolPort) {
+		
+		StringBuilder sb = new StringBuilder();
+		sb.append("mt_");
+		sb.append(dstAddr);
+		if(protocolPort != null) {
+			sb.append(protocolPort.toString());
+		}
+		return sb.toString();
 	}
 
 	/** ### Description ###

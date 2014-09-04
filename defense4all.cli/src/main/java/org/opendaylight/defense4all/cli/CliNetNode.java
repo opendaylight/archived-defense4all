@@ -80,6 +80,7 @@ public class CliNetNode {
 	protected static void displayUsageAddNetnode() {
 
 		StringBuilder sb = new StringBuilder();
+		sb.append("Bugged, please use curl instead!!!");//TODO: decide and use lower-case or camel-case, and fix the amslabel issue and parsing. 				
 		sb.append("Usage:  controlapps addnetnode param1 param2 ... \n");
 		sb.append("   Description - adds the netnode described through the params.\n");
 		sb.append("   A params is formed -- field_name=field_value.\n");
@@ -95,6 +96,7 @@ public class CliNetNode {
 		sb.append("       props - other custom properties. Each in the form:\n");
 		sb.append("           props::prop_name or props::prop_name=prop_value.\n");
 		sb.append("       ams connections - netnode connections to amss. Can be zero or more. Each connection is described through its fields, as follows:\n");
+		sb.append("           amsconnection::amslabel=label_value - [mandatory] ams connection unique label.\n");
 		sb.append("           amsconnection::amslabel=amslabel_value - [mandatory] label of the connected ams.\n");
 		sb.append("           amsconnection::amslabel::netnodenorthport=port_value - [mandatory] number of the north (closer to client) port in the netnode connected to the ams.\n");
 		sb.append("           amsconnection::amslabel::netnodesouthport=port_value - [mandatory] number of the south (closer to server) port in the netnode connected to the ams.\n");
@@ -268,12 +270,12 @@ public class CliNetNode {
 		}
 
 		try {
-			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);			
+			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);
+			System.out.println("Adding netnode " + netNode.label);			
 			connector.postToControlApps("netnodes", netNode);
 		} catch (Exception e) {
 			System.out.println("Could not add netnode because " + e.getMessage());
 		}
-		System.out.println("Adding netnode " + netNode.label);
 	}
 
 	protected static void addLabel(NetNode netNode, String param) throws Exception {
@@ -318,10 +320,14 @@ public class CliNetNode {
 
 	protected static void addAmsConnectionField(NetNode netNode, String param) throws Exception {
 		String[] split = Cli.splitAndAssertSize(param, "::");
-		if(split[1].startsWith("amslabel"))
-			addAmsConnectionAmsLabel(netNode, split[1]);
+		if(split[1].startsWith("label"))
+			addAmsConnectionLabel(netNode, split[1]);
+//		else if(split[1].startsWith("amslabel"))
+//			addAmsConnectionAmsLabel(netNode, split[1], split[2]);
 		else if(split.length < 3 || split[1] == null || split[1].isEmpty())			
 			throw new Exception("Invalid param " + param); // Other fields: amsconnection::label::field_name=field_value
+		else if(split[2].startsWith("amslabel"))
+			addAmsConnectionAmsLabel(netNode, split[1], split[2]);
 		else if(split[2].startsWith("netnodenorthport"))
 			addAmsConnectionNetnodeNorthPort(netNode, split[1], split[2]);
 		else if(split[2].startsWith("netnodesouthport"))
@@ -332,7 +338,7 @@ public class CliNetNode {
 			addAmsConnectionAmsSouthPort(netNode, split[1], split[2]);
 	}
 
-	private static void addAmsConnectionAmsLabel(NetNode netNode, String nameValStr) throws Exception {
+	private static void addAmsConnectionLabel(NetNode netNode, String nameValStr) throws Exception {
 		String[] split = Cli.splitAndAssertSize(nameValStr, "=");
 		getCreateAmsConnection(netNode, split[1]);	// Create if non existent
 	}
@@ -341,10 +347,19 @@ public class CliNetNode {
 		AMSConnection amsConnection = netNode.amsConnections.get(label);
 		if(amsConnection == null) { // First field in this amsConnection
 			amsConnection = new AMSConnection();
-			amsConnection.amsLabel = label;
+			amsConnection.label = label;
 			netNode.amsConnections.put(label, amsConnection);
 		}
 		return amsConnection;
+	}
+
+	private static void addAmsConnectionAmsLabel(NetNode netNode,String label,String nameValStr) throws Exception {
+
+		String[] split = Cli.splitAndAssertSize(nameValStr, "=");
+		String amsLabel = split[1];
+		if(amsLabel == null || amsLabel.isEmpty()) throw new Exception("Invalid amsLabel for amsconnection " + label);
+		AMSConnection amsConnection = getCreateAmsConnection(netNode, label);
+		amsConnection.amsLabel = split[1];
 	}
 
 	private static void addAmsConnectionNetnodeNorthPort(NetNode netNode,String label,String nameValStr) throws Exception {

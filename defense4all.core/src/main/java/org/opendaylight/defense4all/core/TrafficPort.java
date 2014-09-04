@@ -13,11 +13,14 @@ public class TrafficPort {
 	public short number;
 	public int vlan;
 	public PortLocation location;
+	public boolean up;
 
-	public TrafficPort() {this.label = null; this.number = 0; this.vlan = 0; location = PortLocation.invalid;}
+	public TrafficPort() {
+		this.label = null; this.number = 0; this.vlan = 0; location = PortLocation.invalid; up = true;
+	}
 
 	public TrafficPort(String label, short number, int vlan, PortLocation location) {
-		this.label = label; this.number = number; this.vlan = vlan; this.location = location; 
+		this.label = label; this.number = number; this.vlan = vlan; this.location = location; up = true;
 	}
 
 	public TrafficPort(String s) throws IllegalArgumentException {
@@ -36,6 +39,7 @@ public class TrafficPort {
 			NetNode.log.error("Invalid string parameter " + s);
 			throw new IllegalArgumentException("Invalid string parameter " + s, e);
 		}
+		up = true;
 	}
 
 	public String toString() {
@@ -44,6 +48,7 @@ public class TrafficPort {
 		sb.append(NetNode.ITEMS_DELIMITER); sb.append(number); 
 		sb.append(NetNode.ITEMS_DELIMITER); sb.append(vlan); 
 		sb.append(NetNode.ITEMS_DELIMITER); sb.append(location);
+		sb.append(NetNode.ITEMS_DELIMITER); sb.append(up);
 		return sb.toString();
 	}
 

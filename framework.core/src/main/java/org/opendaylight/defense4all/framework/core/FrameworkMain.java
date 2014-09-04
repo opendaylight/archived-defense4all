@@ -85,4 +85,5 @@ public interface FrameworkMain {
 	public boolean isOpenForBusiness();
 	public boolean isDebugRun();
 	public String getHostAddr();
+	boolean isDemo();
 }

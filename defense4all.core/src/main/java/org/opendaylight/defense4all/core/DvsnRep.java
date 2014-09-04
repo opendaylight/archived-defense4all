@@ -13,7 +13,10 @@ package org.opendaylight.defense4all.core;
 import java.net.UnknownHostException;
 import java.util.Properties;
 
+import javax.transaction.NotSupportedException;
+
 import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
+import org.opendaylight.defense4all.core.interactionstructures.NetNodeUppedDownedAMSConns;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
@@ -25,7 +28,6 @@ public abstract class DvsnRep extends DFAppModule {
 	 */
 	protected static final int ACTION_INVALID = -1;	// Already defined in Module. Brought here for brevity
 	protected static final int ACTION_RESERVED = 0; // Already defined in Module. Brought here for brevity
-	protected static final int ACTION_NOTIFY_TOPOLOGY_CHANGED = 2;
 
 	/* Constructor for Spring */
 	public DvsnRep() {
@@ -99,18 +101,20 @@ public abstract class DvsnRep extends DFAppModule {
 	 * @param param_name param description
 	 * @return return description
 	 * @throws ExceptionControlApp 
+	 * @throws NotSupportedException 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void addNetNode(String netNodeKey) throws ExceptionControlApp;
+	public abstract void addNetNode(String netNodeKey) throws ExceptionControlApp, NotSupportedException;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
 	 * @throws ExceptionControlApp 
+	 * @throws NotSupportedException 
 	 * @throws exception_type circumstances description 
 	 */
-	public abstract void removeNetNode(String netNodeLabel) throws ExceptionControlApp;
+	public abstract void removeNetNode(String netNodeLabel) throws NotSupportedException, ExceptionControlApp, IllegalStateException;
 
 	/**
 	 * #### method description ####
@@ -123,19 +127,6 @@ public abstract class DvsnRep extends DFAppModule {
 		// Can check diversion links capacity and current load with respect to the diverted traffic size, constraints with respect to other diverted
 		// traffics.
 		return new Properties();
-	}
-
-	protected void notifyTopologyChanged() {
-		try {
-			invokeDecoupledSerially(ACTION_NOTIFY_TOPOLOGY_CHANGED, null);
-		} catch (ExceptionControlApp e) {
-			log.error("Excepted trying to invokeDecoupledSerially.", e);
-			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-		}
-	}
-
-	protected void decoupledNotifyTopologyChanged() {
-		dfAppRoot.getMitigationMgr().topologyChanged();
 	}
 
 	/**
@@ -194,14 +185,38 @@ public abstract class DvsnRep extends DFAppModule {
 		}
 	}
 
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	public abstract DvsnInfo prepareForDvsn(String mitigationKey, String dvsnInfoKey);
+	
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	public abstract DvsnInfo unprepareForDvsn(String mitigationKey, String dvsnInfoKey);
+
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	public abstract void notifyNetNodeAMSConnStatusChanged(NetNodeUppedDownedAMSConns netNodeUppedDownedAMSConns);
+
 	@Override
 	protected void actionSwitcher(int actionCode, Object param) {
 
 		switch(actionCode) {
 		case ACTION_RESERVED:
-			break;
-		case ACTION_NOTIFY_TOPOLOGY_CHANGED:
-			decoupledNotifyTopologyChanged();
 			break;
 		default:
 		}

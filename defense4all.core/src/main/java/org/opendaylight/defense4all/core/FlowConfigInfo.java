@@ -214,4 +214,150 @@ public class FlowConfigInfo {
 		}		
 		return flowConfigInfoRCDs;
 	}
+
+	public String getKey() {
+		return key;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
+	}
+
+	public String getNodeLabel() {
+		return nodeLabel;
+	}
+
+	public void setNodeLabel(String nodeLabel) {
+		this.nodeLabel = nodeLabel;
+	}
+
+	public short getFloor() {
+		return floor;
+	}
+
+	public void setFloor(short floor) {
+		this.floor = floor;
+	}
+
+	public TrafficDirection getDirection() {
+		return direction;
+	}
+
+	public void setDirection(TrafficDirection direction) {
+		this.direction = direction;
+	}
+
+	public String getTrafficFloorKey() {
+		return trafficFloorKey;
+	}
+
+	public void setTrafficFloorKey(String trafficFloorKey) {
+		this.trafficFloorKey = trafficFloorKey;
+	}
+
+	public int getEtherType() {
+		return etherType;
+	}
+
+	public void setEtherType(int etherType) {
+		this.etherType = etherType;
+	}
+
+	public short getProtocol() {
+		return protocol;
+	}
+
+	public void setProtocol(short protocol) {
+		this.protocol = protocol;
+	}
+
+	public short getIngressPort() {
+		return ingressPort;
+	}
+
+	public void setIngressPort(short ingressPort) {
+		this.ingressPort = ingressPort;
+	}
+
+	public String getDlSrc() {
+		return dlSrc;
+	}
+
+	public void setDlSrc(String dlSrc) {
+		this.dlSrc = dlSrc;
+	}
+
+	public String getDlDst() {
+		return dlDst;
+	}
+
+	public void setDlDst(String dlDst) {
+		this.dlDst = dlDst;
+	}
+
+	public String getNwSrc() {
+		return nwSrc;
+	}
+
+	public void setNwSrc(String nwSrc) {
+		this.nwSrc = nwSrc;
+	}
+
+	public String getNwDst() {
+		return nwDst;
+	}
+
+	public void setNwDst(String nwDst) {
+		this.nwDst = nwDst;
+	}
+
+	public String getTpSrc() {
+		return tpSrc;
+	}
+
+	public void setTpSrc(String tpSrc) {
+		this.tpSrc = tpSrc;
+	}
+
+	public String getTpDst() {
+		return tpDst;
+	}
+
+	public void setTpDst(String tpDst) {
+		this.tpDst = tpDst;
+	}
+
+	public List<String> getActions() {
+		return actions;
+	}
+
+	public void setActions(List<String> actions) {
+		this.actions = actions;
+	}
+
+	public boolean isForRates() {
+		return forRates;
+	}
+
+	public void setForRates(boolean forRates) {
+		this.forRates = forRates;
+	}
+
+	public boolean isForTrafficLearning() {
+		return forTrafficLearning;
+	}
+
+	public void setForTrafficLearning(boolean forTrafficLearning) {
+		this.forTrafficLearning = forTrafficLearning;
+	}
+
+	public boolean isFirstToDelete() {
+		return firstToDelete;
+	}
+
+	public void setFirstToDelete(boolean firstToDelete) {
+		this.firstToDelete = firstToDelete;
+	}
+	
+	
 }

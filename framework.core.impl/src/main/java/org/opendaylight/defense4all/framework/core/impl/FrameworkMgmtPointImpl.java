@@ -40,7 +40,7 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	 */
 	@Override
 	public void requestTerminate(String scope) throws ExceptionControlApp {
-		fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_OPERATIONAL,"User requested termination of "+scope);
+		fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_OPERATIONAL,"User requested termination of framework.");
 		invokeDecoupledSerially(ACTION_REQUEST_SHUTDOWN, scope);
 	}
 	
@@ -57,7 +57,7 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	 */
 	@Override
 	public void requestReset(ResetLevel resetLevel) throws ExceptionControlApp {
-		fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_CONFIG, "User requested reset " + resetLevel);
+		fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_CONFIG, "User requested reset to " + resetLevel + " settings.");
 		invokeDecoupledSerially(ACTION_REQUEST_RESET, resetLevel);
 	}
 	
@@ -77,7 +77,7 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	 * @throws exception_type circumstances description 
 	 */
 	public void setClusterInfo(ClusterInfo clusterInfo) {
-		fMain.getFR().logRecord(FrameworkMain.FR_FRAMEWORK_OPERATIONAL, "User requested to set cluster info" + clusterInfo.toString());
+		fMain.getFR().logRecord(FrameworkMain.FR_FRAMEWORK_OPERATIONAL, "User request to set cluster information");
 		fMainImpl.clusterMgrImpl.setClusterInfo(clusterInfo);
 	}
 
@@ -92,12 +92,12 @@ public class FrameworkMgmtPointImpl extends FrameworkModule implements Framework
 	@Override
 	public void setHostAddr(String hostAddr) throws ExceptionControlApp {
 		
-		fr.logRecord(FrameworkMain.FR_FRAMEWORK_CONFIG, "Framework is setting hostaddress to " + hostAddr);		
+		fr.logRecord(FrameworkMain.FR_FRAMEWORK_CONFIG, "Framework is setting Control Network address to " + hostAddr);		
 		try {
 			fMainImpl.coreStateRepo.setCell(CoreState.FWORK_CORE_STATE_ROW_KEY, CoreState.HOST_ADDRESS, hostAddr);
 		} catch (Exception e) {
 			log.error("Framework failed to set hostaddress " + hostAddr, e );
-			fr.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Framework failed to set hostaddress " + hostAddr);
+			fr.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Framework failed to set Control Network address " + hostAddr);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Framework failed to set hostaddress " + hostAddr + ", " + e.getMessage());
 		}

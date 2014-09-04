@@ -35,6 +35,7 @@ import org.opendaylight.defense4all.core.DvsnInfo;
 import org.opendaylight.defense4all.core.ProtocolPort;
 import org.opendaylight.defense4all.core.TrafficPort;
 import org.opendaylight.defense4all.core.TrafficPort.PortLocation;
+import org.opendaylight.defense4all.core.interactionstructures.NetNodeUppedDownedAMSConns;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -79,7 +80,6 @@ public class OdlDvsnRep extends DvsnRep {
 	protected void initConnectionToOFC(String ofcKey) throws ExceptionControlApp {
 		odl.initConnectionToOFC(ofcKey);
 		odl.retrieveTopology(ofcKey);
-		notifyTopologyChanged();
 	}
 
 	/**
@@ -92,7 +92,6 @@ public class OdlDvsnRep extends DvsnRep {
 	@Override
 	public void addNetNode(String netNodeKey) throws ExceptionControlApp {
 		odl.addNetNode(netNodeKey);
-		notifyTopologyChanged();
 	}
 
 	/**
@@ -104,8 +103,8 @@ public class OdlDvsnRep extends DvsnRep {
 	 */
 	@Override
 	public void removeNetNode(String netNodeKey) throws ExceptionControlApp {
+		// TODO: add checks and returns similar to NEC
 		odl.removeNetNode(netNodeKey);
-		notifyTopologyChanged();
 	}
 
 	public void test(Properties props) {}
@@ -129,7 +128,7 @@ public class OdlDvsnRep extends DvsnRep {
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public Properties getDvsnProps(String pnKey, String netNodeLabel, String amsKey) {
+	public Properties getDvsnProps(String pnKey, String netNodeLabel, String amsConnKey) {
 
 		// Can check diversion links capacity and current load with respect to the diverted traffic size, 
 		// constraints with respect to other diverted traffics.
@@ -142,12 +141,12 @@ public class OdlDvsnRep extends DvsnRep {
 		} catch (ExceptionControlApp e) {
 			log.error("Excepted trying to inflate netNode " + netNodeLabel, e);
 			fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to get diversion properties for " + pnKey
-					+ " from NetNode " + netNodeLabel + " to AMS " + amsKey);
+					+ " from NetNode " + netNodeLabel + " to AMS " + amsConnKey);
 			return null;
 		}
 
 		/* If the ams is directly connected to the netNode, then local diversion is possible. Otherwise not. */
-		if(netNode.amsConnections == null || !netNode.amsConnections.containsKey(amsKey)) 
+		if(netNode.amsConnections == null || !netNode.amsConnections.containsKey(amsConnKey)) 
 			return null;
 		return new Properties();
 	}
@@ -163,7 +162,7 @@ public class OdlDvsnRep extends DvsnRep {
 	public String divert(String mitigationKey, String dvsnInfoKey) throws ExceptionControlApp {
 
 		Mitigation mitigation;	DvsnInfo dvsnInfo;	NetNode netNode; PN pn; TrafficFloor tFloor;
-		boolean success; DFProtocol protoToDivert; AMSConnection amsConn; String amsLabel;
+		boolean success; DFProtocol protoToDivert; AMSConnection amsConn; String amsConnLabel;
 
 		try {
 
@@ -188,8 +187,17 @@ public class OdlDvsnRep extends DvsnRep {
 			tFloor.nodeLabel = netNode.label;
 			tFloor.nodeId = netNode.id;
 
-			amsLabel = dvsnInfo.amsDvsnInfos.get(0).label;
-			amsConn = netNode.amsConnections.get(amsLabel);	// Connection to diversion AMS
+			amsConnLabel = dvsnInfo.amsDvsnInfos.get(0).label;
+			amsConn = netNode.amsConnections.get(amsConnLabel);	// Connection to diversion AMS
+			if(amsConn == null) {
+				String msg = "Internal DF inconsistency - NetNode AMSConnection does not contain the AMSConnection " + 
+						" specified in DvsnInfo. DF Reset is advised. " + dvsnInfoKey;
+				log.error(msg);
+				fMain.getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "OdlDvsnRep failed to divert traffic for mitigation "
+						+ mitigationKey	+ " , and according to diversion information " + dvsnInfoKey);
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
+				return null;
+			}
 
 			tFloor.floorBase = getAvailableDvsnFloor(tFloor.nodeLabel, tFloor.pnKey, mitigation.protocolPort.protocol);
 			tFloor.floorCurrentHeight = tFloor.floorBase;
@@ -247,7 +255,7 @@ public class OdlDvsnRep extends DvsnRep {
 			sb.append(", and diversionInfoKey="); sb.append(dvsnInfoKey);
 			sb.append(". diversionInfoKey="); sb.append(dvsnInfoKey);
 			sb.append(". Diverting from NetNode="); sb.append(netNode.label);
-			sb.append(" through AMS="); sb.append(amsLabel);
+			sb.append(" through AMSConnection="); sb.append(amsConnLabel);
 			sb.append(". The diversion is "); sb.append(pn.symmetricDvsn ? "symmetric" : "asymmetric");
 			sb.append(". Diversion traffic floor key="); sb.append(tFloor.key);
 			sb.append(", floor number="); sb.append(tFloor.floorBase);	
@@ -440,9 +448,9 @@ public class OdlDvsnRep extends DvsnRep {
 			int dstAddrLen = (Integer) dfAppRoot.pNsRepo.getCellValue(pn.label, PN.DST_ADDR_PREFIX_LEN);
 			Subnet pnAddrSubnet = new Subnet(InetAddress.getByName(dstAddrStr), dstAddrLen);
 			if(inBoundTraffic)
-				configInfoTemplate.nwDst = pnAddrSubnet.toString();
+				configInfoTemplateClone.nwDst = pnAddrSubnet.toString();
 			else
-				configInfoTemplate.nwSrc = pnAddrSubnet.toString();
+				configInfoTemplateClone.nwSrc = pnAddrSubnet.toString();
 		} catch (Throwable e) { 
 			log.error("Excepted trying to get PN destination address from repo for " + pn.label);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
@@ -578,14 +586,14 @@ public class OdlDvsnRep extends DvsnRep {
 	 * @throws exception_type circumstances description 
 	 */
 	@Override
-	public void endDvsn(String dvsnKey, String tFloorKey) {
+	public void endDvsn(String mitigationKey, String tFloorKey) {
 
-		fMain.getFR().logRecord(DFAppRoot.FR_DF_SECURITY, "Ending diversion for dvsnKey=" + dvsnKey 
+		fMain.getFR().logRecord(DFAppRoot.FR_DF_SECURITY, "Ending diversion for dvsnKey=" + mitigationKey 
 				+ ", trafficFloorKey=" + tFloorKey);
 		try {
-			Hashtable<String,Object> dvsnRow = dfAppRoot.mitigationsRepo.getRow(dvsnKey);
-			String pnKey = (String) dvsnRow.get(Mitigation.PNKEY);
-			ProtocolPort protocolPort = new ProtocolPort((String) dvsnRow.get(Mitigation.PROTOCOL_PORT));
+			Hashtable<String,Object> mitigationRow = dfAppRoot.mitigationsRepo.getRow(mitigationKey);
+			String pnKey = (String) mitigationRow.get(Mitigation.PNKEY);
+			ProtocolPort protocolPort = new ProtocolPort((String) mitigationRow.get(Mitigation.PROTOCOL_PORT));
 			log.info("defense4all is canceling traffic diversion for " + pnKey + " " + protocolPort.toString() + "!");
 		} catch (Throwable e1) {/* Ignore */}
 		try {
@@ -597,5 +605,15 @@ public class OdlDvsnRep extends DvsnRep {
 	}
 
 	@Override
+	public DvsnInfo prepareForDvsn(String mitigationKey, String dvsnInfoKey) {return new DvsnInfo(dvsnInfoKey);}
+
+	@Override
+	public DvsnInfo unprepareForDvsn(String mitigationKey, String dvsnInfoKey) {return new DvsnInfo(dvsnInfoKey);}
+	
+	@Override
+	public void notifyNetNodeAMSConnStatusChanged(NetNodeUppedDownedAMSConns netNodeUppedDownedAMSConn2) {}
+
+	@Override
 	protected void actionSwitcher(int actionCode, Object param) {}
+
 }

@@ -4,7 +4,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>df.aggregate</artifactId>
-	<version>1.0.7</version>
+	<version>1.0.12</version>
 	<packaging>pom</packaging>
 	<name>df</name>
 	<url>http://maven.apache.org</url>
@@ -17,17 +17,17 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>framework.aggregate</artifactId>
-			<version>1.0.7</version>
+			<version>1.0.12</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.aggregate</artifactId>
-			<version>1.0.7</version>
+			<version>1.0.12</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>restservice</artifactId>
-			<version>1.0.7</version>
+			<version>1.0.12</version>
 			<type>war</type>
 		</dependency>
 	</dependencies>
@@ -98,10 +98,13 @@
 									<groupname>defense4all</groupname>
 									<sources>
 										<source>
-											<location>../dfapp.aggregate/target/df.aggregate-1.0.7.jar</location>
+											<location>../dfapp.aggregate/target/df.aggregate-1.0.12.jar</location>
 										</source>
 										<source>
-											<location>../restservice/target/restservice-1.0.7.war</location>
+											<location>../restservice/target/restservice-1.0.12.war</location>
+										</source>
+										<source>
+											<location>../webgui/target/webgui-1.0.12.war</location>
 										</source>
 									</sources>
 								</mapping>
@@ -184,10 +187,10 @@
 									<groupname>defense4all</groupname>
 									<sources>
 										<source>
-											<location>../defense4all.cli/target/defense4all.cli-1.0.7.jar</location>
+											<location>../defense4all.cli/target/defense4all.cli-1.0.12.jar</location>
 										</source>
 										<source>
-											<location>../framework.cli/target/framework.cli-1.0.7.jar</location>
+											<location>../framework.cli/target/framework.cli-1.0.12.jar</location>
 										</source>
 									</sources>
 								</mapping>
@@ -226,7 +229,7 @@
 						</goals>
 						<configuration>
 							<deb>[[buildDir]]/defense4all_[[version]].[[extension]]</deb>
-							<controlDir>../dfapp.aggregate/src/deb/defense4all.control</controlDir>
+							<controlDir>${project.basedir}/../dfapp.aggregate/src/deb/defense4all.control</controlDir>
 							<dataSet>
 								<data>
 									<type>template</type>
@@ -243,7 +246,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../dfapp.aggregate/target/df.aggregate-1.0.7.jar</src>
+									<src>../dfapp.aggregate/target/df.aggregate-1.0.12.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -254,7 +257,18 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../restservice/target/restservice-1.0.7.war</src>
+									<src>../restservice/target/restservice-1.0.12.war</src>
+									<type>file</type>
+									<mapper>
+										<type>perm</type>
+										<prefix>/usr/share/defense4all/lib</prefix>
+										<user>defense4all</user>
+										<group>defense4all</group>
+										<filemode>555</filemode>
+									</mapper>
+								</data>
+								<data>
+									<src>../webgui/target/webgui-1.0.12.war</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -298,7 +312,7 @@
 						</goals>
 						<configuration>
 							<deb>[[buildDir]]/defense4all-cli_[[version]].[[extension]]</deb>
-							<controlDir>../dfapp.aggregate/src/deb/defense4all-cli.control</controlDir>
+							<controlDir>${project.basedir}/../dfapp.aggregate/src/deb/defense4all-cli.control</controlDir>
 							<dataSet>
 								<data>
 									<type>template</type>
@@ -314,7 +328,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../defense4all.cli/target/defense4all.cli-1.0.7.jar</src>
+									<src>../defense4all.cli/target/defense4all.cli-1.0.12.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -325,7 +339,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../framework.cli/target/framework.cli-1.0.7.jar</src>
+									<src>../framework.cli/target/framework.cli-1.0.12.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -365,15 +379,15 @@
 						<configuration>
 							<artifacts>
 								<artifact>
-									<!-- <artifactId> defense4all-cli_1.0.7 </artifactId> -->
-									<file>../dfapp.aggregate/target/defense4all-cli_1.0.7.deb</file>
+									<!-- <artifactId> defense4all-cli_1.0.12 </artifactId> -->
+									<file>../dfapp.aggregate/target/defense4all-cli_1.0.12.deb</file>
 									<type>deb</type>
 									<classifier>
 										defense4all-cli
 									</classifier>
 								</artifact>
 								<artifact>
-									<file>../dfapp.aggregate/target/defense4all_1.0.7.deb</file>
+									<file>../dfapp.aggregate/target/defense4all_1.0.12.deb</file>
 									<type>deb</type>
 									<classifier>
 										defense4all

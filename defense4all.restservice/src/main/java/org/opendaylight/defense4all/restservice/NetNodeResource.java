@@ -10,6 +10,7 @@ package org.opendaylight.defense4all.restservice;
 
 import java.util.Hashtable;
 
+import javax.transaction.NotSupportedException;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Produces;
@@ -26,6 +27,14 @@ import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.Repo;
 
 public class NetNodeResource {
+
+	public enum NetNodeResourceStatus {
+		OK,
+		FORBIDDEN,
+		CONFLICT,
+		SERVER_ERROR
+	}
+	
 	private static Log log = LogFactory.getLog(NetNodeResource.class);
 	
 	@Context
@@ -46,6 +55,7 @@ public class NetNodeResource {
 			log.debug("In getnetNode. NetNode label is " + netNodeLabel);
 			Repo<String> netNodesRepo = DFHolder.get().netNodesRepo;
 			Hashtable<String,Object> netNodeRow = netNodesRepo.getRow(netNodeLabel);
+			if(netNodeRow == null) return null;
 			NetNode netNode = new NetNode(netNodeRow);
 			netNode.toJacksonFriendly();
 			return netNode;
@@ -56,11 +66,18 @@ public class NetNodeResource {
 	}
 	
 	@DELETE
-	public void deleteNetNode() {
-		
+	public NetNodeResourceStatus deleteNetNode() {		
+
 		try {
 			log.debug("DeleteNetNode: invoked");
 			DFHolder.get().getMgmtPoint().removeNetNode(netNodeLabel);
-		} catch (ExceptionControlApp e) {{/* Ignore. Already logged in DFMgmtPoint. */}}
+			return NetNodeResourceStatus.OK;
+		} catch (NotSupportedException e2) {
+			return NetNodeResourceStatus.FORBIDDEN; 
+		} catch (IllegalStateException e1) {
+			return NetNodeResourceStatus.CONFLICT; 
+		} catch (ExceptionControlApp e) {
+			return NetNodeResourceStatus.SERVER_ERROR;		
+		}
 	}
 }

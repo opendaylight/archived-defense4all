@@ -1,0 +1,92 @@
+<div class="container">
+<div class="row">
+
+    <div class="col-md-8 col-md-offset-2">
+    <div class="header-template">
+        <h1>Add Protected Object (PO)</h1>
+
+            <alert ng-repeat="alert in PoFormAlerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+
+            <form role="form" name="addPoForm" class="form-horizontal" valid-submit="save(po)" novalidate>
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addPoForm.label.$dirty && addPoForm.label.$invalid]">
+                <label class="col-sm-3 control-label" for="label">Name</label>
+                <div class="col-sm-9">
+                    <input name="label" ng-model="po.label" ng-maxlength="64" blacklist="-" type="text" class="form-control" id="label" placeholder="WebServer" required>
+                    <span class="help-block" ng-show="addPoForm.label.$dirty && addPoForm.label.$error.required">Protected Object name is required.</span>
+                    <span class="help-block" ng-show="addPoForm.label.$dirty && addPoForm.label.$error.blacklist">Invalid character in name. (no hyphens allowed)</span>
+                    <span class="help-block" ng-show="addPoForm.label.$dirty && addPoForm.label.$error.pattern">Can't be more than 64 characters long.</span>
+                </div>
+            </div>
+
+
+            <!-- TODO: select from netnode instead of free text ?
+           <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addPoForm.netNodeLabel.$dirty && addPoForm.netNodeLabel.$invalid]">
+                <label class="col-sm-3 control-label" for="netNodeLabel">Net Node</label>
+                <div class="col-sm-9">
+
+                        <tags-input ng-model="poNetNodeLabels" class="bootstrap" id="poNetNodeLabels" name="poNetNodeLabels" placeholder="Net Nodes"></tags-input>
+
+                        -- input name="netNodeLabel" ng-model="po.netNodeLabel" ng-maxlength="64" type="text" class="form-control" id="netNodeLabel" placeholder="Net-node" required --
+                    <span class="help-block" ng-show="addPoForm.netNodeLabel.$dirty && addPoForm.netNodeLabel.$error.required">Net-node is required.</span>
+                </div>
+            </div>
+-->
+<!--
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addPoForm.virtualNetid.$dirty && addPoForm.virtualNetid.$invalid]">
+                <label class="col-sm-3 control-label" for="virtualNetid">VLAN</label>
+                <div class="col-sm-9">
+                    <input name="virtualNetid" ng-model="po.virtualNetid" ng-maxlength="64" type="number" class="form-control" min="0" max="4096" id="virtualNetid" placeholder="VLAN Id" required>
+                    <span class="help-block" ng-show="addPoForm.virtualNetid.$dirty && addPoForm.virtualNetid.$error.required">VLAN ID  is required.</span>
+                    <span class="help-block" ng-show="addPoForm.virtualNetid.$dirty && (addPoForm.virtualNetid.$error.max || addPoForm.virtualNetid.$error.min)">Should be a number in range [0-4095].</span>
+                </div>
+            </div>
+-->
+            <!--<div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addPoForm.props.$dirty && addPoForm.props.$invalid]">-->
+                <!--<label class="col-sm-3 control-label">Links</label>-->
+                <!--<div class="col-sm-9">-->
+                    <!--<tags-input ng-model="po.props" class="bootstrap" id="props" name="props"></tags-input>-->
+                    <!--<span class="help-block" ng-show="addPoForm.props.$dirty && addPoForm.props.$error.required">Links are required.</span>-->
+                    <!--&lt;!&ndash;input name="version" ng-model="po.links" ng-maxlength="64" type="text" class="form-control" id="links" placeholder="1.0">-->
+                    <!--<span class="help-block" ng-show="addPoForm.virtualNetid.$dirty && addPoForm.virtualNetid.$error.required">VID is required.</span>-->
+                    <!--<span class="help-block" ng-show="addPoForm.virtualNetid.$dirty && addPoForm.virtualNetid.$error.maxlength">Can't be more than 64 characters long.</span&ndash;&gt;-->
+                <!--</div>-->
+            <!--</div>-->
+
+            <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addPoForm.dstAddr.$dirty && addPoForm.dstAddr.$invalid]">
+                <label class="col-sm-3 control-label" for="dstAddr">IP Address</label>
+                <div class="col-sm-6">
+                    <input name="dstAddr" ng-model="po.dstAddr" ng-maxlength="64" cidr-verify="po.dstAddrPrefixLen" ng-pattern="/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/" type="text" class="form-control" id="dstAddr" placeholder="100.100.100.100" required>
+
+                    <span class="help-block" ng-show="addPoForm.dstAddr.$dirty && addPoForm.dstAddr.$error.cidrVerify">IP does not match Netmask (incorrect number of zeros)</span>
+                    <span class="help-block" ng-show="addPoForm.dstAddr.$dirty && addPoForm.dstAddr.$error.required">IP Address is required.</span>
+                    <span class="help-block" ng-show="addPoForm.dstAddr.$dirty && addPoForm.dstAddr.$error.pattern">Invalid IP Address Format.</span>
+                    <span class="help-block" ng-show="addPoForm.dstAddr.$dirty && addPoForm.dstAddr.$error.maxlength">Can't be more than 64 characters long.</span>
+
+                </div>
+
+                <label class="col-sm-1 control-label" for="dstAddrPrefixLen">/</label>
+
+
+                <div class="col-sm-2" ng-class="{true: 'has-error',false: 'is-required'}[addPoForm.dstAddrPrefixLen.$dirty && addPoForm.dstAddrPrefixLen.$invalid]">
+                    <input name="dstAddrPrefixLen" ng-change="prefixChange(po)" ng-model="po.dstAddrPrefixLen" ng-maxlength="2" type="text" class="form-control" id="dstAddrPrefixLen" placeholder="32" required>
+                    <span class="help-block" ng-show="addPoForm.dstAddrPrefixLen.$dirty && addPoForm.dstAddrPrefixLen.$error.required">Prefix length is required.</span>
+
+                </div>
+            </div>
+
+            <div class="form-group pull-right">
+                <button type="button" class="btn btn-warning" ng-click="cancel()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+        </form>
+
+
+    </div>
+    </div> <!-- col -->
+</div> <!-- row -->
+</div> <!-- container -->
+
+
+

@@ -8,6 +8,9 @@
  */
 package org.opendaylight.defense4all.core;
 
+import java.util.List;
+
+import org.opendaylight.defense4all.core.DFAppRoot.HealthStatus;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
@@ -74,16 +77,25 @@ public interface MitigationDriver {
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
-	 * @throws ExceptionControlApp 
-	 * @throws exception_type circumstances description 
-	 */
-	public void topologyChanged() throws ExceptionControlApp;
-
-	/**
-	 * #### method description ####
-	 * @param param_name param description
-	 * @return return description
 	 * @throws exception_type circumstances description 
 	 */
 	public void addNetNode(String netNodeKey);
+
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	public void netNodeStatusDowned(String logicalNetNodeLabel, HealthStatus healthStatus);
+
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	public void handleFailedAMSs(List<String> failedAMSs);
 }

@@ -16,30 +16,31 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.opendaylight.defense4all.core.Traffic.TrafficDirection;
+import org.opendaylight.defense4all.core.interactionstructures.Bandwidth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TrafficTuple {
-	
+
 	protected static final String TUPLE_SERIALIZATION_DELIMITER = "::";
 	protected static final String TRAFFIC_DATA_SERIALIZATION_DELIMITER = ":";
 
-	static Logger log = LoggerFactory.getLogger(TrafficTuple.class);
-	
+	public static Logger log = LoggerFactory.getLogger(TrafficTuple.class);
+
 	public class TrafficData {
-		
+
 		public int protocol;		// 6-tcp, 17-udp, 1-icmp, 0- other
 		public int port;			// Relevant only for tcp and udp
 		public float bytes;
 		public float packets;
 		public boolean forTrafficLearning;
 		public TrafficDirection direction; 
-	
+
 		public TrafficData() {
 			this.protocol = 0; this.port = 0; this.bytes = 0; this.packets = 0;	this.forTrafficLearning = false;
 			direction = TrafficDirection.INVALID; 
 		}
-		
+
 		public TrafficData(TrafficData other) {
 			this.protocol = other.protocol;
 			this.port = other.port;
@@ -48,32 +49,36 @@ public class TrafficTuple {
 			this.forTrafficLearning = other.forTrafficLearning;
 			this.direction = other.direction;
 		}
+		
+		public String toPrintableString () {
+			return ( ProtocolPort.DFProtocol.getProtocol(protocol).name() + " bytes: "+bytes+ " packets: "+packets); 
+		}
 	}
-	
+
 	protected Hashtable<Integer,TrafficData> tuple;
-	
+
 	public Hashtable<Integer,TrafficData> getTuple() {
 		return tuple;
 	}
-	
+
 	public static int generateTrafficDataKey(int protocol, int port) {
 		return (protocol<<16) + port;
 	}
-	
+
 	public TrafficData getTrafficData(int protocol, int port) {
 		int key = generateTrafficDataKey(protocol, port);
 		return tuple.get(key);
 	}
-	
+
 	public TrafficData getTrafficData(int key) {
 		return tuple.get(key);
 	}
-	
+
 	public float getTrafficBytes(int protocol, int port) {
 		int key = generateTrafficDataKey(protocol, port);
 		return tuple.get(key).bytes;
 	}
-	
+
 	public float getTrafficPackets(int protocol, int port) {
 		int key = generateTrafficDataKey(protocol, port);
 		return tuple.get(key).packets;
@@ -87,30 +92,30 @@ public class TrafficTuple {
 		}
 		return false;
 	}
-		
+
 	public void setTrafficData(int protocol, int port, float bytes, float packets, boolean forTrafficLearning, 
 			TrafficDirection direction) {
 		TrafficData trafficData = new TrafficData();
 		trafficData.protocol = protocol;
 		trafficData.port = port;
-		trafficData.bytes = bytes;
-		trafficData.packets = packets;
+		trafficData.bytes = bytes > 0 ? bytes : 0;
+		trafficData.packets = packets > 0 ? packets : 0;
 		trafficData.forTrafficLearning = forTrafficLearning;
 		trafficData.direction = direction;
-	
+
 		tuple.put(generateTrafficDataKey(protocol, port), trafficData);
 	}
-	
+
 	public void setTrafficData(TrafficData trafficData ) { 
-		tuple.put(generateTrafficDataKey(trafficData.protocol, trafficData.port), trafficData);
+		tuple.put(generateTrafficDataKey(trafficData.protocol, trafficData.port), new TrafficData(trafficData));
 	}
-	
+
 	public TrafficTuple() {
 		tuple = new Hashtable<Integer,TrafficData>();
 	}
 
 	public void zero() {
-		
+
 		Iterator<Map.Entry<Integer,TrafficData>> iter = tuple.entrySet().iterator();
 		TrafficData trafficData;
 		while(iter.hasNext()) {
@@ -118,14 +123,14 @@ public class TrafficTuple {
 			trafficData.bytes = trafficData.packets = 0;
 		}
 	}
-	
+
 	public boolean isZero() {
-		
+
 		Iterator<Map.Entry<Integer,TrafficData>> iter = tuple.entrySet().iterator();
 		TrafficData trafficData;
 		while(iter.hasNext()) {
 			trafficData = iter.next().getValue();
-			if(trafficData.bytes != 0 || trafficData.packets != 0) return false;
+			if(trafficData.bytes > 0 || trafficData.packets > 0) return false;
 		}
 		return true;
 	}
@@ -135,16 +140,16 @@ public class TrafficTuple {
 	 * udpportbytes:udpportpackets:udpbytes:udppackets:icmpbytes:icmppackets:otherbytes:otherpackets
 	 */
 	public TrafficTuple(String trafficTupleStr) throws IllegalArgumentException {
-		
+
 		this();
-		
+
 		if(trafficTupleStr == null || trafficTupleStr.length() == 0) return;
-		
+
 		String[] split1 = trafficTupleStr.split(TUPLE_SERIALIZATION_DELIMITER);
 		String[] split2; TrafficData trafficData;
-		
+
 		for(String trafficDataStr : split1) {
-			
+
 			if(trafficDataStr.length() == 0) continue;
 			split2 = trafficDataStr.split(TRAFFIC_DATA_SERIALIZATION_DELIMITER);
 			if(split2.length < 6) continue;
@@ -161,43 +166,60 @@ public class TrafficTuple {
 				log.error("Failed to construct TrafficTuple from string." + e.getLocalizedMessage());
 				throw new IllegalArgumentException("Could not parse trafficTupleStr. + " + e.getLocalizedMessage());
 			}
-		
+
 			tuple.put(generateTrafficDataKey(trafficData.protocol, trafficData.port), trafficData);
 		}		
 	}
 
-	public TrafficTuple nonZeroClone() {
-		
+	@Override
+	public TrafficTuple clone() {
+
 		TrafficTuple tt = new TrafficTuple();
 
 		Iterator<Map.Entry<Integer,TrafficData>> iter = tuple.entrySet().iterator();
 		TrafficData trafficData;
 		while(iter.hasNext()) {
 			trafficData = new TrafficData(iter.next().getValue());
-			if(trafficData.bytes == 0) trafficData.bytes = 1;
-			if(trafficData.packets == 0) trafficData.packets = 1;
 			tt.tuple.put(generateTrafficDataKey(trafficData.protocol, trafficData.port), trafficData);
 		}
-		
+
 		return tt;
 	}
 	
+
 	@Override
 	public String toString() {
 		return serialize();
 	}
+	
+	public String toPrintableString() {
+		if ( tuple == null || tuple.isEmpty()) return "";
+
+		StringBuilder sb = new StringBuilder(); TrafficData trafficData;
+
+		int[] traceOrder = {6,17,1,0};
+		for ( int tr:traceOrder) {
+			trafficData = getTrafficData( tr, 0);
+			if (trafficData == null ) continue;
+			sb.append( trafficData.toPrintableString());
+			sb.append(" ");	
+		}
+	
+		return sb.toString();
+	}
+	
 
 	/**
 	 * ####
 	 * @return
 	 */
 	public String serialize() {
-		
+
 		if ( tuple == null || tuple.isEmpty()) return "";
 
 		StringBuilder sb = new StringBuilder(); TrafficData trafficData;
 		Iterator<Map.Entry<Integer,TrafficData>> iter = tuple.entrySet().iterator();
-		
+
 		while(iter.hasNext()) {
 			trafficData = iter.next().getValue();
 			sb.append(trafficData.protocol); sb.append(TRAFFIC_DATA_SERIALIZATION_DELIMITER);
@@ -208,18 +230,18 @@ public class TrafficTuple {
 			sb.append(trafficData.direction);  
 			sb.append(TUPLE_SERIALIZATION_DELIMITER);
 		}
-		
+
 		sb.setLength(sb.length() - TUPLE_SERIALIZATION_DELIMITER.length());
 		return sb.toString();
 	}
 
 	public Object toString(int protocol) {
-		
+
 		if ( tuple == null || tuple.isEmpty()) return "";		
 		float trafficBytes = getTrafficBytes(protocol, 0);
 		return Float.toString(trafficBytes);
 	}
-	
+
 	public TrafficTuple delta(TrafficTuple lower, float timePeriod) {
 
 		if(lower == null) return this;
@@ -234,7 +256,7 @@ public class TrafficTuple {
 			trafficData = iter.next().getValue();
 			if(trafficData == null) continue;
 			TrafficData lowerTrafficData = lower.getTrafficData(trafficData.protocol, trafficData.port);		
-			
+
 			if ( lowerTrafficData == null )
 				lowerTrafficData = new TrafficData();
 
@@ -252,7 +274,7 @@ public class TrafficTuple {
 	public void add(TrafficTuple other) {
 
 		if(other == null) return;
-		
+
 		// Update traffic data for received protocol/port data
 		Iterator<Map.Entry<Integer,TrafficData>> iter = other.tuple.entrySet().iterator();
 		TrafficData otherTrafficData;
@@ -269,9 +291,32 @@ public class TrafficTuple {
 		}
 	}
 
+	public void setNonNegative(TrafficTuple other) {
+
+		if(other == null) return;
+
+		// Update traffic data for received protocol/port data
+		Iterator<Map.Entry<Integer,TrafficData>> iter = other.tuple.entrySet().iterator();
+		TrafficData otherTrafficData;
+
+		while(iter.hasNext()) {
+			otherTrafficData = iter.next().getValue();
+			// Copy only positive values. In case of negative keep current
+			if ( otherTrafficData.bytes < 0 ||otherTrafficData.packets < 0 ) continue;
+
+			int key = generateTrafficDataKey(otherTrafficData.protocol, otherTrafficData.port);
+			if ( ! tuple.containsKey(key)) {
+				tuple.put(key, new TrafficData (otherTrafficData));
+			} else if ( otherTrafficData.direction == tuple.get(key).direction ) { // Add for same direction only 
+				tuple.get(key).bytes =   otherTrafficData.bytes ;
+				tuple.get(key).packets = otherTrafficData.packets ;
+			}		
+		}
+	}
+
 	/* Return string containing bytes and packets. */
 	public String getBandwidth(TrafficDirection direction) {
-		
+
 		long bytes = 0; long packets = 0;
 		Iterator<Map.Entry<Integer,TrafficData>> iter = tuple.entrySet().iterator();
 		TrafficData trafficData; 
@@ -285,4 +330,5 @@ public class TrafficTuple {
 		Bandwidth bandwidth = new Bandwidth(bytes, packets);
 		return bandwidth.toString();		
 	}
+
 }

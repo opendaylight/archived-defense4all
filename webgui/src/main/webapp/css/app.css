@@ -1,0 +1,67 @@
+/* app css stylesheet */
+
+body {
+    padding-top: 50px;
+}
+.header-template {
+    padding: 40px 15px;
+    text-align: center;
+}
+
+.menu {
+  list-style: none;
+  border-bottom: 0.1em solid black;
+  margin-bottom: 2em;
+  padding: 0 0 0.5em;
+}
+
+.menu:before {
+  content: "[";
+}
+
+.menu:after {
+  content: "]";
+}
+
+.menu > li {
+  display: inline;
+}
+
+.menu > li:before {
+  content: "|";
+  padding-right: 0.3em;
+}
+
+.menu > li:nth-child(1):before {
+  content: "";
+  padding: 0;
+}
+
+.logo {
+    height:50px;
+    margin:0;
+}
+
+.dflogo {
+    height: 120px;
+}
+
+a.navbar-brand {
+    padding-top: 0;
+}
+
+.page-heading {
+    text-align:center;
+    margin-bottom: 40px;
+}
+
+.table-heading-bottom-aligned-wrapper{
+    position:relative;
+}
+
+.table-heading-bottom-aligned{
+    position:absolute;
+    bottom: 0px;
+    margin-bottom:7px;
+}
+

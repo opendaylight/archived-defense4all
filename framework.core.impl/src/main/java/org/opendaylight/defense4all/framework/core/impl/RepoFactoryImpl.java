@@ -20,7 +20,6 @@ import org.opendaylight.defense4all.framework.core.Asserter;
 import org.opendaylight.defense4all.framework.core.EM;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.ExceptionEntityExists;
-import org.opendaylight.defense4all.framework.core.FrameworkMain;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.RepoCD;
 import org.opendaylight.defense4all.framework.core.RepoFactory;
@@ -414,7 +413,7 @@ public class RepoFactoryImpl extends FrameworkModule implements RepoFactory {
 		} catch (HectorException e) {
 			log.error("Failed to create CF in cassandra or instantiate RepoImpl for"+repoName+". "+e.getLocalizedMessage());
 			fMainImpl.healthTrackerImpl.reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
-			fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE,"Failed to create Repo "+repoDesc.repoName);
+			//fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE,"Failed to create Repo "+repoDesc.repoName);
 			throw new ExceptionControlApp("Failed to create CF in cassandra or instantiate RepoImpl for"+repoName+". ",e);
 		}
 
@@ -463,8 +462,7 @@ public class RepoFactoryImpl extends FrameworkModule implements RepoFactory {
 	 */
 	@Override
 	public <K> RepoImpl<K> getOrCreateRepo(String RepoNameMajor, String RepoNameMinor, Serializer<K> keySerializer, 
-			boolean immediateFlush,	List<RepoCD> columnDescriptions ) 
-					throws IllegalArgumentException, ExceptionEntityExists, ExceptionControlApp  {
+			boolean immediateFlush,	List<RepoCD> columnDescriptions ) throws IllegalArgumentException, ExceptionControlApp {
 
 		Asserter.assertNonEmptyStringParam(RepoNameMajor, "RepoNameMajor", log);
 		Asserter.assertNonEmptyStringParam(RepoNameMinor, "RepoNameMinor", log);
@@ -472,8 +470,10 @@ public class RepoFactoryImpl extends FrameworkModule implements RepoFactory {
 
 		@SuppressWarnings("unchecked")
 		RepoImpl<K> repo = (RepoImpl<K>) getRepo(RepoNameMajor, RepoNameMinor);
-		if (repo == null) // Has not yet been created
-			repo = (RepoImpl<K>) createRepo(RepoNameMajor, RepoNameMinor, keySerializer, immediateFlush, columnDescriptions);
+		if (repo == null)
+			try {
+				repo = (RepoImpl<K>) createRepo(RepoNameMajor,RepoNameMinor,keySerializer,immediateFlush,columnDescriptions);
+			} catch (ExceptionEntityExists e) {/* Should not happen after failed get*/}
 		return repo;
 	}
 

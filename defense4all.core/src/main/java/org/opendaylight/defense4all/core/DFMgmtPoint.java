@@ -10,6 +10,11 @@
 
 package org.opendaylight.defense4all.core;
 
+import java.util.Collection;
+
+import javax.transaction.NotSupportedException;
+
+import org.opendaylight.defense4all.core.interactionstructures.PNStatReport;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 
 public interface DFMgmtPoint {
@@ -39,17 +44,20 @@ public interface DFMgmtPoint {
 	 * @param param_name param description
 	 * @return return description
 	 * @throws ExceptionControlApp 
+	 * @throws NotSupportedException 
+	 * @throws IllegalArgumentException 
 	 * @throws exception_type circumstances description 
 	 */
-	public void addNetNode(NetNode netNode) throws ExceptionControlApp;
+	public void addNetNode(NetNode netNode) throws ExceptionControlApp, IllegalArgumentException, NotSupportedException;
 
 	/**
 	 * #### method description ####
 	 * @param param_name param description
 	 * @return return description
+	 * @throws NotSupportedException 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removeNetNode(String netNodeLabel) throws ExceptionControlApp;
+	public void removeNetNode(String netNodeLabel) throws ExceptionControlApp, NotSupportedException;
 
 	/**
 	 * Set the OFC address. If this overrides the previously set OFC address, then it is considered a different OFC. 
@@ -69,7 +77,7 @@ public interface DFMgmtPoint {
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removeAMS(String dpLabel) throws ExceptionControlApp;
+	public boolean removeAMS(String dpLabel) throws ExceptionControlApp;
 
 	/**
 	 * Add an external detector.
@@ -102,7 +110,7 @@ public interface DFMgmtPoint {
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void removePN(String pnLabel) throws ExceptionControlApp;
+	public boolean removePN(String pnLabel) throws ExceptionControlApp;
 
 	/**
 	 * #### method description ####
@@ -112,4 +120,14 @@ public interface DFMgmtPoint {
 	 * @throws exception_type circumstances description 
 	 */
 	public PNStatReport getLatestPNStatReport(String pnKey) throws ExceptionControlApp, IllegalArgumentException;
+
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+	 * @throws ExceptionControlApp 
+		 * @throws exception_type circumstances description
+	 */
+	public Collection<PNStatReport> getLatestPNStatReports() throws ExceptionControlApp;
 }

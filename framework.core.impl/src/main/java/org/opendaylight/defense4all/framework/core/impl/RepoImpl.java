@@ -112,7 +112,7 @@ public class RepoImpl<K> implements Repo<K> {
 			cellQuery.setColumnFamily(repoDesc.repoName);
 		} catch (Throwable e) {
 			log.error("Failed to initialize Repo." + e.getLocalizedMessage());
-			rf.fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE,"Failed to initialize Repo "+repoDesc.repoName);
+			rf.fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Internal Database Failure");
 			throw new ExceptionControlApp("Failed to initialize Repo.", e);
 		}
 	}
@@ -124,7 +124,7 @@ public class RepoImpl<K> implements Repo<K> {
 			applyUpdateBatch();
 		} catch (Throwable e) {
 			log.error("Failed to apply update batch." + e.getLocalizedMessage());
-			rFactory.fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE,"Failed to batch-update Repo "+repoDesc.repoName);
+			rFactory.fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Internal Database Failure");
 		}
 	}
 
@@ -246,7 +246,7 @@ public class RepoImpl<K> implements Repo<K> {
 			rowsIter = rows.iterator();
 			if(rowsIter == null) break;
 
-			if (lastKey != null) 
+			if (lastKey != null && rowsIter.hasNext())
 				rowsIter.next(); // skip this first one, since it is the same as the last one from previous time we executed
 
 			while (rowsIter.hasNext()) { // Iterate over a single row chunk
@@ -363,7 +363,7 @@ public class RepoImpl<K> implements Repo<K> {
 				break;
 			} catch (Throwable e) {
 				log.error("Failed to truncate repo"+repoDesc.repoName+". "+e.getLocalizedMessage());
-				rFactory.fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE,"Failed to truncate Repo "+repoDesc.repoName);
+				rFactory.fMainImpl.frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE,"Internal Database Failure");
 				rFactory.fMainImpl.healthTrackerImpl.reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 			}
 		}

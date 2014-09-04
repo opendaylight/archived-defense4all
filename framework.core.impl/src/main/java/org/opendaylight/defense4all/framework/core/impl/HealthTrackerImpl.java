@@ -12,11 +12,14 @@ package org.opendaylight.defense4all.framework.core.impl;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FrameworkMain;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HealthTrackerImpl implements HealthTracker {
 
 	private static final int PERCENTAGE_OF_HEALTH_IMROVEMENT_PER_MINUTE = 10;
 	private static final int MINIMAL_TIME_IN_MINUTES_BETWEEN_FR_HEALTH_LOGS = 1;
+	static Logger log = LoggerFactory.getLogger(HealthTrackerImpl.class);
 
 	/* request shutdown is dedicated thread */
 	class ShutdownThread implements Runnable { 
@@ -50,7 +53,10 @@ public class HealthTrackerImpl implements HealthTracker {
 	 */
 	@Override
 	public synchronized void reportHealthIssue(int issueLevel) {
+		reportHealthIssueSynchronized(issueLevel);
+	}
 
+	protected void reportHealthIssueSynchronized(int issueLevel) {
 		long currentTime = System.currentTimeMillis();
 		long timeFromLastReportInMins = (currentTime - lastReportTime) / 60000;
 
@@ -71,7 +77,7 @@ public class HealthTrackerImpl implements HealthTracker {
 		
 		/* Log health in flight recorder */
 		if(timeFromLastReportInMins > MINIMAL_TIME_IN_MINUTES_BETWEEN_FR_HEALTH_LOGS)
-			fMain.getFR().logRecord(FrameworkMain.FR_FRAMEWORK_OPERATIONAL, "Health level is " + healthLevel + "%");
+			log.info ( "Health level is " + healthLevel + "%");
 
 		if(healthLevel >= minimalHealthThreshold) return;
 
@@ -79,7 +85,7 @@ public class HealthTrackerImpl implements HealthTracker {
 		 * Launch shutdown request in dedicated thread to prevent possible deadlocks on finit operations */
 		if(!shutdownRequested) {
 			shutdownRequested = true;
-			fMain.getFR().logRecord(FrameworkMain.FR_FRAMEWORK_OPERATIONAL, ". Initiating shutdown because health level " 
+			log.warn( "Initiating shutdown because health level " 
 					+ healthLevel +	"% is below threshold level of " + minimalHealthThreshold);
 			ShutdownThread shutdownThread = new ShutdownThread(true);
 			shutdownThread.run();
@@ -92,14 +98,14 @@ public class HealthTrackerImpl implements HealthTracker {
 	public synchronized void reportHealthIssue(int issueLevel, boolean permanent) {
 		if ( permanent == false) {
 			// just report health issue
-			reportHealthIssue (issueLevel );
+			reportHealthIssueSynchronized (issueLevel );
 		} else {
 			// permanent health issue - decrease max
 			maxHealthLevel -= issueLevel;
 			if ( maxHealthLevel < 0) maxHealthLevel = 0;
 			
 			// report 0 health issue to check current value against new maximum
-			reportHealthIssue ( 0 );
+			reportHealthIssueSynchronized ( 0 );
 		}
 	}
 }

@@ -12,6 +12,7 @@ package org.opendaylight.defense4all.framework.core.impl;
 
 import java.security.ProtectionDomain;
 import java.util.Properties;
+import java.util.logging.LogManager;
 
 import javax.persistence.EntityManager;
 
@@ -30,15 +31,18 @@ import org.opendaylight.defense4all.framework.core.Repo;
 import org.opendaylight.defense4all.framework.core.RepoFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.support.GenericXmlApplicationContext;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.webapp.WebAppClassLoader;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.server.Handler;
 
 public class FrameworkMainImpl implements FrameworkMain {
 
-	public static ApplicationContext context;
+	public static ApplicationContext contextG;
 	protected Properties configProperties;
 	protected AppRoot appRoot;
 
@@ -50,15 +54,18 @@ public class FrameworkMainImpl implements FrameworkMain {
 	protected EntityManager frameworkEM;
 	public Repo<String> coreStateRepo = null;
 	protected String stateClassPaths;
-	protected String restWarPath; // Path to the WAR containing the service
+	protected String restWarPath; // Path to the WAR containing the rest service
+	protected String guiWarPath;  // Path to the WAR containing the gui service
 	protected String restPath; 	// REST Path (in HTTP URL) to service requests
+	protected String guiPath; 	// GUI Path (in HTTP URL) to service requests
 	protected int port;
-	protected Server restServer;
+	protected Server jettyServer;
 	protected FRImpl frImpl;
 	protected HealthTrackerImpl healthTrackerImpl;
 	protected boolean openForBusiness = false;
 	public boolean debugRun = false;
 	public String hostAddr;
+	public int demoRun;
 
 	static Logger log = LoggerFactory.getLogger(FrameworkMainImpl.class);
 
@@ -85,10 +92,13 @@ public class FrameworkMainImpl implements FrameworkMain {
 	public void setAppRoot(AppRoot appRoot) {this.appRoot = appRoot;}
 	public void setPort(int port) { this.port = port; }
 	public void setRestWarPath(String restWarPath) { this.restWarPath = restWarPath; }
+	public void setGuiWarPath(String guiWarPath) { this.guiWarPath = guiWarPath; }
 	public void setRestPath(String restPath) { this.restPath = restPath; }
+	public void setGuiPath(String guiPath) { this.guiPath = guiPath; }
 	public void setFlightRecorderImpl(FRImpl flightRecorderImpl) { this.frImpl = flightRecorderImpl; }
-	public void setHealthTrackerImpl(HealthTrackerImpl healthTrackerImpl) {this.healthTrackerImpl = healthTrackerImpl;}
-	
+	public void setHealthTrackerImpl(HealthTrackerImpl healthTrackerImpl) {this.healthTrackerImpl = healthTrackerImpl;}	
+	public void setDemoRun(int demoRun) {this.demoRun = demoRun;}
+
 	/**
 	 * #### method description ####
 	 * @param param_name param description
@@ -100,8 +110,16 @@ public class FrameworkMainImpl implements FrameworkMain {
 
 		FrameworkMainImpl frameworkMain = null;
 		try {
-			context = new ClassPathXmlApplicationContext(SPRING_CONTEXT_FILENAME); // Start the Spring container
+			// redirect JUL to log4j
+			LogManager.getLogManager().reset();
+			SLF4JBridgeHandler.install();
+
+			GenericXmlApplicationContext context = new GenericXmlApplicationContext();
+			context.setValidating(false);
+			context.load(SPRING_CONTEXT_FILENAME);
+			context.refresh();
 			frameworkMain = (FrameworkMainImpl) context.getBean("frameworkMain");
+
 		} catch (Throwable e1) {
 			log.error("Failed to initialize the Spring framework." + e1.getMessage());
 			System.exit(1);
@@ -115,60 +133,71 @@ public class FrameworkMainImpl implements FrameworkMain {
 				break;
 			}
 		}
-		
-		try {
-			frameworkMain.init();
-		} catch (Throwable e2) {
-			System.exit(2);
-		}
-		
+
+		boolean runReset = false, runTest = false; 
 		if(args.length > 0) {
 			if(args[0].equals("reset")) {
-				ResetLevel level = args.length > 1 ? ResetLevel.valueOf(args[1], ResetLevel.soft) : ResetLevel.soft;
-				try {
-					frameworkMain.reset(level);
-				} catch (Throwable e3) {
-					System.exit(3);
-				}
-				log.info("Reset is done");
-				System.exit(0);
+				runReset = true;
 			} else if(args[0].equals("test")) {
-				try {
-					frameworkMain.appRoot.test(null);
-					frameworkMain.test();
-				} catch (Exception e4) {
-					log.error("The framework/application test failed." + e4.getLocalizedMessage());
-					System.exit(4);
-				}
-				System.exit(0);
+				runTest = true;
 			}
 		}
 
+		try {
+			frameworkMain.init(runReset);
+		} catch (Throwable e2) {
+			System.exit(2);
+		}
+
+		if ( runReset == true ) {
+			ResetLevel level = args.length > 1 ? ResetLevel.valueOf(args[1], ResetLevel.soft) : ResetLevel.soft;
+			try {
+				frameworkMain.reset(level);
+			} catch (Throwable e3) {
+				System.exit(3);
+			}
+			log.info("Reset is done");
+			System.exit(0);
+		}
+
+		if ( runTest == true ) {
+			try {
+				frameworkMain.appRoot.test(null);
+				frameworkMain.test();
+			} catch (Exception e4) {
+				log.error("The framework/application test failed." + e4.getLocalizedMessage());
+				System.exit(4);
+			}
+			System.exit(0);
+		}
+
+
 		/* Bring-up of the jetty web server to serve REST requests. */
 		try {
-			frameworkMain.frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Rest server is starting");
-			frameworkMain.restServer.start();
+			log.info("Rest server is starting");
+			frameworkMain.jettyServer.start();
 		} catch (Throwable e) {
+			log.error("Fail to start jettyServer", e);
 			frameworkMain.stopRestServer();
 			frameworkMain.finit();
 			System.exit(9);
 		}
 
 		try {
-			frameworkMain.restServer.join();
+			frameworkMain.jettyServer.join();
 			frameworkMain.stopRestServer();
 			frameworkMain.finit();
 		} catch (InterruptedException e) {
 			System.exit(10);
 		}
 	}
-	
+
 	protected void stopRestServer() {
 		try {
 			/* Stop rest server */
-			if(restServer != null) {
-				frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Rest server is stopping");
-				restServer.stop();
+			if(jettyServer != null) {
+				log.info("Rest server is stopping");
+				jettyServer.stop();
 			}
 		} catch (Throwable e) {/* Ignore interrupt exceptions. */}
 	}
@@ -179,47 +208,89 @@ public class FrameworkMainImpl implements FrameworkMain {
 	/**
 	 * Initializes all modules after construction bottom-up. First, registers the provided ShutdownHookThread object 
 	 * to be called for pre-shutdown cleanup. Next, invokes org.opendaylight.ctlapps.framework initialization, followed by application initialization.
+	 * @param bestEffort 
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void init() throws ExceptionControlApp {
+	public void init(boolean bestEffort) throws ExceptionControlApp {
 
 		/* This class initialization */
+		boolean hasException = false;
 		Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(this, appRoot));
 		log.info("Framework is starting");
-		setupRESTServer();
+		try {
+			setupJettyServer();
+		} catch (Throwable e) { 
+			String msg = "Excepted trying to setup Jetty server";
+			log.error(msg, e);
+			if ( ! bestEffort) throw new ExceptionControlApp(msg);
+			hasException = true;
+		}
 
 		/* RepoFactoryImpl initialization */
-		repoFactoryImpl.init();
+		try {
+			repoFactoryImpl.init();
+		} catch (Throwable e) { 
+			if ( !bestEffort) throw new ExceptionControlApp(e);
+			hasException = true;
+		}
 
 		/* This part of frameworkMain init can only be done after RepoFactoryImpl init. */
-		frameworkEM = repoFactoryImpl.createFrameworkMainEM(FRAMEWORK_CORE_EM_ID, stateClassPaths);
+		try {
+			frameworkEM = repoFactoryImpl.createFrameworkMainEM(FRAMEWORK_CORE_EM_ID, stateClassPaths);
+		} catch (Throwable e) { 
+			if ( !bestEffort) throw new ExceptionControlApp(e);
+			hasException = true;
+		}
 		try {
 			coreStateRepo = (Repo<String>) repoFactoryImpl.getOrCreateRepo(RepoMajor.FWORK_GLOBAL.name(), 
 					RepoMinor.CORE_STATE.name(), StringSerializer.get(), true, CoreState.getRCDs());
 			hostAddr = (String)coreStateRepo.getCellValue(CoreState.FWORK_CORE_STATE_ROW_KEY, CoreState.HOST_ADDRESS);
-		} catch (Throwable e1) {
+		} catch (Throwable e) {
 			String msg = "Excepted trying to retrieve/construct the framework coreStateRepo";
-			log.error(msg, e1);
-			throw new ExceptionControlApp(msg);
+			log.error(msg, e);
+			if ( !bestEffort) throw new ExceptionControlApp(msg);
+			hasException = true;
 		}
 
 		/* init framework FlightLogger */
-		frImpl.init();
-		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is starting");
+		try {	
+			log.info( "FlightRecorder is starting");
+			frImpl.init();
+		} catch (Throwable e) {
+			String msg = "Excepted trying to init Flight Recorder";
+			log.error(msg, e);
+			if ( ! bestEffort) throw new ExceptionControlApp(msg);
+			hasException = true;
+		}
 
 		/* Other modules initialization */
-		peerCommunicatorImpl.init();
-		clusterMgrImpl.init();
-		frameworkMgmtPointImpl.init();
+		try {
+			peerCommunicatorImpl.init();
+			clusterMgrImpl.init();
+			frameworkMgmtPointImpl.init();
+		} catch (Throwable e) {
+			if ( ! bestEffort) throw new ExceptionControlApp(e);
+			hasException = true;
+		}
 
-		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is starting " + appRoot.name);
-		appRoot.init();
+		try {
+			frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, appRoot.name + " application starting.");
+			appRoot.init(bestEffort);
+		} catch (Throwable e) {
+			String msg = "Excepted trying to init application "+ appRoot.name;
+			log.error(msg, e);
+			if ( ! bestEffort) throw new ExceptionControlApp(msg);
+			hasException = true;
+		}
+
 
 		/* Mark completion of all initializations allowing all periodic operations to start working and using
 		 * repository and other services. */
-		log.info("Is openForBusiness "+ appRoot.name );
-		openForBusiness = true;
+		if ( ! hasException ) {
+			log.info("Is openForBusiness "+ appRoot.name );
+			openForBusiness = true;
+		}
 	}
 
 	/**
@@ -228,11 +299,11 @@ public class FrameworkMainImpl implements FrameworkMain {
 	 */
 	public void finit() {
 
-		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is stopping");
+		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Framework stopping");
 
 		openForBusiness = false;
 
-		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is stopping " + appRoot.name);
+		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, appRoot.name + " application stopping." );
 		try {
 			appRoot.finit();
 		} catch (Exception e1) {
@@ -259,17 +330,17 @@ public class FrameworkMainImpl implements FrameworkMain {
 	 * @throws exception_type circumstances description 
 	 */
 	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
-
-		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is "+ resetLevel + " resetting");
+	
+		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Reset to "+ resetLevel + " settings for framework.");
 		openForBusiness = false;
 		StringBuilder msg = new StringBuilder();
 		Boolean success = true;
-		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Is " + resetLevel + " resetting " + appRoot.name);
+		frImpl.logRecord(FR_FRAMEWORK_OPERATIONAL, "Reset to " + resetLevel + " settings for " + appRoot.name + " application");
 		try {
 			appRoot.reset(resetLevel);
 		} catch (Throwable e5) {
 			log.error("Could not reset the application " + appRoot.name + "." + e5.getMessage());
-			frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, appRoot.name + " failed to reset");			
+			frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, appRoot.name + " application failed to reset");			
 			success = false;
 			msg.append("Failed to reset application " + appRoot.name);
 			// TODO: continue anyway or return - depending on resetLevel
@@ -279,7 +350,7 @@ public class FrameworkMainImpl implements FrameworkMain {
 			frameworkMgmtPointImpl.reset(resetLevel);
 		} catch (Throwable e1) {
 			log.error("Could not reset framework mgmt point impl." + e1.getMessage());
-			frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Management point failed to reset");
+			//frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Management point failed to reset");
 			success = false;
 			msg.append("Failed to reset some framework modules");
 			// TODO: continue anyway or return - depending on resetLevel
@@ -288,7 +359,7 @@ public class FrameworkMainImpl implements FrameworkMain {
 			clusterMgrImpl.reset(resetLevel);
 		} catch (Throwable e2) {
 			log.error("Could not reset framework mgmt cluster mgr impl." + e2.getMessage());
-			frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Cluster Manager failed to reset");
+			//frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Cluster Manager failed to reset");
 			success = false;
 			msg.append("Failed to reset some framework modules");
 			// TODO: continue anyway or return - depending on resetLevel
@@ -297,7 +368,7 @@ public class FrameworkMainImpl implements FrameworkMain {
 			peerCommunicatorImpl.reset(resetLevel);
 		} catch (Throwable e3) {
 			log.error("Could not reset framework peer communicator impl." + e3.getMessage());
-			frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Peer Communicator failed to reset");
+			//frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Peer Communicator failed to reset");
 			success = false;
 			msg.append("Failed to reset some framework modules");
 			// TODO: continue anyway or return - depending on resetLevel
@@ -306,7 +377,7 @@ public class FrameworkMainImpl implements FrameworkMain {
 			frImpl.reset(resetLevel);
 		} catch (Throwable e4) {
 			log.error("Flight recorder failed to reset." + e4.getMessage());
-			frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Flight Recorder failed to reset");
+			//frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Flight Recorder failed to reset");
 			success = false;
 			msg.append("Failed to reset some framework modules");
 			// TODO: continue anyway or return - depending on resetLevel
@@ -318,12 +389,12 @@ public class FrameworkMainImpl implements FrameworkMain {
 			repoFactoryImpl.reset(resetLevel);
 		} catch (Throwable e4) {
 			log.error("Could not reset framework repo factory impl." + e4.getMessage());
-			frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Repo Factory failed to reset");
+			//frImpl.logRecord(FrameworkMain.FR_FRAMEWORK_FAILURE, "Repo Factory failed to reset");
 			success = false;
 			msg.append("Failed to reset some framework modules");
 			// TODO: continue anyway or return - depending on resetLevel
 		}
-		
+
 		if(!success)
 			throw new ExceptionControlApp(msg.toString());
 	}
@@ -360,34 +431,47 @@ public class FrameworkMainImpl implements FrameworkMain {
 	public FR getFR() {return frImpl;}
 
 	/* Set the framework logic web parts */
-	protected void setupRESTServer() throws ExceptionControlApp {
+	protected void setupJettyServer() throws ExceptionControlApp {
 
 		try {
-			restServer = new Server(port);	
+			jettyServer = new Server(port);	
+			String restServiceWarPath = System.getProperty("restWarPath" ); // check if path to restservice war is defined in cli params
+			String guiServiceWarPath = System.getProperty("guiWarPath" ); // check if path to gui war is defined in cli params
 
+			/* if restServiceWarPath, guiWarPath is not defined use default from context file. Append current class location with 
+			 * relative path to restservice war from context file. */
+			if (restServiceWarPath == null  ) {				
+				ProtectionDomain protectionDomain = this.getClass().getProtectionDomain();    	
+				restServiceWarPath = protectionDomain.getCodeSource().getLocation().getPath() +  restWarPath ;
+			}
+			if (guiServiceWarPath == null  ) {
+				ProtectionDomain protectionDomain = this.getClass().getProtectionDomain();    	
+				guiServiceWarPath = protectionDomain.getCodeSource().getLocation().getPath() +  guiWarPath ;
+			}
+
+			/* Set fwork webapp context. */
 			WebAppContext fworkWebAppContext = new WebAppContext();
 			fworkWebAppContext.setContextPath(restPath);
 			WebAppClassLoader classLoader = new WebAppClassLoader(this.getClass().getClassLoader(), fworkWebAppContext);
 			fworkWebAppContext.setClassLoader(classLoader);
 			fworkWebAppContext.setParentLoaderPriority(true);
+			fworkWebAppContext.setWar(restServiceWarPath); 			
 
-			// check if path to restservice war is defined in command line params
-			String restServiceWarPath = System.getProperty("restWarPath" );
+			/* Set gui webapp context. */
+			WebAppContext guiWebAppContext = new WebAppContext();
+			guiWebAppContext.setContextPath(guiPath);
+			guiWebAppContext.setWar(guiServiceWarPath);
 
-			// if it's not defined use default from context file
-			if (restServiceWarPath == null  ) {
-				// append current class location with relative path to restservice war from context file
-				ProtectionDomain protectionDomain = this.getClass().getProtectionDomain();    	
-				restServiceWarPath = protectionDomain.getCodeSource().getLocation().getPath() +  restWarPath ;
-			}
-			fworkWebAppContext.setWar(restServiceWarPath); 
-
-			restServer.setHandler(fworkWebAppContext);
+			/* Set both handlers (rest and gui) into the Jetty server. */
+			ContextHandlerCollection contexts = new ContextHandlerCollection();
+			Handler[] handlers = new Handler[] { fworkWebAppContext, guiWebAppContext };
+			contexts.setHandlers(handlers);
+			jettyServer.setHandler(contexts);
 		} catch (Throwable e) {
-			log.error("Failed to initialize Rest server." + e.getMessage());
+			log.error("Failed to initialize Jetty server." + e.getMessage());
 			healthTrackerImpl.reportHealthIssue(HealthTracker.SIGNIFICANT_HEALTH_ISSUE);
-			frImpl.logRecord(FR_FRAMEWORK_FAILURE, "Failed to initialize Rest server");
-			throw new ExceptionControlApp("Failed to initialize Rest server.", e);
+			//frImpl.logRecord(FR_FRAMEWORK_FAILURE, "Failed to initialize Jetty server");
+			throw new ExceptionControlApp("Failed to initialize Jetty server.", e);
 		}
 	}
 
@@ -399,7 +483,7 @@ public class FrameworkMainImpl implements FrameworkMain {
 
 	public void requestReset(ResetLevel resetLevel) throws ExceptionControlApp {
 		reset(resetLevel);
-		init();		
+		init(false);		
 	}
 
 	@Override
@@ -410,6 +494,9 @@ public class FrameworkMainImpl implements FrameworkMain {
 
 	@Override
 	public boolean isDebugRun() {return debugRun;}
+
+	@Override
+	public boolean isDemo() {return demoRun == 1;}
 
 	@Override
 	public String getHostAddr() {return hostAddr;}

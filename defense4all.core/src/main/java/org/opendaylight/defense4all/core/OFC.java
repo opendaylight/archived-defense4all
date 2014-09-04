@@ -33,11 +33,13 @@ public class OFC {
 	public static final String FOR_STATS_COLLECTION = "for_stats_collection";
 	public static final String FOR_DIVERSION = "for_diversion";
 	public static final String PROPS = "props";
+	public static final String STATS_INTERVAL = "stats_collection_interval";
 	
 	public String hostname; 			public String ipAddrString;  	public int port = -1;
 	public String username; 			public String password;
 	public boolean forStatsCollection;	public boolean forDiversion;
 	public Properties props;
+	public int ofcStatsCollectionInterval; 
 	
 	protected static ArrayList<RepoCD> mOFCsRepoCDs = null;
 	
@@ -46,22 +48,25 @@ public class OFC {
 	 */
 	public OFC() {
 		hostname = null; ipAddrString = null; port = -1; username = password = ""; 
-		forStatsCollection = forDiversion = false; props = new Properties();
+		forStatsCollection = forDiversion = true; props = new Properties();
+		ofcStatsCollectionInterval = 0;
 	}
 	
 	/* ### Description ###
 	 * @param param_name 
 	 */
 	public OFC(String hostname, String ipAddrString, int port, String username, String password, 
-			boolean forStatsCollection, boolean forDiversion, Properties props) {
+			boolean forStatsCollection, boolean forDiversion, Properties props,  int ofcStatsIntervalInSecs) {
 		this.hostname = hostname; this.ipAddrString = ipAddrString; this.port = port; 
 		this.username = username; this.password = password; this.forStatsCollection = forStatsCollection; 
 		this.forDiversion = forDiversion; 
 		this.props = (props == null ? new Properties() : props);
+		this.ofcStatsCollectionInterval = ofcStatsIntervalInSecs;
 	}
 	
 	public OFC(Hashtable<String, Object> ofcRow) {
 		this();
+		Object obj = null;
 		hostname = (String) ofcRow.get(HOSTNAME);
 		ipAddrString = (String) ofcRow.get(IP_ADDR_STRING);
 		port = (Integer) ofcRow.get(PORT);
@@ -69,7 +74,9 @@ public class OFC {
 		password = (String) ofcRow.get(PASSWORD);
 		forStatsCollection = (Boolean) ofcRow.get(FOR_STATS_COLLECTION);
 		forDiversion = (Boolean) ofcRow.get(FOR_DIVERSION);
-		props = (Properties) ofcRow.get(PROPS);
+		props = (Properties) ofcRow.get(PROPS);	
+		obj = ofcRow.get(STATS_INTERVAL);
+		if(obj != null) ofcStatsCollectionInterval = (Integer) obj;		
 	}
 	
 	public String getHostname() {return hostname;}
@@ -95,6 +102,9 @@ public class OFC {
 	
 	public Properties getProps() {return props;}
 	public void setProps(Properties props) {this.props = props;}
+	
+	public int getOfcStatsCollectionInterval() {return ofcStatsCollectionInterval;}
+	public void setOfcStatsCollectionInterval(int ofcStatsCollectionInterval) {this.ofcStatsCollectionInterval = ofcStatsCollectionInterval;}
 
 	public Hashtable<String, Object> toRow() {
 		
@@ -113,6 +123,7 @@ public class OFC {
 		row.put(FOR_STATS_COLLECTION, forStatsCollection);
 		row.put(FOR_DIVERSION, forDiversion);
 		row.put(PROPS, props);
+		row.put(STATS_INTERVAL, ofcStatsCollectionInterval);
 		return row;
 	}
 	
@@ -126,6 +137,7 @@ public class OFC {
 		sb.append("ipAddrString="); sb.append(ipAddrString); sb.append(", ");
 		sb.append("port="); sb.append(port); sb.append(", ");
 		sb.append("forDiversion="); sb.append(forDiversion); sb.append(", ");
+		sb.append("ofcStatsCollectionInterval="); sb.append(ofcStatsCollectionInterval); sb.append(", ");
 		sb.append("props="); sb.append(props.toString());
 		sb.append("]");
 		return sb.toString();
@@ -144,6 +156,7 @@ public class OFC {
 			rcd = new RepoCD(FOR_STATS_COLLECTION, BooleanSerializer.get(), null); mOFCsRepoCDs.add(rcd);
 			rcd = new RepoCD(FOR_DIVERSION, BooleanSerializer.get(), null);	mOFCsRepoCDs.add(rcd);
 			rcd = new RepoCD(PROPS, PropertiesSerializer.get(), null); mOFCsRepoCDs.add(rcd);
+			rcd = new RepoCD(STATS_INTERVAL, IntegerSerializer.get(), null);	mOFCsRepoCDs.add(rcd);
 		}		
 		return mOFCsRepoCDs;
 	}

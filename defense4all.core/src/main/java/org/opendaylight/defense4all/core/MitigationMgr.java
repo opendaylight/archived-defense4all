@@ -9,6 +9,7 @@
 package org.opendaylight.defense4all.core;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 
@@ -67,7 +68,7 @@ public interface MitigationMgr {
 	 * @throws exception_type circumstances description 
 	 */
 	public ArrayList<MitigationDriver> getMitigationDrivers();
-
+	
 	/**
 	 * #### method description ####
 	 * @param param_name param description
@@ -75,5 +76,14 @@ public interface MitigationMgr {
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void topologyChanged() ;
+	public List<Mitigation> getAllPNMitigations(String pnkey);
+
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	public void notifyFailedAMSs(List<String> failedAMSs);
 }

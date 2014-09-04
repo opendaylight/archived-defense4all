@@ -20,6 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.mortbay.log.Log;
 import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
 import org.opendaylight.defense4all.core.TrafficTuple.TrafficData;
+import org.opendaylight.defense4all.core.interactionstructures.StatReport;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.FR;
@@ -57,7 +58,7 @@ public class CounterStat {
 	public static final String STATUS = "status";
 	public static final String COUNTERS_STATUS = "counters_status";
 
-	private String key;		// key in repo - trafficFloorKey + "_" + pnKey
+	protected String key;		// key in repo - trafficFloorKey + "_" + pnKey
 	public String trafficFloorKey;	// serialized Counter trafficFloorKey (CounterLocation.serialize())
 	public String pnKey;
 	public String lastReadingStr;		public TrafficTuple lastReading;	// bytes/packets counter reading
@@ -67,9 +68,9 @@ public class CounterStat {
 	public long   firstReadTime;	// Time of first reading - used to determine the end of grace period	
 	public Status status;
 
-	private int maxReadingRetries = 3; // Stat collector reading interval should be longer then controller update
+	protected int maxReadingRetries = 3; // Stat collector reading interval should be longer then controller update
 	// interval. So, it's not required to have to much retries
-	private int readingRetries;
+	protected int readingRetries;
 	protected long lastBaselineFRTime;
 
 	// to allow locking of the Counter object from Detectors methods
@@ -118,7 +119,7 @@ public class CounterStat {
 		lastBaselineFRTime = 0;	lastReadTime = 0;  firstReadTime = 0;
 		status = Status.INVALID;		
 	}
-	
+
 	/** ### Description ###
 	 * @param param_name 
 	 * @throws
@@ -162,6 +163,7 @@ public class CounterStat {
 		return countersStatus.get(key).attacked;
 	}
 
+
 	public boolean isAttacked ( ProtocolPort protocolPort ) {
 		return  isAttacked ( protocolPort.protocol.getProtocolNumber(), protocolPort.port);  
 	}
@@ -186,6 +188,23 @@ public class CounterStat {
 		}
 	}
 
+	// copy only suspicions counter from PN sum to each counter
+	public void copySuspicions (CounterStat other) {
+
+		Iterator<Map.Entry<Integer,CounterStatusData>> iter = other.countersStatus.entrySet().iterator();
+		while(iter.hasNext()) {
+			Map.Entry<Integer,CounterStatusData> entry = iter.next();
+			CounterStatusData counterStatusData = entry.getValue();
+			Integer key = entry.getKey();
+			if ( ! countersStatus.containsKey(key)) 
+				// this means statistic is processed comes for port / protocol first time
+				countersStatus.put(key, counterStatusData);
+			countersStatus.get(key).numofAttackSuspicions = counterStatusData.numofAttackSuspicions;
+		}
+	}
+
+
+
 	public boolean validateAttackSuspicions ( int threshold ) {
 
 		Iterator<Map.Entry<Integer,CounterStatusData>> iter = countersStatus.entrySet().iterator();
@@ -208,15 +227,17 @@ public class CounterStat {
 				if(entryData.numofAttackSuspicions < 0) entryData.numofAttackSuspicions = 0;
 			} else {
 				entryData.numofAttackSuspicions ++;
+				log.debug("Suspicions counter for "+entryData.protocol+":"+entryData.port+" is "+entryData.numofAttackSuspicions);
 			}
 		}
 	}
 
-//	public static String generateKey(String trafficFloorKey, String pnKey) {return trafficFloorKey + "_" + pnKey;}
+	//	public static String generateKey(String trafficFloorKey, String pnKey) {return trafficFloorKey + "_" + pnKey;}
 	public static String generateKey(String trafficFloorKey) {return trafficFloorKey;}
 
 	public String getKey() { return key; }
 
+	@SuppressWarnings("unused")
 	public void printTCP() {
 
 		float latestTcpbytes = 0; float latestTcppackets = 0; float averageTcpbytes = 0; float averageTcppackets = 0;
@@ -351,7 +372,7 @@ public class CounterStat {
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void updateStats(StatReport statsReport, float averagePeriod, boolean updateAverage) throws ExceptionControlApp {
+	public void updateStats(StatReport statsReport, float averagePeriod, boolean updateAverage, float bytesIgnoreThreshold, float packetsIgnoreThreshold) throws ExceptionControlApp {
 
 		if  ( status == Status.INVALID )
 			return;
@@ -363,9 +384,9 @@ public class CounterStat {
 			return;
 		}
 
-
 		long thisPeriod = statsReport.readingTime - lastReadTime; // Calculate this period
 		TrafficTuple latestRateCalc = statsReport.stats.delta(lastReading, thisPeriod); // Calculate latest rates per new stats reading
+		lastReading = statsReport.stats; 						  // Set last reading to this on
 		// check if calculated rates are zero - statistics were not updated by controller - ignore it
 		if ( latestRateCalc.isZero() && readingRetries < maxReadingRetries ) {
 			readingRetries++;
@@ -373,13 +394,16 @@ public class CounterStat {
 			return;
 		}
 		readingRetries = 0;	
-
-		lastReadTime = statsReport.readingTime; 				  // Update the time of last reading
-		latestRate = latestRateCalc;
-		lastReading = statsReport.stats; 						  // Set last reading to this one
-		log.debug("Last reading time: "+lastReadTime+" latest rates "+latestRate.toString());
-		if(updateAverage) 			// Update moving average. In 2nd reading moving average is set for the first time
-			updateAverage(latestRate, averagePeriod, thisPeriod);
+		lastReadTime = statsReport.readingTime; 
+		// Update the time of last reading
+		latestRate.setNonNegative ( latestRateCalc ) ;
+		
+		if(updateAverage) 		{	// Update moving average. In 2nd reading moving average is set for the first time
+			// ignore 'spike' readings	
+			updateAverage(latestRate, averagePeriod, thisPeriod, bytesIgnoreThreshold, packetsIgnoreThreshold);
+		}
+		log.debug("STAT Latest rates for PN: "+statsReport.pnKey+" time: "+lastReadTime+" "+latestRate.toPrintableString() );
+		log.debug("STAT Averages for PN : "+statsReport.pnKey+" "+ average.toPrintableString());
 	}
 
 	/**
@@ -396,7 +420,8 @@ public class CounterStat {
 	/* Use the following formula to update the averages:
 	 * newAverage = (currentAverage * periodTime + latest * latestTime) / (periodTime + latestTime); 
 	 * */
-	public void updateAverage(TrafficTuple latestRate, float movingAveragePeriod, float latestPeriod) throws ExceptionControlApp {
+	public void updateAverage(TrafficTuple latestRate, float movingAveragePeriod, float latestPeriod, 
+			float bytesIgnoreThreshold, float packetsIgnoreThreshold) throws ExceptionControlApp {
 
 		if(latestRate == null) return;
 		float sumTime = movingAveragePeriod + latestPeriod;
@@ -404,13 +429,15 @@ public class CounterStat {
 
 		// Update average for received protocol/port data
 		Iterator<Map.Entry<Integer,TrafficData>> iter = latestRate.getTuple().entrySet().iterator();
-		TrafficData latestTrafficData;
+		TrafficData latestTrafficData; TrafficData averageTrafficData;
 
 		try {
 			while(iter.hasNext()) {
 				latestTrafficData = iter.next().getValue();
 
 				if ( !latestTrafficData.forTrafficLearning ) continue;
+				// Ignore traffic spikes
+				if (latestTrafficData.bytes < bytesIgnoreThreshold || latestTrafficData.packets < packetsIgnoreThreshold ) continue;
 
 				int key = TrafficTuple.generateTrafficDataKey(latestTrafficData.protocol, latestTrafficData.port);
 				if ( ! average.getTuple().containsKey(key))
@@ -418,10 +445,13 @@ public class CounterStat {
 				else {
 					// Average for same direction only
 					// It will take out attacked flow 
-					if ( isAttacked( latestTrafficData.protocol, latestTrafficData.port)   ) continue;
-					if ( latestTrafficData.direction != average.getTrafficData(key).direction ) continue;
-					average.getTrafficData(key).bytes = ( average.getTrafficData(key).bytes * movingAveragePeriod + latestTrafficData.bytes * latestPeriod) / sumTime;
-					average.getTrafficData(key).packets = ( average.getTrafficData(key).packets * movingAveragePeriod + latestTrafficData.packets * latestPeriod) / sumTime;
+					if ( 0 != getAttackSuspicions( latestTrafficData.protocol, latestTrafficData.port)   ) continue;
+					averageTrafficData = average.getTrafficData(key);
+					if(averageTrafficData == null) continue;
+				
+					if ( latestTrafficData.direction != averageTrafficData.direction ) continue;
+					averageTrafficData.bytes = (averageTrafficData.bytes * movingAveragePeriod + latestTrafficData.bytes * latestPeriod) / sumTime;
+					averageTrafficData.packets = (averageTrafficData.packets * movingAveragePeriod + latestTrafficData.packets * latestPeriod) / sumTime;
 				}		
 			}
 		} catch (Throwable e) {
@@ -431,13 +461,13 @@ public class CounterStat {
 		}
 	}
 
-	public List<ProtocolPort> deviationExceeds(TrafficTuple average, int lowerDeviationPercentage , int upperDeviationPercentage) throws ExceptionControlApp {
+	public List<ProtocolPort> deviationExceeds(TrafficTuple average, int lowerDeviationPercentage, 
+			int upperDeviationPercentage) throws ExceptionControlApp {
 
 		if(average == null) return null;	
 
 		ArrayList<ProtocolPort> exceededDeviations = new ArrayList<ProtocolPort>();
-		TrafficTuple nonZeroAverage = average.nonZeroClone();
-
+		
 		Iterator<Map.Entry<Integer,TrafficData>> iter = latestRate.getTuple().entrySet().iterator();
 		TrafficData trafficData; int trafficKey; ProtocolPort protocolPort;
 
@@ -445,18 +475,21 @@ public class CounterStat {
 			while(iter.hasNext()) {		
 				trafficKey  = iter.next().getKey();
 				trafficData = latestRate.getTrafficData(trafficKey);
+				if(trafficData == null) continue;
 
-				if ( !nonZeroAverage.getTuple().containsKey(trafficKey )) 
+				if ( !average.getTuple().containsKey(trafficKey )) 
+					continue;
+				
+				float averageBytes = average.getTuple().get(trafficKey).bytes;
+				float averagePackets = average.getTuple().get(trafficKey).packets;
+				// First time traffic received. Don't detect attack
+				if ( averageBytes == 0  || averagePackets == 0 )
 					continue;
 
-				float averageBytes = nonZeroAverage.getTuple().get(trafficKey).bytes;
-				float averagePackets = nonZeroAverage.getTuple().get(trafficKey).packets;
+				
 				boolean attacked = isAttacked( trafficData.protocol, trafficData.port) ;
 				int deviationPercentage = attacked ? lowerDeviationPercentage : upperDeviationPercentage;
 				float deviationFraction = ((float) deviationPercentage) / 100;
-
-				if ( trafficData.bytes == 0 || trafficData.packets == 0)
-					continue;
 
 				if ((trafficData.bytes  - averageBytes) /  averageBytes > deviationFraction ||
 						(trafficData.packets - averagePackets) / averagePackets > deviationFraction) {
@@ -498,11 +531,11 @@ public class CounterStat {
 		sb.append("average="); if (average!= null ) sb.append(average.toString(protocol)); sb.append("; ");
 		return sb.toString();
 	}
-	
+
 	public void periodicallyRecordAverages(FR flightRecorder, long baselineRecordingIntervalInSecs) {		
 		long currentTimeInSecs = System.currentTimeMillis() / 1000;
 		if(currentTimeInSecs - lastBaselineFRTime > baselineRecordingIntervalInSecs) {
-			flightRecorder.logRecord(DFAppRoot.FR_DF_SECURITY,"Baselines for counter "+key+": "+average.toString());
+			log.info("Baselines for counter "+key+": "+average.toString());
 			lastBaselineFRTime = currentTimeInSecs;
 		}
 	}

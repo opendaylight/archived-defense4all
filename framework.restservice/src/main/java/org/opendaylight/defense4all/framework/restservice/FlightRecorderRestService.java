@@ -36,7 +36,7 @@ import org.opendaylight.defense4all.framework.core.FR.FilterRecord;
 @Path("/fr")
 public class FlightRecorderRestService {
 
-	static Logger log = LoggerFactory.getLogger(FlightRecorderRestService.class);
+	static Logger log = LoggerFactory.getLogger("org.opendaylight.defense4all.restservice");
 
 	static final String MAX_NUM_PARAM = "maxNum";
 	static final String FROM_DATE_PARAM = "fromDate";
@@ -61,6 +61,11 @@ public class FlightRecorderRestService {
 
 		log.debug("FlightRecorderRestService latest : invoked");
 		log.debug("Params :"+maxNum+":"+fromDateStr+":"+toDateStr);
+
+		if ( ! FMHolder.get().isOpenForBusiness() ) {
+			servletResponse.sendError(503, "Service is unavailable" ); 
+			return null;
+		}
 
 		// verifying the format of the sent date   
 		Date fromDate = null;   Date toDate = null;
@@ -103,6 +108,11 @@ public class FlightRecorderRestService {
 
 		log.debug("FlightRecorderRestService events : invoked");
 
+		if ( ! FMHolder.get().isOpenForBusiness() ) {
+			servletResponse.sendError(503, "Service is unavailable" ); 
+			return null;
+		}
+
 		FilterRecord filterRec = null;
 		if ( filterStr != null ) {
 			filterRec = FMHolder.get().getFR().createFilter(filterStr);
@@ -124,6 +134,12 @@ public class FlightRecorderRestService {
 	public String dump(Map<String,String> input , @Context HttpServletResponse servletResponse) throws Exception {
 
 		log.debug("FlightRecorderRestService dump");
+
+		if ( ! FMHolder.get().isOpenForBusiness() ) {
+			servletResponse.sendError(503, "Service is unavailable" ); 
+			return null;
+		}
+
 
 		String fileName = input.get(TO_FILE_PARAM);
 		if ( fileName == null ) {
@@ -180,8 +196,12 @@ public class FlightRecorderRestService {
 	@Path("cleanup")
 	@Consumes(MediaType.APPLICATION_JSON)
 	public String cleanup(Map<String,String> input , @Context HttpServletResponse servletResponse) throws Exception {
-		
+
 		log.debug("FlightRecorderRestService cleanup");
+		if ( ! FMHolder.get().isOpenForBusiness() ) {
+			servletResponse.sendError(503, "Service is unavailable" ); 
+			return null;
+		}
 
 		String olderDaysStr = null; int olderDays = 0;
 
@@ -191,7 +211,7 @@ public class FlightRecorderRestService {
 			servletResponse.sendError(400);
 			return null; 
 		}
-		
+
 		try { 
 			olderDays = Integer.valueOf(olderDaysStr);
 		} catch ( Throwable pe) {  

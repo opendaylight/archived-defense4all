@@ -1,0 +1,202 @@
+<div class="container">
+
+    <div>
+        <h1 class="page-heading">DefenseFlow Setup</h1>
+
+        <alert ng-repeat="alert in DFConfigAlerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+        <div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <h4 class="pull-left">Protected Objects (POs)&nbsp;&nbsp;&nbsp;<a class="btn btn-primary" href="#/addPo">Add</a></h4>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <table class="table table-striped table-bordered">
+                    <thead>
+                    <th>Name</th>
+                    <!--
+                    <th>VID</th>
+                    <th>Links</th>
+                    -->
+                    <th>Network</th>
+                    <th class="table-heading-bottom-aligned-wrapper"><span class="table-heading-bottom-aligned">Policy</span><span><button type="button" class="btn btn-primary pull-right" ng-click="openPolicyDetails()">View Default Policy Details</button></span></th>
+                    <th></th>
+                    </thead>
+
+                    <tr ng-repeat="po in pos">
+                        <td>{{po.label}}</td>
+                        <!--
+                        <td>{{po.virtualNetid}}</td>
+                        <td>{{po.props | poTags}}</td>
+                        -->
+                        <td>{{po.dstAddr}}/{{po.dstAddrPrefixLen}}</td>
+                        <td> <button class="btn btn-primary" ng-click="addPolicy(po, $event)" ng-disabled="po.hasPolicy">Add Policy</button>
+                            <button class="btn btn-primary" ng-click="removePolicy(po, $event)" ng-disabled="!po.hasPolicy">Remove Policy</button></td>
+                        <td> <button class="btn btn-danger" ng-click="deletePO(po.label, $event)" ng-disabled="po.hasPolicy">Delete PO</button> </td>
+                    </tr>
+
+                </table>
+                </div>
+            </div>
+
+        </div>
+
+
+    </div>
+
+</div><!-- /.container -->
+
+<script type="text/ng-template" id="DefaultPolicyDetails.html">
+    <div class="modal-header">
+        <h3>Default Policy Details</h3>
+    </div>
+
+    <div class="modal-body">
+
+        <div class="container">
+            <div class="row">
+                <div class="col-md-5">
+
+                    <table class="table table-bordered">
+                        <th class="active">Security Profile</th>
+                        <th class="active"></th>
+                        <tr>
+                            <td>
+                                Stats Collection Period
+                            </td>
+                            <td>
+                                120
+                            </td>
+                        </tr>
+                        <tr>
+
+                            <td>
+                                Network DoS protection
+                            </td>
+                            <td>
+                                All (tcp, tcp syn, tcp rst, tcp fin, udp, icmp, other)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Detection Mode of Network DoS Protection
+                            </td>
+                            <td>
+                                Dynamic Thresholds
+                            </td>
+
+                        </tr>
+
+                        <tr>
+                            <td>
+                                Learning Period
+                            </td>
+                            <td>
+                                1 hour
+                            </td>
+
+                        </tr>
+
+
+                    </table>
+
+                    <table class="table table-bordered">
+                        <th class="active">Action</th>
+                        <th class="active"></th>
+                        <tr>
+                            <td>
+                                Action
+                            </td>
+                            <td>
+                                Redirect & Mitigate
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>
+                                Redirection Target
+                            </td>
+                            <td>
+                                Default Group
+                            </td>
+                        </tr>
+
+
+                        <tr>
+                            <td>
+                                Redirection Types
+                            </td>
+                            <td>
+                                Most Available Group
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>
+                                Redirection Options
+                            </td>
+                            <td>
+                                Ingres only
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>
+                                Redirection Scope
+                            </td>
+                            <td>
+                                Per policy rule
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>
+                                Redirection Confirmation
+                            </td>
+                            <td>
+                                No
+                            </td>
+                        </tr>
+
+
+
+
+
+
+                    </table>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button class="btn btn-primary" ng-click="$close()" type="submit">OK</button>
+    </div>
+
+</script>
+
+
+
+<script type="text/ng-template" id="offline.html">
+
+        <div class="modal-header">
+            <h3>No connection to server</h3>
+        </div>
+
+        <div class="modal-body">
+
+            <p>There is no connection to the server. Will keep retrying to connect every {{pollingInterval}} seconds...</p>
+
+        </div>
+
+        <div class="modal-footer">
+
+        </div>
+
+</script>

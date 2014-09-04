@@ -217,7 +217,7 @@ public class Odl {
 	 * @throws exception_type circumstances description 
 	 */
 	public void addNetNode(String netNodeKey) throws ExceptionControlApp {
-
+		// TODO: add checks and returns similar to NEC
 		NetNode netNode; TrafficFloor trafficFloor;	String trafficFloorKey;
 
 		try {
@@ -269,7 +269,7 @@ public class Odl {
 		/* Create and set common fields in configInfo template object */
 		OdlFlowConfigInfo configInfoTemplate = new OdlFlowConfigInfo();
 		configInfoTemplate.nodeLabel = netNode.label; configInfoTemplate.etherType = 2048;
-		configInfoTemplate.idleTimeout = 300; // TODO: validate that idleTimeout is indeed in seconds.
+		configInfoTemplate.idleTimeout = 0;//TODO: was 300, probably to avoid leaving flows on the controller on d4a crush (in this case, the other flows' timeout should be set as well.); // TODO: validate that idleTimeout is indeed in seconds.
 		configInfoTemplate.actions = new ArrayList<String>();
 
 		Iterator<Map.Entry<String,ProtectedLink>> iter = netNode.protectedLinks.entrySet().iterator();
@@ -425,7 +425,7 @@ public class Odl {
 	 * @throws exception_type circumstances description 
 	 */
 	public void removeNetNode(String netNodeKey) throws ExceptionControlApp {
-
+		// TODO: add checks and returns similar to NEC
 		try {
 			/* Remove the common traffic floor */
 			String netNodeLabel = (String) dfAppRoot.netNodesRepo.getCellValue(netNodeKey, NetNode.LABEL);

@@ -28,7 +28,7 @@ public class Cli {
 			displayUsage();
 			System.exit(0);
 		}
-		Defense4AllCmd dfCmd = null;
+		Defense4AllCmd dfCmd = Defense4AllCmd.cmdlist;
 		try {
 			dfCmd = Defense4AllCmd.valueOf(args[0]);
 		} catch (Throwable e) { // Illegal Defense4AllCmd_name
@@ -171,7 +171,7 @@ public class Cli {
 			return;
 		}
 
-		Defense4AllCmd dfCmd = null;
+		Defense4AllCmd dfCmd = Defense4AllCmd.help;
 		try {
 			dfCmd = Defense4AllCmd.valueOf(params.get(0));
 		} catch (Throwable e) { // Illegal FrameworkCmd_name

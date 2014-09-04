@@ -42,11 +42,20 @@ public class AMS {
 	public static final String PASSWORD = "password";
 	public static final String FOR_STATS_COLLECTION = "for_stats_collection";
 	public static final String FOR_DIVERSION = "for_diversion";
+	public static final String STATUS = "status";
 	public static final String HEALTH_CHECK_FREQUENCY = "health_check_frequency";
+	public static final String HEALTH_STATUS = "up";
 	public static final String PROPS = "props";
 	public static final String SECURITY_CONFIG_PREFIX = "security_config_";
 	
 	public static final int DEFAULT_HEALTH_CHECK_FREQUENCY = 10;
+	
+	public enum Status {
+		ACTIVE,
+        UNKNOWN,
+		REMOVED
+	}
+
 	
 	static Logger log = LoggerFactory.getLogger(AMS.class);
 
@@ -62,8 +71,10 @@ public class AMS {
 	public boolean forStatsCollection;
 	public boolean forDiversion;
 	public int healthCheckFrequency; // When in-path in secs. When out of path - decrease frequency by X 10	
+	public boolean up;
 	public Properties props;
 	public List<String> securityConfigKeys;
+	public Status status;
 	
 	/* ### Description ###
 	 * @param param_name 
@@ -71,8 +82,8 @@ public class AMS {
 	public AMS() {
 		
 		label = null; brand = null; version = null; mgmtAddr = null; mgmtPort = 0; username = null; password = null;
-		forStatsCollection = forDiversion = false; healthCheckFrequency = DEFAULT_HEALTH_CHECK_FREQUENCY;
-		props = new Properties();
+		forStatsCollection = forDiversion = false; healthCheckFrequency = DEFAULT_HEALTH_CHECK_FREQUENCY; up = true;
+		props = new Properties(); status = Status.ACTIVE;
 		securityConfigKeys = new ArrayList<String>();
 	}
 	
@@ -85,10 +96,11 @@ public class AMS {
 		
 		this.label = label;	this.brand = brand; this.version = version; this.mgmtAddr = mgmtAddr;	
 		this.mgmtPort = port; this.username = username; this.password = password; this.forStatsCollection = forStatsCollection;	
-		this.forDiversion = forDiversion; this.healthCheckFrequency = healthCheckFrequency; 
+		this.forDiversion = forDiversion; this.healthCheckFrequency = healthCheckFrequency; up = true;
 		this.props = props == null ? new Properties() : props;
 		this.securityConfigKeys = securityConfigKeys;
 		if(label == null || label.isEmpty()) label = "ams_" + mgmtAddr.getHostName();
+		status = Status.ACTIVE;
 	}
 	
 	public AMS(Hashtable<String, Object> amsRow) {
@@ -97,7 +109,10 @@ public class AMS {
 		brand = (String) amsRow.get(BRAND);
 		version = (String) amsRow.get(VERSION);
 		try {
-			mgmtAddr = InetAddress.getByName((String) amsRow.get(MGMT_IP_ADDR_STRING));
+            String mgmtAddrStr = (String) amsRow.get(MGMT_IP_ADDR_STRING);
+            if(!"".equals(mgmtAddrStr)) {//some AMS may not have mgmt ip
+                mgmtAddr = InetAddress.getByName(mgmtAddrStr);
+            }
 		} catch (UnknownHostException e) {/* Ignore - some AMSs may not be manageable via Defense4All */}
 		mgmtPort = (Integer) amsRow.get(MGMT_PORT);
 		username = (String) amsRow.get(USERNAME);
@@ -105,7 +120,10 @@ public class AMS {
 		forStatsCollection = (Boolean) amsRow.get(FOR_STATS_COLLECTION);
 		forDiversion = (Boolean) amsRow.get(FOR_DIVERSION);
 		healthCheckFrequency = (Integer) amsRow.get(HEALTH_CHECK_FREQUENCY);
+		up = (Boolean) amsRow.get(HEALTH_STATUS);
 		props = (Properties) amsRow.get(PROPS);
+		status = Status.valueOf((String) amsRow.get(STATUS));
+		
 
 		/* Retrieve all securityConfigKeys */
 		Iterator<Map.Entry<Object,Object>> iter = props.entrySet().iterator();
@@ -147,7 +165,9 @@ public class AMS {
 		row.put(PASSWORD, password);
 		row.put(FOR_STATS_COLLECTION, forStatsCollection);
 		row.put(FOR_DIVERSION, forDiversion);
+		row.put(STATUS, status.name());
 		row.put(HEALTH_CHECK_FREQUENCY, healthCheckFrequency);
+		row.put(HEALTH_STATUS, up);
 		row.put(PROPS, props);
 		for(String securityConfigKey : securityConfigKeys)
 			row.put(SECURITY_CONFIG_PREFIX + securityConfigKey, securityConfigKey);
@@ -178,6 +198,9 @@ public class AMS {
 	public int getHealthCheckFrequency() {return healthCheckFrequency;}
 	public void setHealthCheckFrequency(int healthCheckFrequency) {this.healthCheckFrequency = healthCheckFrequency;}
 	
+	public boolean getUp() {return up;}
+	public void setUp(boolean up) {this.up = up;}
+	
 	public Properties getProps() {return props;}
 	public void setProps(Properties props) {this.props = props;}
 	
@@ -189,6 +212,9 @@ public class AMS {
 	
 	public List<String> getSecurityConfigKeys() {return securityConfigKeys;}
 	public void setSecurityConfigKeys(List<String> securityConfigKeys) {this.securityConfigKeys = securityConfigKeys;}
+	
+	public Status getStatus() {return status;}
+	public void setStatus(Status status) {this.status = status;}
 
 	@Override
 	public String toString() {
@@ -204,10 +230,15 @@ public class AMS {
 		sb.append("forStatsCollection="); sb.append(forStatsCollection); sb.append(", ");
 		sb.append("forDiversion="); sb.append(forDiversion); sb.append(", ");
 		sb.append("healthCheckFrequency="); sb.append(healthCheckFrequency); sb.append(", ");
+		sb.append("up="); sb.append(up); sb.append(", ");
 		for(String securityConfigKey : securityConfigKeys) {
 			sb.append("securityConfigKey="); sb.append(securityConfigKey); sb.append(", ");
 		}
 		sb.append("props="); sb.append(props.toString());
+		if ( status == Status.REMOVED ) {
+			sb.append("status="); sb.append(status); sb.append(", ");
+		}
+		
 		sb.append("]");
 		return sb.toString();
 	}
@@ -224,8 +255,11 @@ public class AMS {
 			rcd = new RepoCD(MGMT_PORT, IntegerSerializer.get(), null);	 amsRepoCDs.add(rcd);
 			rcd = new RepoCD(FOR_STATS_COLLECTION, BooleanSerializer.get(), null); amsRepoCDs.add(rcd);
 			rcd = new RepoCD(FOR_DIVERSION, BooleanSerializer.get(), null);	amsRepoCDs.add(rcd);
-			rcd = new RepoCD(HEALTH_CHECK_FREQUENCY, BooleanSerializer.get(), null); amsRepoCDs.add(rcd);
+			rcd = new RepoCD(STATUS, StringSerializer.get(), null);	 amsRepoCDs.add(rcd);
+			rcd = new RepoCD(HEALTH_CHECK_FREQUENCY, IntegerSerializer.get(), null); amsRepoCDs.add(rcd);
+			rcd = new RepoCD(HEALTH_STATUS, StringSerializer.get(), null); amsRepoCDs.add(rcd);
 			rcd = new RepoCD(PROPS, PropertiesSerializer.get(), null); amsRepoCDs.add(rcd);
+			
 		}		
 		return amsRepoCDs;
 	}
@@ -235,10 +269,47 @@ public class AMS {
 	}
 
 	public void validate() throws Exception {
-		if(label == null || label.isEmpty()) throw new Exception("Invalid ams label.");			
-		if(mgmtAddr == null ) throw new Exception("Invalid ams address.");
-		if(mgmtPort < 0 ) throw new Exception("Invalid ams port.");	
-		if(username == null || username.isEmpty()) throw new Exception("Invalid ams username.");
-		if(password == null || password.isEmpty()) throw new Exception("Invalid ams password.");
+		if(label == null || label.isEmpty()) throw new Exception("Invalid ams label.");
+        if(!"other".equalsIgnoreCase(brand)) {
+            if (mgmtAddr == null) throw new Exception("Invalid ams address.");
+            if (mgmtPort < 0) throw new Exception("Invalid ams port.");
+            if (username == null || username.isEmpty()) throw new Exception("Invalid ams username.");
+            if (password == null || password.isEmpty()) throw new Exception("Invalid ams password.");
+        }
+	}
+	
+
+	/* Check if AMS is alive */
+	public static boolean isUp(String amsLabel) {
+		
+		try {
+			boolean amsUp = (Boolean) DFHolder.get().amsRepo.getCellValue(amsLabel, HEALTH_STATUS);
+			return amsUp;
+		} catch (Throwable e1) {
+			String msg = "Failed to retrieve AMS liveness from repo. ";
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			log.error(msg + e1.getLocalizedMessage());
+			return false;	
+		}
+	}
+	
+	public static boolean isRemoved(String netNodeLabel) {
+
+		try {
+			String amsStatusStr = (String) DFHolder.get().amsRepo.getCellValue(netNodeLabel, AMS.STATUS);
+			Status amsStatus = Status.valueOf(amsStatusStr);
+			if( amsStatus == Status.REMOVED) return true;
+			return false;
+		} catch (Throwable e) {return false;}
+	}
+
+	public static boolean isRemoved(Hashtable<String,Object> amsRow) {
+
+		try {
+			String amsStatusStr = (String) amsRow.get(STATUS);
+			Status amsStatus = Status.valueOf(amsStatusStr);
+			if(amsStatus == Status.REMOVED) return true;
+			return false;
+		} catch (Throwable e) {return false;}
 	}
 }

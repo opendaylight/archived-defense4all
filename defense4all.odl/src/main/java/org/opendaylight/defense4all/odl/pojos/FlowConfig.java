@@ -74,7 +74,7 @@ public abstract class FlowConfig {
     	FlowConfig otherFlowConfig = (FlowConfig) other;
     	if(name == null || !name.equals(otherFlowConfig.name)) return false;
     	if(cookie == null || !cookie.equals(otherFlowConfig.cookie)) return false;
-    	if(node==null || node.id==null || !((String) node.id).equals((String)(otherFlowConfig.node.id))) return false;
+    	if(node==null || node.id==null || !node.id.equals(otherFlowConfig.node.id)) return false;
     	if(ingressPort != otherFlowConfig.ingressPort) return false;
     	if(vlanId != otherFlowConfig.vlanId) return false;
     	if(priority != otherFlowConfig.priority) return false;

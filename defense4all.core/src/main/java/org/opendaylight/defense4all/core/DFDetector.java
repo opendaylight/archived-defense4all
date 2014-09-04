@@ -9,6 +9,11 @@
  */
 package org.opendaylight.defense4all.core;
 
+import java.util.Collection;
+
+import org.opendaylight.defense4all.core.interactionstructures.EndDetectionNotification;
+import org.opendaylight.defense4all.core.interactionstructures.PNStatReport;
+import org.opendaylight.defense4all.core.interactionstructures.StatReport;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 
 public interface DFDetector extends Detector {
@@ -28,7 +33,7 @@ public interface DFDetector extends Detector {
 	 * @param detectionKey
 	 * @throws ExceptionControlApp 
 	 */
-	public void notifyEndDetection(String detectionKey) ; 
+	public void notifyEndDetection(EndDetectionNotification endDetectionNotification) ; 
 	
 	/**
 	 * Retrieve PN stats - latest rates and averages.
@@ -42,4 +47,13 @@ public interface DFDetector extends Detector {
 	 * @throws ExceptionControlApp 
 	 */
 	public void cleanup() ;
+
+	/**
+	 * 
+		 * #### method description ####
+		 * @param param_name param description
+		 * @return return description
+		 * @throws exception_type circumstances description
+	 */
+	public Collection<PNStatReport> getLatestPNStatReports();
 }

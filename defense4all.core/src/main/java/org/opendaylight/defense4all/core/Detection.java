@@ -14,15 +14,20 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.RepoCD;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
 public class Detection {
-	
+
 	public final static String DF_DETECTOR = "df_detector";
-	
+	static Logger log = LoggerFactory.getLogger(Detection.class);
+
 	/* DetectionRepo column names */
 	public static final String KEY 	= "key";
 	public static final String DETECTOR = "detector";
@@ -31,7 +36,7 @@ public class Detection {
 	public static final String DURATION = "duration";
 	public static final String PNKEY = "pnkey";
 	public static final String PROTOCOL_PORT = "protocol_port";
-	
+
 	public enum DetectionConfidence {
 		INVALID,
 		VERY_HIGH,
@@ -46,9 +51,9 @@ public class Detection {
 	public long duration;
 	public String pnKey;
 	public ProtocolPort protocolPort;
-	
+
 	protected static ArrayList<RepoCD> mDetectionsRepoCDs = null;
-	
+
 	public static String generateDetectionKey(String detectorLabel, String pnKey, ProtocolPort protocolPort) {
 		return detectorLabel + pnKey + "." + protocolPort.toString();
 	}
@@ -60,13 +65,13 @@ public class Detection {
 		key = detector = null; setTime = duration = 0; pnKey = null; protocolPort = new ProtocolPort(); 
 		detectionConfidence = DetectionConfidence.INVALID;
 	}
-	
+
 	/** ### Description ###
 	 * @param param_name 
 	 * @throws
 	 */
 	public Detection(String key, String detector, DetectionConfidence detectionConfidence, long setTime, 
-					 long duration, String pnKey, ProtocolPort protocolPort) {	
+			long duration, String pnKey, ProtocolPort protocolPort) {	
 		this.key = key;	this.detector = detector; this.detectionConfidence = detectionConfidence;
 		this.setTime = setTime;	this.duration = duration; this.pnKey = pnKey; this.protocolPort = protocolPort;
 	}
@@ -92,11 +97,11 @@ public class Detection {
 	}
 
 	public Hashtable<String, Object> toRow() {
-		
+
 		/* Change any null value to empty, otherwise Hashtable.put() will throw an exception */
 		if(key == null) key = "";
 		if(detector == null) detector = "";
-		
+
 		Hashtable<String, Object> row = new Hashtable<String, Object>();
 		row.put(KEY, key);
 		row.put(DETECTOR, detector);
@@ -107,13 +112,13 @@ public class Detection {
 		row.put(PROTOCOL_PORT, protocolPort.toString());
 		return row;
 	}
-	
+
 	public String getKey() {return key;}
 	public void setKey(String key) {this.key = key;}
-	
+
 	public String getDetector() {return detector;}
 	public void setDetector(String detector) {this.detector = detector;}
-	
+
 	public DetectionConfidence getDetectionConfidence() {return detectionConfidence;}
 	public void setDetectionConfidence(DetectionConfidence confidence) {this.detectionConfidence = confidence;}
 
@@ -122,13 +127,13 @@ public class Detection {
 
 	public long getDuration() {return duration;}
 	public void setDuration(long duration) {this.duration = duration;}
-	
+
 	public String getPnkey() {return pnKey;}
 	public void setPnkey(String pnKey) {this.pnKey = pnKey;}
 
 	public ProtocolPort getProtocolPort() {return protocolPort;}
 	public void setProtocolPort(ProtocolPort protocolPort) {this.protocolPort = protocolPort;}
-	
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -158,4 +163,40 @@ public class Detection {
 		}		
 		return mDetectionsRepoCDs;
 	}
+
+	public static Detection getDetection(String detectionKey) {
+		try {
+			Hashtable<String, Object> detectionRow = DFHolder.get().detectionsRepo.getRow(detectionKey); 
+			if(detectionRow == null) { 
+				log.error("Got null detectionRow for key " + detectionKey);
+				return null;
+			}
+			Detection detection = new Detection(detectionRow); 
+			return detection;
+		} catch (Throwable e) {
+			log.error("Failed to get Detection : "+detectionKey, e);
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return null;
+		}
+	}
+
+	public String getPrintableDetectionTarget() {
+		StringBuilder sb = new StringBuilder();
+		if (protocolPort != null ) 
+			sb.append( protocolPort.toPrintableString());
+		sb.append(" traffic for PO " );
+		sb.append(PN.getPrintableKey(pnKey));
+
+		return sb.toString();		
+	}
+
+	public static String getPrintableDetectionTarget(String detectionKey) {
+
+		Detection detection = getDetection(detectionKey);
+		if ( detection == null ) return "";
+		
+		return 	detection.getPrintableDetectionTarget();
+	}
+
+
 }

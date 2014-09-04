@@ -42,6 +42,10 @@ fi
 chmod +w $cassandra_yaml
 cat $cassandra_yaml | sed -e "s/^#* *cluster_name:.*/cluster_name: 'df_cluster'/" > /tmp/cassandra.yaml
 mv -f /tmp/cassandra.yaml $cassandra_yaml
+cat $cassandra_yaml | sed -e "s/num_tokens:.*/num_tokens: 1/" > /tmp/cassandra.yaml
+mv -f /tmp/cassandra.yaml $cassandra_yaml
+cat $cassandra_yaml | sed -e "s/^#* *num_tokens:.*/num_tokens: 1/" > /tmp/cassandra.yaml
+mv -f /tmp/cassandra.yaml $cassandra_yaml
 cat $cassandra_yaml | sed -e "s/^#* *initial_token:.*/initial_token: 0/" > /tmp/cassandra.yaml
 mv -f /tmp/cassandra.yaml $cassandra_yaml
 cat $cassandra_yaml | sed -e "s/^#* *key_cache_size_in_mb:.*/key_cache_size_in_mb: 0/" > /tmp/cassandra.yaml

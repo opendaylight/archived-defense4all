@@ -27,8 +27,10 @@ import org.opendaylight.defense4all.core.PN;
 import org.opendaylight.defense4all.core.ProtocolPort;
 import org.opendaylight.defense4all.core.Traffic;
 import org.opendaylight.defense4all.core.Attack.Status;
+import org.opendaylight.defense4all.core.PN.OperationalStatus;
 import org.opendaylight.defense4all.core.ProtocolPort.DFProtocol;
 import org.opendaylight.defense4all.core.Traffic.TrafficMatch;
+import org.opendaylight.defense4all.core.interactionstructures.EndDetectionNotification;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -61,14 +63,14 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	public void init() throws ExceptionControlApp {
 
 		super.init();
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "AttackDecisionPoint is starting.");
+		log.info( "AttackDecisionPoint is starting.");
 		addPeriodicExecution(ACTION_PROCESS_ATTACKS, null, processAttacksPeriod);
 		initialized = true;
 	}
 
 	/** Pre-shutdown cleanup */
 	public void finit() {
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "AttackDecisionPoint is stopping.");
+		log.info( "AttackDecisionPoint is stopping.");
 		super.finit();
 	}
 
@@ -76,7 +78,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	 * @throws ExceptionControlApp */
 	public synchronized void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "AttackDecisionPoint is resetting to level " + resetLevel);
+		log.info( "AttackDecisionPoint is resetting to level " + resetLevel);
 		super.reset(resetLevel);
 		Traffic.NameHash.reset();
 		try {
@@ -158,13 +160,25 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 			return;
 		}
 
-		fr.logRecord(DFAppRoot.FR_DF_SECURITY,"DF is processing detection "+detection.toString());
+		/* Check if the PN is failed or canceled */
+		try {
+			Object obj = dfAppRootFullImpl.pNsRepo.getCellValue(detection.pnKey, PN.OPERATIONAL_STATUS);
+			OperationalStatus operationalStatus = OperationalStatus.INVALID;
+			if(obj != null)	operationalStatus = OperationalStatus.valueOf((String) obj);
+			if(operationalStatus == OperationalStatus.CANCELED || operationalStatus == OperationalStatus.FAILED) return;
+		} catch (Throwable e) {
+			log.error("Failed to retrieve operational status value for " + detection.pnKey, e);
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return;
+		}
+
+		log.info("DF is processing detection "+detection.toString());
 
 		try {
 			dfAppRootFullImpl.detectionsRepo.setRow(detection.key, detection.toRow());
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to add detetection to detectionsRepo. Detection key: "+detection.key, e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"DF failed to process detection "+detection.key);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"DefenseFlow failed to process detection "+Detection.getPrintableDetectionTarget(detection.key));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			return;
 		}
@@ -174,11 +188,11 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 		String newAttackKey = Attack.generateKey(detection.pnKey, detection.protocolPort);
 		if(attack == null) {
 			attack = new Attack(newAttackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
-			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring a new attack " + newAttackKey);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DefenseFlow declaring a new attack on " +attack.getPrintableAttackTarget());
 		}
 		switch(attack.status) {
 		case DECLARED:
-			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is adding detection " + detection.key 
+			log.info( "DF is adding detection " + detection.key 
 					+ " to existing attack " + attack.key);
 			break;
 		case SUSPECTED:
@@ -191,11 +205,11 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			}
 			attack = new Attack(newAttackKey, detection.pnKey, detection.protocolPort, Status.SUSPECTED, null);
-			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring a new attack " + newAttackKey);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DefenseFlow declaring a new attack on " +Detection.getPrintableDetectionTarget( newAttackKey));
 			log.info("DF is declaring a new attack " + newAttackKey);
 			break;
 		case ENDING:
-			fr.logRecord(DFAppRoot.FR_DF_SECURITY,detection.toString() + " is of an \"ending attack\". "
+			log.info(detection.key + " is of an \"ending attack\". "
 					+ "DF is ignoring new detections until the attack is fully ended.");
 			return;    // Ignore new detections until ended attack is deleted
 		default:
@@ -206,7 +220,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 			dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
 		} catch (Throwable e) {
 			log.error("Failed to create attack in the attacksRepo. " +attack.key, e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"DF failed to create attack " + attack.key);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DefenseFlow  fail to process attack on " +Detection.getPrintableDetectionTarget( attack.key));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			return;
 		}
@@ -237,7 +251,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 			return null;
 		}
 
-		Traffic traffic = new Traffic(pn.dstAddr, pn.dstAddrPrefixLen);
+		Traffic comparedAttackTraffic = new Traffic(0, pn.dstAddr, pn.dstAddrPrefixLen); //vlan=0 - not important. same PN compared
 		Hashtable<String,Hashtable<String,Object>> attackTable = dfAppRootFullImpl.attacksRepo.getTable();		
 		if(attackTable == null) {
 			log.error("Retrieved null attacksTable.");
@@ -260,21 +274,21 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				continue;
 			}
-			
+
 			if(!attack.pnKey.equals(detection.pnKey)) continue;
 
 			/* Matched pnKey means matched dstAddr and dstAddrPrefixLen, so match proto-port */
-			traffic.setProtocolPort(attack.protocolPort.protocol,attack.protocolPort.port);
+			comparedAttackTraffic.setProtocolPort(attack.protocolPort.protocol,attack.protocolPort.port);
 			try {
-				trafficMatch = traffic.match(pn.dstAddr, detection.protocolPort.protocol, detection.protocolPort.port);
+				trafficMatch = comparedAttackTraffic.match(0, pn.dstAddr, detection.protocolPort.protocol, 
+						detection.protocolPort.port); // vlan = 0 is not important here, because comparison is for the same PN
 			} catch (Throwable e) {
 				log.error("Excepted in match operation for attack traffic: "+ pn.dstAddr.getHostAddress()+":"+
 						detection.protocolPort.protocol+"."+ detection.protocolPort.port, e);
 				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 				continue;
 			}
-			if(trafficMatch == TrafficMatch.NO) 
-				continue;
+			if(trafficMatch == TrafficMatch.NO) continue;
 
 			return attack; // Found matching attack
 		}
@@ -291,7 +305,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	 */
 	public synchronized void removeDetection(String detectionKey) {
 
-		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is removing detection " + detectionKey);
+		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DefenseFlow removing detection for  " + Detection.getPrintableDetectionTarget(detectionKey));
 		log.info("DF is removing detection " + detectionKey);
 
 		Hashtable<String, Object> detectionRow;
@@ -299,7 +313,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 			detectionRow = dfAppRootFullImpl.detectionsRepo.getRow(detectionKey);
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to get detetectionRow from detectionsRepo. Detection key: "+detectionKey, e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly remove detection " + detectionKey);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DefenseFlow failed to remove detection for " +Detection.getPrintableDetectionTarget(detectionKey));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			return;
 		}
@@ -351,7 +365,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	 */
 	public void removePN(String pnKey) throws ExceptionControlApp {
 
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL, "DF is processing PN removal with respect to ongoing attacks "
+		log.info( "DF is processing PN removal with respect to ongoing attacks "
 				+ pnKey);
 		try {
 			invokeDecoupledSerially(ACTION_REMOVE_PN, pnKey);	
@@ -384,7 +398,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 				attackRow = entry.getValue();
 				attackPnkey = (String) attackRow.get(Attack.PNKEY);
 				if(attackPnkey.equals(pnKey)) {
-					String msg = "DF is ending attack " + entry.getKey() + " for removed PN " + pnKey;
+					String msg = "DefenseFlow ending attack for removed PO  " + PN.getPrintableKey(pnKey);
 					fr.logRecord(DFAppRoot.FR_DF_SECURITY, msg);
 					endAttack(new Attack(attackRow));
 				}
@@ -401,7 +415,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	protected void periodicProcessAttacks() {
+	protected synchronized void periodicProcessAttacks() {
 
 		if(!fMain.isOpenForBusiness()) return; // Operate only after everything is initialized and is not terminating
 
@@ -478,6 +492,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 			}
 		}
 
+		log.debug("Attack: "+attackKey+" Expiration: "+ latestDetectionExpiration+ " Current time: "+currentTime);
 		if(latestDetectionExpiration <= currentTime && attack.status != Status.ENDING && attack.status != Status.ENDED) {
 			log.info("processAttack: ending attack: " + attack.toString());
 			endAttack(attack); // The attack should be ended
@@ -493,15 +508,16 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 		// Else ongoing attack - nothing to be done
 	}
 
-	protected synchronized void declareAttack(String attackKey) throws ExceptionControlApp {
+	protected void declareAttack(String attackKey) throws ExceptionControlApp {
 
-		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is declaring new attack " + attackKey);
-
+		// same message twice
+		//fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DefenseFlow declaring new attack on " + Attack.getPrintableAttackTarget(attackKey));
+		
 		try {
 			// clean-up counters from previous attacks 	
 			dfAppRootFullImpl.detectorMgrImpl.cleanup();
 		} catch ( Throwable e) {
-			log.error("Failed to initiate detector manager claenup", e);
+			log.error("Failed to initiate detector manager cleanup", e);
 			// ignore
 		}; 
 
@@ -509,7 +525,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 			dfAppRootFullImpl.attacksRepo.setCell(attackKey, Attack.STATUS, Status.DECLARED.name());
 		} catch (ExceptionControlApp e1) {
 			log.error("Failed to update attack status in attacksRepo "+attackKey, e1);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to process attack " + attackKey);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DefenseFlow failed to process attack on " + Attack.getPrintableAttackTarget(attackKey));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp ("Failed to update attack status in attacksRepo "+attackKey, e1);
 		}
@@ -519,23 +535,33 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 		// Update attack row 
 	}
 
-	protected synchronized void endAttack(Attack attack) throws ExceptionControlApp {
+	protected void endAttack(Attack attack) throws ExceptionControlApp {
 
 		if(attack.status != Status.DECLARED) return;
-		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DF is ending the attack " + attack.key);		
+		
+		fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DefenseFlow ending the attack on " + Attack.getPrintableAttackTarget(attack.key));
 
 		attack.status = Status.ENDING;
-		Set<Entry<Object, Object>> attackSet = attack.detectionKeys.entrySet();
-		if ( attackSet != null ) {
-			Iterator<Map.Entry<Object,Object>> iter	= attackSet.iterator();
-			Map.Entry<Object,Object> entry; String detectionKey;
+		List<String> mitigationTFKeys = dfAppRootFullImpl.mitigationMgrImpl.getMitigationTrafficFloorKeys(attack.key);		
+		Set<Entry<Object, Object>> detectionSet = attack.detectionKeys.entrySet();
 
+		if ( mitigationTFKeys != null && detectionSet != null ) {
+
+			EndDetectionNotification endDetectionNotification = new EndDetectionNotification();
+			endDetectionNotification.trafficFloorKeys = mitigationTFKeys;
+
+			Iterator<Map.Entry<Object,Object>> iter	= detectionSet.iterator();
+			Map.Entry<Object,Object> entry; 
+			String detectionKey; Hashtable<String,Object> detectionRow; Detection detection;
 			while(iter.hasNext()) {
 
 				entry = iter.next();
 				detectionKey = (String) entry.getKey();
 				try {
-					dfAppRootFullImpl.detectorMgrImpl.notifyEndDetection(detectionKey);
+					detectionRow = dfAppRootFullImpl.detectionsRepo.getRow(detectionKey);
+					detection = new Detection(detectionRow);
+					endDetectionNotification.detection = detection;
+					dfAppRootFullImpl.detectorMgrImpl.notifyEndDetection(endDetectionNotification);
 					dfAppRootFullImpl.detectionsRepo.deleteRow(detectionKey);
 				} catch (Throwable e) {
 					log.error("Failed to end detection for attack. "+detectionKey);
@@ -550,7 +576,7 @@ public class AttackDecisionPointImpl extends DFAppCoreModule implements AttackDe
 			dfAppRootFullImpl.attacksRepo.setRow(attack.key, attack.toRow());
 		} catch (Exception e) {
 			log.error("Failed to update attack in attacksRepo. "+attack.key);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "DF failed to properly end attack " + attack.key);
+			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "DefenseFlow failed to end attack on " + Attack.getPrintableAttackTarget(attack.key));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			// don't process next - it will be retry on next circle
 			throw new ExceptionControlApp("Failed to update attack in attacksRepo. "+attack.key);

@@ -100,8 +100,7 @@ public interface RepoFactory {
 	 * @throws ExceptionEntityExists If the repo already exists
 	 */
 	public <K> Repo<K> getOrCreateRepo(String RepoNameMajor, String RepoNameMinor, Serializer<K> keySerializer, 
-			boolean immediateFlush,	List<RepoCD> columnDescriptions ) 
-			throws IllegalArgumentException, ExceptionEntityExists, ExceptionControlApp;
+			boolean immediateFlush,	List<RepoCD> columnDescriptions ) throws IllegalArgumentException, ExceptionControlApp;
 
 	/**
 	 * The table needs to be declared prior to persisting or finding the annotated state class, because

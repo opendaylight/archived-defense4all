@@ -50,6 +50,7 @@ public class OFCResource {
 			log.debug("In getOFC. OFC label is " + ofcLabel);
 			Repo<String> oFCsRepo = DFHolder.get().oFCsRepo;
 			Hashtable<String,Object> ofcRow = oFCsRepo.getRow(ofcLabel);
+			if(ofcRow == null) return null;
 			return new OFC(ofcRow);
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to retrieve ofc " + ofcLabel, e);

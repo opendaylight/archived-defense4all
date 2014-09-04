@@ -63,7 +63,7 @@ public class FRImpl implements FR {
 		public static final String EVENT_DATA = "eventData";
 
 		public String			timeCounter;
-		
+
 		public  EventRecordImpl( String eventType, String eventData) {
 			this.eventTime = new Date();
 			this.eventType = eventType;
@@ -99,7 +99,7 @@ public class FRImpl implements FR {
 			sb.append(eventData);
 			return sb.toString();
 		}
-	
+
 		public Hashtable<String, Object> toRow() { 
 			Hashtable<String, Object> row = new Hashtable<String, Object>();
 			row.put(TIME_COUNTER,timeCounter ); 
@@ -411,9 +411,11 @@ public class FRImpl implements FR {
 			bw = new BufferedWriter(fwriter);
 
 			List<EventRecordData> result = getTimeRangeEvents (  fromDate,  toDate,  maxNum, filter );
-			for ( EventRecordData event:result) {
-				event.dump(bw);
-				bw.newLine();
+			if(result != null) {
+				for ( EventRecordData event:result) {
+					event.dump(bw);
+					bw.newLine();
+				}
 			}
 		}
 		catch (IOException e) {
@@ -449,7 +451,7 @@ public class FRImpl implements FR {
 		List<EventRecordData> result = new ArrayList<EventRecordData>();
 		List<String> eventSlicesKeys = timeSliceRepo.getOrderedColumns(SLICES_KEYS,0,false);
 		if(eventSlicesKeys == null) return null;
-		
+
 		if ( maxNum == 0 )
 			maxNum = Integer.MAX_VALUE;
 
@@ -561,7 +563,7 @@ public class FRImpl implements FR {
 	@Override
 	public void reset ( int days ) {
 
-		if(days == 0) return;
+		if(days < 0) return;
 		long deletePeriod = days * 24 * 60 * 60 * 1000;
 		long latestSlice  = ( new Date().getTime() - deletePeriod ) / slicePeriod;
 
@@ -572,7 +574,7 @@ public class FRImpl implements FR {
 		while ( eventSlicesKeysIter.hasNext()) { // Go over slices to find latest slice
 
 			String eventSliceKey = eventSlicesKeysIter.next();
-			if ( Long.valueOf(eventSliceKey) >= latestSlice )
+			if ( Long.valueOf(eventSliceKey) > latestSlice )
 				break;
 
 			List<String> eventKeys = timeSliceRepo.getOrderedColumns(eventSliceKey,0,false);
@@ -627,8 +629,12 @@ public class FRImpl implements FR {
 			long bt = System.currentTimeMillis();
 			List<EventRecordData> latest = getLatestEvents(20, createFilter("COMMON"));
 			long at = System.currentTimeMillis();
-			for (EventRecordData ev:latest) {
-				System.out.println("Latest: "+ev.toString());
+			if(latest == null)
+				System.out.println("No events");
+			else {
+				for (EventRecordData ev:latest) {
+					System.out.println("Latest: "+ev.toString());
+				}
 			}
 
 			System.out.println("Spend "+(at-bt));

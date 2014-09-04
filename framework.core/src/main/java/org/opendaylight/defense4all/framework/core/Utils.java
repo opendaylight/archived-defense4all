@@ -57,7 +57,7 @@ public class Utils {
 	public static void printTable(Hashtable<String,Hashtable<String,Object>> table) {
 
 		Iterator<Map.Entry<String,Hashtable<String,Object>>> iter = table.entrySet().iterator();
-		Map.Entry<String,Hashtable<String,Object>> entry; Hashtable<String,Object> row; String key = null;
+		Map.Entry<String,Hashtable<String,Object>> entry; Hashtable<String,Object> row; String key;
 
 		while(iter.hasNext()) {
 			
@@ -89,7 +89,14 @@ public class Utils {
 				input = reader.readLine();
 			} catch (IOException e) {return false;}
 		}
+		if(input == null) return false;
 		if(input.startsWith("yes") || input.startsWith("Yes") || input.equals("y") || input.equals("Y"))
+			return true;
+		return false;
+	}
+	
+	public static boolean isObjectClassSubClassOf(Object o, Class<?> c) {
+		if(c.isAssignableFrom(o.getClass())) 
 			return true;
 		return false;
 	}

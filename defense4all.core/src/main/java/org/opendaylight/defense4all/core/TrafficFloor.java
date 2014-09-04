@@ -30,6 +30,7 @@ public class TrafficFloor {
 	public static final String FLOOR_BASE = "floor_base";
 	public static final String FLOOR_CURRENT_HEIGHT = "floor_current_height";	
 	public static final String FLOW_CONFIG_INFO_KEY_PREFIX = "flow_config_info_key_";
+	public static final String STATUS = "status";
 
 	public final static short FLOOR_INVALID = -1;
 	public final static short FLOOR_STEP = 20;
@@ -59,7 +60,14 @@ public class TrafficFloor {
 	public String nodeId;
 	public short  floorBase;
 	public short  floorCurrentHeight;
+	public Status status;
 	public HashMap<String,Object> flowConfigInfoKeys;	
+	
+	public enum Status {
+		ACTIVE,
+		REMOVED
+	}
+
 	
 	public String generateAndSetKey() {		
 		StringBuilder sb = new StringBuilder();
@@ -91,7 +99,7 @@ public class TrafficFloor {
 	 */
 	public TrafficFloor() {		
 		key = null; pnKey = null; nodeLabel = null; nodeId = null; floorBase = FLOOR_INVALID; floorCurrentHeight = floorBase;
-		flowConfigInfoKeys = new HashMap<String,Object>();
+		flowConfigInfoKeys = new HashMap<String,Object>(); status = Status.ACTIVE;
 	}
 	
 	public TrafficFloor(Hashtable<String, Object> row) {
@@ -104,6 +112,7 @@ public class TrafficFloor {
 		nodeId = (String) row.get(NODE_ID);
 		floorBase = (Short) row.get(FLOOR_BASE);
 		floorCurrentHeight= (Short) row.get(FLOOR_CURRENT_HEIGHT);
+		status = Status.valueOf((String) row.get(STATUS));
 		
 		Iterator<Map.Entry<String,Object>> iter = row.entrySet().iterator();
 		Map.Entry<String,Object> entry;
@@ -130,6 +139,7 @@ public class TrafficFloor {
 		row.put(NODE_ID, nodeId);
 		row.put(FLOOR_BASE, floorBase);
 		row.put(FLOOR_CURRENT_HEIGHT, floorCurrentHeight);
+		row.put(STATUS, status.name());
 		Iterator<Map.Entry<String,Object>> iter = flowConfigInfoKeys.entrySet().iterator();
 		String flowConfigInfoKey;
 		while(iter.hasNext()) {
@@ -150,6 +160,7 @@ public class TrafficFloor {
 			rcd = new RepoCD(NODE_ID, StringSerializer.get(), null);		trafficFloorRCDs.add(rcd);
 			rcd = new RepoCD(FLOOR_BASE, ShortSerializer.get(), null);		trafficFloorRCDs.add(rcd);
 			rcd = new RepoCD(FLOOR_CURRENT_HEIGHT, ShortSerializer.get(), null); trafficFloorRCDs.add(rcd);
+			rcd = new RepoCD(STATUS, StringSerializer.get(), null);	 trafficFloorRCDs.add(rcd);
 		}		
 		return trafficFloorRCDs;
 	}

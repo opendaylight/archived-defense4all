@@ -38,4 +38,13 @@ public interface DetectorMgr {
 	 * @throws exception_type circumstances description 
 	 */
 	public void removeDetector(String label) throws ExceptionControlApp;	
+	
+	/**
+	 * Update an  Detector in arepository 
+	 * @param param_name param description
+	 * @return return description
+	 * @throws ExceptionControlApp 
+	 * @throws exception_type circumstances description 
+	 */
+	public void setDetectorProperties(String detectorLabel, String detectorAttr, String value) throws ExceptionControlApp;
 }

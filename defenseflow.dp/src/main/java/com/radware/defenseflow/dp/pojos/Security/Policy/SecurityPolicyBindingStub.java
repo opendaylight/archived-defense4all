@@ -832,7 +832,7 @@ public class SecurityPolicyBindingStub extends org.apache.axis.client.Stub imple
             throw (java.rmi.RemoteException)_resp;
         }
         extractAttachments(_call);
-  } catch (org.apache.axis.AxisFault axisFaultException) {
+  } catch (org.apache.axis.AxisFault axisFaultException ) {
   throw axisFaultException;
 }
     }

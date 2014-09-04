@@ -219,11 +219,11 @@ public class CliAms {
 
 		try {
 			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);	
+			System.out.println("Adding ams " + ams.label);
 			connector.postToControlApps("amss", ams);
 		} catch (Exception e) {
 			System.out.println("Could not add ams because " + e.getMessage());
 		}
-		System.out.println("Adding ams " + ams.label);
 	}
 
 	protected static void addLabel(AMS ams, String param) throws Exception {
@@ -316,23 +316,18 @@ public class CliAms {
 	}
 
 	public static void handleGetAmsCount() {
-		List<AMS> amss;
+		Integer count = 0;
 		try {
-			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);
-			TypeReference<?> typeRef = new TypeReference<List<AMS>>(){};
-			amss = connector.getFromControlApps("amss", typeRef);
+			Defense4allConnector connector = new Defense4allConnector(Cli.user, Cli.password);			
+			TypeReference<?> typeRef = new TypeReference<Integer>(){};
+			count = connector.getFromControlApps("amss/count", typeRef);
+			
 		} catch (Exception e) {
-			System.out.println("Could not get amss because " + e.getMessage());
+			System.out.println("Could not get ams count because " + e.getMessage());
 			return;
 		}
-		if(amss == null || amss.isEmpty()) {
-			System.out.println("0");
-			return;
-		}
-
-		System.out.println("Ams counts:" + amss.size());
-		System.out.println("=================================");
 		
+		System.out.println("There are " + count + " AMSs known to DF.\n");
 	}
 
 	public static void displayUsageRemoveAms() {

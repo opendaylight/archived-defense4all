@@ -26,6 +26,13 @@ import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.Repo;
 
 public class AmsResource {
+
+	public enum AMSResourceStatus {
+		OK,
+		CONFLICT,
+		SERVER_ERROR
+	}
+	
 	private static Log log = LogFactory.getLog(AmsResource.class);
 	
 	@Context
@@ -47,6 +54,7 @@ public class AmsResource {
 			Repo<String> amsRepo = DFHolder.get().amsRepo;
 			log.debug("In getAms. amsRepo is " + amsRepo);
 			Hashtable<String,Object> amsRow = amsRepo.getRow(amsLabel);
+			if(amsRow == null) return null;
 			return new AMS(amsRow);
 		} catch (Throwable e) {
 			log.error("Failed to retrieve pn " + amsLabel, e);			
@@ -55,12 +63,15 @@ public class AmsResource {
 	}
 
 	@DELETE
-	public void deleteAms() {
-		
+	public AMSResourceStatus deleteAms() {
+
 		try {
 			log.debug("DeleteAms: invoked");
-			DFHolder.get().getMgmtPoint().removeAMS(amsLabel);
-		} catch (ExceptionControlApp e) {{/* Ignore. Already logged in DFMgmtPoint. */}}
-	}
-	
+			boolean success = DFHolder.get().getMgmtPoint().removeAMS(amsLabel);
+			return success ? AMSResourceStatus.OK : AMSResourceStatus.CONFLICT;
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to delete AMS " + amsLabel, e);
+			return AMSResourceStatus.SERVER_ERROR;		
+		}
+	}	
 }

@@ -435,8 +435,12 @@ public class FrameworkCli {
 			return;
 		}
 		
-		for (EventRecordData ev:listEvents ) 
-			System.out.println(ev.toString());		
+		if(listEvents == null)
+			System.out.println("No events");
+		else {
+			for (EventRecordData ev:listEvents ) 
+				System.out.println(ev.toString());	
+		}
 	}
 
 	/**
@@ -462,9 +466,13 @@ public class FrameworkCli {
 			System.out.println("Could not get latest events because " + e.getMessage());
 			return;
 		}
-		
-		for (EventRecordData ev:listEvents ) 
-			System.out.println(ev.toString());		
+
+		if(listEvents == null)
+			System.out.println("No events");
+		else {
+			for (EventRecordData ev:listEvents ) 
+				System.out.println(ev.toString());	
+		}		
 	}
 
 	/**

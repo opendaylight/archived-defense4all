@@ -9,21 +9,28 @@
  */
 package org.opendaylight.defense4all.odl.controller;
 
+import java.nio.charset.Charset;
+
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.DefaultHttpClient;
+
 import com.fasterxml.jackson.core.type.TypeReference;	
 import com.fasterxml.jackson.databind.DeserializationFeature;	
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.odl.OdlOFC;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -55,16 +62,21 @@ public class Connector {
 	public void init() throws ExceptionControlApp {
 
 		try {
-			restPrefix = "http://" + odlOFC.hostname + ":" + Integer.toString(odlOFC.port);
+			restPrefix = "http://" + odlOFC.ipAddrString + ":" + Integer.toString(odlOFC.port);
 
 			// set authentication for rest template
 			AuthScope authScope = new AuthScope(odlOFC.hostname, odlOFC.port, AuthScope.ANY_REALM);
 			UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(odlOFC.username,odlOFC.password);
-			DefaultHttpClient client = new DefaultHttpClient();
-			client.getCredentialsProvider().setCredentials(authScope, credentials);
+//			DefaultHttpClient client = new DefaultHttpClient();
+//			client.getCredentialsProvider().setCredentials(authScope, credentials);
 
-			HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(client);
-			restTemplate = new RestTemplate(factory);
+//			HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(client);
+//			restTemplate = new RestTemplate(factory);
+			
+			RestTemplateFactory.INSTANCE.setInsecureSsl(true);
+			restTemplate = RestTemplateFactory.INSTANCE.createRestTemplate(authScope, credentials);
+
+			
 			if(restTemplate == null) throw new Exception("Failed to create restTemplate");
 		} catch (Throwable e) {
 			log.error("Failed to init connector to " + odlOFC.hostname, e);
@@ -81,7 +93,8 @@ public class Connector {
 			String url = mkUrl(urlPrefix);
 			log.debug("Caller: "+getMethodName(2)+" Class:"+typeRef.getType().toString()+" Invoking restTemplate.getForObject"
 					+ "Calling - URL: "+url+" JSON: ");
-			String result = restTemplate.getForObject(url, String.class);
+			String result = //restTemplate.getForObject(url, String.class);
+							restCallWithAutorization(url, "admin", "admin");
 			if(result == null) return null;
 			// Don't print it to log - it may contain non-printable chars
 			// log.debug("Caller: "+getMethodName(2)+" Class:"+typeRef.getType().toString()+" URL: "+url+" JSON: "+result.toString());
@@ -95,6 +108,22 @@ public class Connector {
 		}
 
 		return t;
+	}
+	
+	//TODO: organize and generalize (use ResponseEntity<T>, and factor out authorization header creation).  
+	private String restCallWithAutorization(String url, final String username, final String password){
+		HttpHeaders httpHeaders =  new HttpHeaders(){
+	          {
+	             String auth = username + ":" + password;
+	             byte[] encodedAuth = Base64.encodeBase64(
+	                auth.getBytes(Charset.forName("US-ASCII")) );
+	             String authHeader = "Basic " + new String( encodedAuth );
+	             set( "Authorization", authHeader );
+	          }
+	       };
+	       ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<Object>(httpHeaders), String.class);
+	       String responseObject = response.getBody();	       
+	       return responseObject;
 	}
 
 	protected synchronized void postToController(String urlPrefix, Object object) throws RestClientException {
@@ -136,8 +165,21 @@ public class Connector {
 		}
 
 		log.debug("Caller: " + getMethodName(2) + " JSON: " + jsonStr);
-		HttpHeaders headers = new HttpHeaders();
+						
+		HttpHeaders headers =  new HttpHeaders(){
+	          {
+	            String username = "admin";
+				String password = "admin";
+				String auth = username + ":" + password;
+	             byte[] encodedAuth = Base64.encodeBase64(
+	                auth.getBytes(Charset.forName("US-ASCII")) );
+	             String authHeader = "Basic " + new String( encodedAuth );
+	             set( "Authorization", authHeader );
+	          }
+	       };
 		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		
 		HttpEntity<String> entity = new HttpEntity<String>(jsonStr,headers);
 		return entity;
 	}

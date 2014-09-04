@@ -60,7 +60,7 @@ public class AppRoot {
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void init() throws ExceptionControlApp {
+	public void init(boolean bestEffort) throws ExceptionControlApp {
 		// init all modules
 	}
 
@@ -81,7 +81,7 @@ public class AppRoot {
 	 * @throws ExceptionControlApp 
 	 * @throws exception_type circumstances description 
 	 */
-	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
+	public void reset(ResetLevel bestEffort) throws ExceptionControlApp {
 		// perform factory reset in all modules
 	}
 
@@ -96,4 +96,5 @@ public class AppRoot {
 	}
 
 	public void setHostAddr(String hostAddr) {}
+
 }

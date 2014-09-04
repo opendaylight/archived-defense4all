@@ -15,8 +15,12 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Properties;
 
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.PropertiesSerializer;
 import org.opendaylight.defense4all.framework.core.RepoCD;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
@@ -31,7 +35,8 @@ public class Attack {
 		ENDED
 	}
 	
-	public final static String DF_DETECTOR = "df_detector";
+	static Logger log = LoggerFactory.getLogger(Attack.class);
+
 	
 	/* AttackRepo column names */
 	public static final String KEY 	= "key";
@@ -150,5 +155,38 @@ public class Attack {
 		sb.append("detectionKeys="); sb.append(detectionKeys);
 		sb.append("]");
 		return sb.toString();
+	}
+	
+	public static Attack getAttack(String attackKey) {
+		try {
+			Hashtable<String, Object> AttackRow = DFHolder.get().attacksRepo.getRow(attackKey); 
+			if(AttackRow == null) { 
+				log.error("Got null AttackRow for key " + attackKey);
+				return null;
+			}
+			Attack Attack = new Attack(AttackRow); 
+			return Attack;
+		} catch (Throwable e) {
+			log.error("Failed to get Attack : "+attackKey, e);
+			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			return null;
+		}
+	}
+	
+	public static String getPrintableAttackTarget(String attackKey) {
+		
+		Attack attack = getAttack(attackKey);
+		if ( attack == null ) return "";
+		return 	attack.getPrintableAttackTarget();
+	}
+		
+	public String getPrintableAttackTarget() {	
+		StringBuilder sb = new StringBuilder();
+		if (protocolPort != null ) 
+			sb.append( protocolPort.toPrintableString());
+		sb.append(" traffic for PO " );
+		sb.append(PN.getPrintableKey(pnKey));
+		
+		return sb.toString();		
 	}
 }

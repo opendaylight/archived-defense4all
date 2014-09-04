@@ -2,3 +2,8 @@
 /target
 /.settings
 /.classpath
+/.project
+/webgui/src/main/webapp/node_modules
+/webgui/src/main/webapp/npm-debug.log
+/target
+/target-grunt

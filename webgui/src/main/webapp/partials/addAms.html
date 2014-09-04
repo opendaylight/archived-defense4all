@@ -1,0 +1,104 @@
+<div class="container">
+    <div class="row">
+
+        <div class="col-md-8 col-md-offset-2">
+            <div class="header-template">
+                <h1>Add Attack Mitigation System (AMS)</h1>
+
+                <alert ng-repeat="alert in AMSFormAlerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+
+                <form role="form" name="addAMSForm" class="form-horizontal" valid-submit="save()" novalidate>
+
+                    <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addAMSForm.label.$dirty && addAMSForm.label.$invalid]">
+                        <label class="col-sm-3 control-label" for="label">Name</label>
+                        <div class="col-sm-9">
+                            <input name="label" ng-model="ams.label" ng-maxlength="64" type="text" class="form-control" id="label" placeholder="AMS Label Name" required>
+                            <span class="help-block" ng-show="addAMSForm.label.$dirty && addAMSForm.label.$error.required">AMS name is required.</span>
+                            <span class="help-block" ng-show="addAMSForm.label.$dirty && addAMSForm.label.$error.maxlength">Can't be more than 64 characters long.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" for="brand">Brand</label>
+                        <div class="col-sm-9">
+                            <select ng-model="ams.brand" ng-change="changeBrand()" class="form-control" id="brand" ng-options="brand.value as brand.name for brand in brands">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div ng-show="ams.brand == 'Radware DefensePro'" class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addAMSForm.version.$dirty && addAMSForm.version.$invalid]">
+                        <label class="col-sm-3 control-label" for="version">Version</label>
+                        <div class="col-sm-9">
+                            <input name="version" ng-model="ams.version" ng-maxlength="64" type="text" class="form-control" id="version" placeholder="1.0">
+                            <span class="help-block" ng-show="addAMSForm.version.$dirty && addAMSForm.version.$error.required">Version is required.</span>
+                            <span class="help-block" ng-show="addAMSForm.version.$dirty && addAMSForm.version.$error.maxlength">Can't be more than 64 characters long.</span>
+                        </div>
+                    </div>
+
+                    <div ng-show="ams.brand == 'Radware DefensePro'" class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addAMSForm.mgmtAddr.$dirty && addAMSForm.mgmtAddr.$invalid]">
+                        <label class="col-sm-3 control-label" for="mgmtAddr">IP Address</label>
+                        <div class="col-sm-9">
+                            <input name="mgmtAddr" ng-model="ams.mgmtAddr" ng-required="ams.brand == 'Radware DefensePro'" ng-maxlength="64" ng-pattern="/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/" type="text" class="form-control" id="mgmtAddr" placeholder="100.100.100.100">
+                            <span class="help-block" ng-show="addAMSForm.mgmtAddr.$dirty && addAMSForm.mgmtAddr.$error.required">IP Address is required.</span>
+                            <span class="help-block" ng-show="addAMSForm.mgmtAddr.$dirty && addAMSForm.mgmtAddr.$error.pattern">Invalid IP Address Format.</span>
+                            <span class="help-block" ng-show="addAMSForm.mgmtAddr.$dirty && addAMSForm.mgmtAddr.$error.maxlength">Can't be more than 64 characters long.</span>
+                        </div>
+                    </div>
+
+                    <div ng-show="ams.brand == 'Radware DefensePro'" class="form-group">
+                        <label class="col-sm-3 control-label" for="mgmtPort">Port</label>
+                        <div class="col-sm-9">
+                            <input ng-model="ams.mgmtPort" ng-disabled="true" type="text" class="form-control" id="mgmtPort" ng-init="ams.mgmtPort='0'">
+                        </div>
+                    </div>
+
+                    <div ng-show="ams.brand == 'Radware DefensePro'" class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addAMSForm.username.$dirty && addAMSForm.username.$invalid]">
+                        <label class="col-sm-3 control-label" for="username">Username</label>
+                        <div class="col-sm-9">
+                            <input name="username" ng-model="ams.username" ng-required="ams.brand == 'Radware DefensePro'" type="text" class="form-control" id="username" placeholder="admin">
+                            <span class="help-block" ng-show="addAMSForm.username.$dirty && addAMSForm.username.$error.required">Username is required.</span>
+                            <span class="help-block" ng-show="addAMSForm.username.$dirty && addAMSForm.username.$error.maxlength">Can't be more than 64 characters long.</span>
+                        </div>
+                    </div>
+
+                    <div ng-show="ams.brand == 'Radware DefensePro'" class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addAMSForm.password.$dirty && addAMSForm.password.$invalid]">
+                        <label class="col-sm-3 control-label" for="password">Password</label>
+                        <div class="col-sm-9">
+                            <input name="password" ng-model="ams.password" ng-required="ams.brand == 'Radware DefensePro'" type="password" class="form-control" id="password">
+                            <span class="help-block" ng-show="addAMSForm.password.$dirty && addAMSForm.password.$error.required">Password is required.</span>
+                            <span class="help-block" ng-show="addAMSForm.password.$dirty && addAMSForm.password.$error.maxlength">Can't be more than 64 characters long.</span>
+                        </div>
+                    </div>
+
+                    <div ng-show="ams.brand == 'Radware DefensePro'" class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addAMSForm.confirmpassword.$dirty && addAMSForm.confirmpassword.$invalid]">
+                        <label class="col-sm-3 control-label" for="confirmpassword">Confirm Password</label>
+                        <div class="col-sm-9">
+                            <input ng-model="confirmpassword" ng-required="ams.brand == 'Radware DefensePro'" name="confirmpassword" type="password" class="form-control" id="confirmpassword" data-password-verify="addAMSForm.password">
+                            <span class="help-block" ng-show="addAMSForm.confirmpassword.$dirty && addAMSForm.confirmpassword.$error.required">Confirmation Password is required.</span>
+                            <span class="help-block" ng-show="addAMSForm.confirmpassword.$dirty && addAMSForm.confirmpassword.$error.passwordVerify">Passwords are not equal!</span>
+                            <span class="help-block" ng-show="confirmpassword.$dirty && confirmpassword.$error.maxlength">Can't be more than 64 characters long.</span>
+                        </div>
+                    </div>
+
+                    <div ng-show="ams.brand == 'Radware DefensePro'" class="form-group">
+                        <label class="col-sm-3 control-label" for="healthCheckFrequency">Health Check Interval</label>
+                        <div class="col-sm-9">
+                            <input ng-model="ams.healthCheckFrequency" ng-disabled="true" type="text" class="form-control" id="healthCheckFrequency" ng-init="ams.healthCheckFrequency='60'">
+                        </div>
+                    </div>
+
+                    <div class="form-group pull-right">
+                        <button type="button" class="btn btn-warning" ng-click="cancel()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
+
+
+            </div>
+        </div> <!-- col -->
+    </div> <!-- row -->
+</div> <!-- container -->
+
+
+

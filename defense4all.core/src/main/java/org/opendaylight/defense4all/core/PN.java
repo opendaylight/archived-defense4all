@@ -20,8 +20,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.opendaylight.defense4all.core.NetNode.Status;
+import org.opendaylight.defense4all.core.PO.IpVersion;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
@@ -36,15 +38,14 @@ import me.prettyprint.cassandra.serializers.LongSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 
 
-public class PN {  
+public class PN {
 
-	/**
-	 * ### Description ### 
-	 */
-	public enum IpVersion {		
+	/* Additional pnRepo column names */
+	public enum OperationalStatus {
 		INVALID,
-		IPV4,
-		IPV6
+		CANCELED, 	// Administratively canceled.
+		FAILED, 	// Operationally failed.
+		ACTIVE
 	}
 
 	/* Additional pnRepo column names */
@@ -81,6 +82,7 @@ public class PN {
 	public static final String VIRTUAL_NETWORK_ID = "virtual_network_id";
 	public static final String ANOMALY_RATE_THRESHOLD_PERCENTAGE = "anomaly_rate_threshold_percentage";
 	public static final String NETNODE_PREFIX = "netnode_";
+	public static final String VLAN_PROPERTY_PREFIX = "vlan_property_";
 
 	/* second group is dynamic column names */
 	public static final String AVERAGES = "averages";	
@@ -89,7 +91,7 @@ public class PN {
 	public static final String LATEST_RATES_TIME = "latest_rates_time";
 	public static final String BASELINES_TIME = "baselines_time";
 	public static final String STATS_COLLECTION_STATUS = "stats_collection_status";	
-	public static final String PN_CANCELED = "pn_canceled";
+	public static final String OPERATIONAL_STATUS = "operational_status";
 	public static final String ATTACK_SUSPICIONS = "attack_suspicions";
 	public static final String TRAFFIC_FLOOR_KEY_PREFIX = "traffic_floor_key_";
 
@@ -118,7 +120,7 @@ public class PN {
 	public boolean  ofBasedDetection;
 	public boolean  symmetricDvsn;
 	public long 	anomalyThresholdPercentage;
-	public boolean 	pnCanceled;
+	public OperationalStatus operationalStatus;
 	public String 	attackSuspicions;
 	public MitigationScope mitigationScope;
 	public List<String> trafficFloorKeys;
@@ -162,7 +164,7 @@ public class PN {
 		detectorLabel = ""; props = new Properties(); amsConfigProps = new Properties();
 		thresholdStr = averageStr = latestRateStr = baselineStr = ""; 
 		latestRateTime = baselinesTime = 0; statsCollectionStatus = StatsCollectionStatus.INVALID;
-		ofBasedDetection = false; pnCanceled = false;
+		ofBasedDetection = false; operationalStatus = OperationalStatus.INVALID;
 		mitigationScope = MitigationScope.INVALID; trafficFloorKeys = new ArrayList<String>();
 		netNodeLabels = new ArrayList<String>();
 		symmetricDvsn = true; 
@@ -300,8 +302,8 @@ public class PN {
 			if(obj != null)	baselinesTime = (Long) obj;
 			obj = pnRow.get(STATS_COLLECTION_STATUS);
 			if(obj != null)	statsCollectionStatus = StatsCollectionStatus.valueOf((String) obj);
-			obj = pnRow.get(PN_CANCELED);
-			if(obj != null)	pnCanceled = (Boolean) obj;
+			obj = pnRow.get(OPERATIONAL_STATUS);
+			if(obj != null)	operationalStatus = OperationalStatus.valueOf((String) obj);
 			attackSuspicions = (String) pnRow.get(ATTACK_SUSPICIONS);
 
 			Iterator<Map.Entry<String,Object>> iter = pnRow.entrySet().iterator();
@@ -369,7 +371,7 @@ public class PN {
 			strobj = propsFromFile.getProperty(PROTECTION_SLA) ; if ( strobj != null )
 				protectionSLA = new ProtectionSLA((String) propsFromFile.getProperty(PROTECTION_SLA));
 			strobj= propsFromFile.getProperty(MITIGATION_CONFIRMATION); if ( strobj != null )
-				mitigationConfirmation =  Boolean.valueOf(propsFromFile.getProperty(MITIGATION_CONFIRMATION).toString());
+				mitigationConfirmation =  Boolean.valueOf(propsFromFile.getProperty(MITIGATION_CONFIRMATION));
 			detectorLabel = (String) propsFromFile.getProperty(DETECTOR_LABEL);
 			thresholdStr = (String) propsFromFile.getProperty(THRESHOLDS);
 			averageStr = (String) propsFromFile.getProperty(AVERAGES);
@@ -393,8 +395,8 @@ public class PN {
 			if ( strobj != null ) baselinesTime = Long.valueOf(strobj);
 			strobj = propsFromFile.getProperty(STATS_COLLECTION_STATUS) ; 
 			if ( strobj != null ) statsCollectionStatus = StatsCollectionStatus.valueOf(strobj);
-			strobj = propsFromFile.getProperty(PN_CANCELED); 
-			if ( strobj != null ) pnCanceled = Boolean.valueOf(strobj);
+			strobj = propsFromFile.getProperty(OPERATIONAL_STATUS); 
+			if ( strobj != null ) operationalStatus = OperationalStatus.valueOf(strobj);
 
 			/* Set all netNodes */
 			this.netNodeLabels = netNodeLabels;
@@ -456,7 +458,7 @@ public class PN {
 		row.put(BASELINES_TIME, baselinesTime);
 		row.put(PROPS, props);
 		row.put(STATS_COLLECTION_STATUS, statsCollectionStatus.name());
-		row.put(PN_CANCELED, pnCanceled);
+		row.put(OPERATIONAL_STATUS, operationalStatus.name());
 		row.put(MITIGATION_SCOPE, mitigationScope.name());
 		row.put(ATTACK_SUSPICIONS, attackSuspicions);
 		row.put(OF_BASED_DETECTION, ofBasedDetection);
@@ -488,9 +490,8 @@ public class PN {
 		sb.append("symmetricDvsn="); sb.append(symmetricDvsn); sb.append(", ");
 		sb.append("anomalyThresholdPercentage="); sb.append(anomalyThresholdPercentage); sb.append(", ");
 		sb.append("mitigationScope="); sb.append(mitigationScope); sb.append(", ");
-		sb.append("ofBasedDetection="); sb.append(ofBasedDetection); sb.append(", ");
-		if ( pnCanceled ) {
-			sb.append("pnCanceled="); sb.append(pnCanceled); sb.append(", ");
+		if ( operationalStatus == OperationalStatus.CANCELED || operationalStatus == OperationalStatus.FAILED ) {
+			sb.append("operationalStatus="); sb.append(operationalStatus.name()); sb.append(", ");
 		}
 		for(String netNodeLabel : netNodeLabels) {
 			sb.append("netNodeLabel="); sb.append(netNodeLabel); sb.append(", ");
@@ -551,8 +552,8 @@ public class PN {
 	public StatsCollectionStatus getStatsCollectionStatus() {return statsCollectionStatus;}	
 	public void setStatsCollectionStatus(StatsCollectionStatus scStatus) {this.statsCollectionStatus = scStatus;}
 
-	public boolean getPnCanceled() {return pnCanceled;}
-	public void setPnCanceled(boolean pnCanceled) {this.pnCanceled = pnCanceled;}
+	public OperationalStatus getOperationalStatus() {return operationalStatus;}
+	public void setOperationalStatus(OperationalStatus operationalStatus) {this.operationalStatus = operationalStatus;}
 
 	public MitigationScope getMitigationScope() {return mitigationScope;}
 	public void setMitigationScope(MitigationScope scope) {this.mitigationScope = scope;}
@@ -602,7 +603,7 @@ public class PN {
 			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw new ExceptionControlApp("Failed to obtain NetNodeLabels from netNodesRepo.", e);
 		}
-		
+
 		/* Remove all netNodes marked as removed. */
 		String netNodeStatusStr; Status netNodeStatus;
 		for(String netNodeLabel : netNodeLabels) {
@@ -614,6 +615,26 @@ public class PN {
 				returnNetNodeLabels.add(netNodeLabel);
 		}
 		return returnNetNodeLabels;
+	}
+
+	public void recordVlanInProps(int vlan) {
+		props.setProperty(VLAN_PROPERTY_PREFIX + vlan, String.valueOf(vlan));
+	}
+
+	public int retrieveVlanFromProps() {
+
+		try {
+			Set<Object> keys = props.keySet();
+			String key; int vlan;
+			for(Object keyObj : keys) {
+				key = (String) keyObj;
+				if(key.startsWith(VLAN_PROPERTY_PREFIX)) {
+					vlan = Integer.valueOf(props.getProperty(key));
+					return vlan;
+				}
+			}
+		} catch(Throwable e) { /* */}
+		return 0;
 	}
 
 	public static List<RepoCD> getPNRCDs() {
@@ -637,9 +658,9 @@ public class PN {
 			rcd = new RepoCD(STATS_COLLECTION_STATUS, StringSerializer.get(), null); mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(OF_BASED_DETECTION, BooleanSerializer.get(), null); mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(SYMMETRIC_DVSN, BooleanSerializer.get(), null); mPNsRepoCDs.add(rcd);
-			rcd = new RepoCD(VIRTUAL_NETWORK_ID, BooleanSerializer.get(), null); mPNsRepoCDs.add(rcd);
+			rcd = new RepoCD(VIRTUAL_NETWORK_ID, StringSerializer.get(), null); mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(ANOMALY_RATE_THRESHOLD_PERCENTAGE, BooleanSerializer.get(), null); mPNsRepoCDs.add(rcd);
-			rcd = new RepoCD(PN_CANCELED, BooleanSerializer.get(), null); mPNsRepoCDs.add(rcd);
+			rcd = new RepoCD(OPERATIONAL_STATUS, StringSerializer.get(), null); mPNsRepoCDs.add(rcd);
 			rcd = new RepoCD(MITIGATION_SCOPE, StringSerializer.get(), null); mPNsRepoCDs.add(rcd);
 		}		
 		return mPNsRepoCDs;
@@ -656,5 +677,10 @@ public class PN {
 		if(ipVersion == null || ipVersion == IpVersion.INVALID ) throw new Exception("Invalid IP version.");		
 		if(mitigationScope == null || mitigationScope == MitigationScope.INVALID ) throw new Exception("Invalid Mitigation Scope.");	
 		if( detectorLabel ==null || detectorLabel.isEmpty()) throw new Exception("Invalid detector label.");	 
+	}
+
+	public static String getPrintableKey( String pnKey ) {
+		if (pnKey == null) return null;
+		return pnKey.split("__")[0];
 	}
 }

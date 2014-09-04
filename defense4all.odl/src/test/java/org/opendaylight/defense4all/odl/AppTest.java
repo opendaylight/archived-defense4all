@@ -9,14 +9,7 @@
 
 package org.opendaylight.defense4all.odl;
 
-import java.util.ArrayList;
-
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.log4j.PatternLayout;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -25,13 +18,6 @@ import junit.framework.TestSuite;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.odl.controller.Connector;
 import org.opendaylight.defense4all.odl.controller.FlowEntryMgr;
-import org.opendaylight.defense4all.odl.pojos.FlowStat;
-import org.opendaylight.defense4all.odl.pojos.FlowStatistics;
-import org.opendaylight.defense4all.odl.pojos.NodeProperties;
-import org.opendaylight.defense4all.odl.pojos.Nodes;
-import org.opendaylight.defense4all.odl.pojos.ReceivedFlowConfig;
-import org.opendaylight.defense4all.odl.pojos.SentFlowConfig;
-import org.opendaylight.defense4all.odl.pojos.SentNode;
 
 /**
  * Unit test for simple App.

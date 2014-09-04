@@ -25,7 +25,6 @@ import org.opendaylight.defense4all.core.Mitigation;
 import org.opendaylight.defense4all.core.ProtocolPort;
 import org.opendaylight.defense4all.core.Detection.DetectionConfidence;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
-import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 
@@ -121,8 +120,8 @@ public class DPBasedDetector extends DFAppModule implements Detector {
 			mitigation = new Mitigation(mitigationRow);
 		} catch (Throwable e) {
 			log.error("Excepted trying to retrieve mitigationRow or inflate mitigation " + mitigationKey, e);
-			FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to add monitored through DPs traffic "
-					+ "for mitigation "	+ mitigationKey);
+			//FMHolder.get().getFR().logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to add monitored through DPs traffic "
+			//		+ "for mitigation "	+ mitigationKey);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
 			return;
 		}
@@ -182,8 +181,7 @@ public class DPBasedDetector extends DFAppModule implements Detector {
 		 * attack detection update. */
 		if(attackReport.dpSecEvent.attackStatus.equals("term")) {
 			log.info("DP attack termination syslog" + attackReport.toString());
-			fMain.getFR().logRecord(DFAppRoot.FR_DF_SECURITY, "Received \"attack terminated\" indication from DP. " +
-					"Will let the attack detection fade out for " + attackReport.monitoredTraffic.toString());
+			fMain.getFR().logRecord(DFAppRoot.FR_DF_SECURITY, "Received \"attack terminated\" indication from DP.");
 			return; // Fade out attack detection
 		}
 

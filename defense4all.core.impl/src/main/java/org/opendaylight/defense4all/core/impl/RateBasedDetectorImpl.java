@@ -16,25 +16,23 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.opendaylight.defense4all.core.Attack;
 import org.opendaylight.defense4all.core.CounterStat;
 import org.opendaylight.defense4all.core.DFAppRoot;
 import org.opendaylight.defense4all.core.DFDetector;
 import org.opendaylight.defense4all.core.Detection;
 import org.opendaylight.defense4all.core.DetectorInfo;
-import org.opendaylight.defense4all.core.Mitigation;
 import org.opendaylight.defense4all.core.PN;
-import org.opendaylight.defense4all.core.PNStatReport;
 import org.opendaylight.defense4all.core.ProtocolPort;
-import org.opendaylight.defense4all.core.StatReport;
 import org.opendaylight.defense4all.core.TrafficTuple;
 import org.opendaylight.defense4all.core.CounterStat.Status;
 import org.opendaylight.defense4all.core.Detection.DetectionConfidence;
 import org.opendaylight.defense4all.core.DetectorInfo.DetectorConfidence;
+import org.opendaylight.defense4all.core.interactionstructures.EndDetectionNotification;
+import org.opendaylight.defense4all.core.interactionstructures.PNStatReport;
+import org.opendaylight.defense4all.core.interactionstructures.StatReport;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
 import org.opendaylight.defense4all.framework.core.HealthTracker;
 import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
@@ -56,6 +54,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	protected static final int ACTION_PROCESS_STATS = 1;
 	protected static final int ACTION_REMOVE_PN = 3; // Asynchronously remove PN against other modules
 	private static final int ACTION_PROCESS_BASELINES = 5; // Periodically drop average to PN repo
+	private static final int ACTION_NOTIFY_END_DETECTION = 6;
 
 	DetectorInfo detectorInfo;
 
@@ -75,6 +74,8 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	protected int durationOfDetection = 300;  
 	protected long baselinesProcessingInterval = 0;
 	protected int pnSuspicionsThreshold = 3;
+	protected float bytesIgnoreThreshold = 0;
+	protected float packetsIgnoreThreshold = 0;
 
 	/* Detectors Repo column names */
 	public static final String MOVING_AVERAGE_PERIOD = "moving_average_period";
@@ -87,6 +88,8 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	public static final String BASELINES_PROCESSING_INTERVAL = "baselines_processing_interval";
 	public static final String COUNTER_SUSPICIONS_THRESHOLD = "counter_suspicions_threshold";
 	public static final String PN_SUSPICIONS_THRESHOLD = "pn_suspicions_threshold";
+	public static final String BYTES_IGNORE_THRESHOLD = "bytes_ignore_threshold";
+	public static final String PACKETS_IGNORE_THRESHOLD = "packets_ignore_threshold";
 
 	protected boolean initialized = false;
 
@@ -121,19 +124,21 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	public void setLabel ( String label ) {
 		detectorInfo.setLabel(label);
 	}
+	public void setBytesIgnoreThreshold ( float bytesIgnoreThreshold ) {this.bytesIgnoreThreshold = bytesIgnoreThreshold;}
+	public void setPacketsIgnoreThreshold ( float packetsIgnoreThreshold ) {this.packetsIgnoreThreshold = packetsIgnoreThreshold;}
 
 	/** Post-constructor initialization	 */
 	public void init() throws ExceptionControlApp {
 
 		super.init();
 
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"RateBased Detector is starting");
+		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"Rate based detector starting");
 
 		try {
 			loadCounters();
 		} catch (Throwable e) {
 			log.error("Failed to load data from countersRepo in RateBasedDetector. ", e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"RateBased Detector failed to properly start");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"Rate based detector failed to start");
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);			
 			throw new ExceptionControlApp("Failed to load data from countersRepo in RateBasedDetector. ", e);
 		}
@@ -146,13 +151,13 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 
 	/** Pre-shutdown cleanup */
 	public void finit() {
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"RateBased Detector is stopping");
+		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"Rate-based detector stopping");
 		try {
 			persistCounters();
 		} catch ( Throwable e ) {
 			// log and ignore
 			log.error("Failed to persist data into countersRepo in RateBasedDetector. ", e );
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"RateBased Detector failed to properly stop");
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE,"Rate-based detector failed to stop");
 		}
 		super.finit();
 	}
@@ -161,7 +166,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	 * @throws ExceptionControlApp */
 	public void reset(ResetLevel resetLevel) throws ExceptionControlApp {
 
-		fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"RateBased Detector is resetting to level " + resetLevel);
+		log.info("RateBased Detector is resetting to level " + resetLevel);
 		super.reset(resetLevel);
 
 		pnStatSums.clear();
@@ -209,6 +214,9 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	 * @throws exception_type circumstances description 
 	 */
 	public void addPN(String pnKey) throws ExceptionControlApp {
+		// delete invalidated counters from possible deleted PN
+		cleanup();
+
 		try {
 			dfAppRootFullImpl.statsCollectorImpl.addPN(pnKey);
 		} catch (ExceptionControlApp e) {
@@ -245,12 +253,15 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	protected void decoupledRemovePN(String pnKey) {
 
 		try {
+			invalidatePNcounters(pnKey);
 			dfAppRootFullImpl.attackDecisionPointImpl.removeDetection(pnKey); // if previously notified attack detection for this object - cancel it.
 			dfAppRootFullImpl.statsCollectorImpl.removePN(pnKey);
 		} catch (ExceptionControlApp e) {
 			log.error("Excepted in removing PN from detector " +detectorInfo.label+ " PN key "+ pnKey , e);			
 		}			
 	}
+
+
 
 	/**
 	 * #### method description ####
@@ -345,7 +356,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			/* If warmup - check for end of warmup - into grace */
 			if(cStat.status == Status.WARMUP_PERIOD && cStat.lastReadTime - cStat.firstReadTime > warmupPeriod) {
 				cStat.status = Status.LEARNING_PERIOD;
-				fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"Counter "+cStat.trafficFloorKey+" is in learning period");
+				fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"PO "+PN.getPrintableKey(statReport.pnKey) + " is currently in learning period" );
 				return;
 			}
 
@@ -353,12 +364,13 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			 * Return the latest rate or null if first time reading. */
 			boolean updateAverages = cStat.status == Status.ACTIVE || cStat.status == Status.LEARNING_PERIOD; 
 			float averagePeriod = cStat.status == Status.ACTIVE ? movingAveragePeriod : gracePeriod;
-			cStat.updateStats(statReport, averagePeriod, updateAverages);
+			cStat.updateStats(statReport, averagePeriod, updateAverages,  bytesIgnoreThreshold,  packetsIgnoreThreshold);
 
 			/* If grace - check for end of grace */
 			if(cStat.status == Status.LEARNING_PERIOD && cStat.lastReadTime - cStat.firstReadTime > gracePeriod) {
-				cStat.status = Status.ACTIVE;
-				fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"Counter " + cStat.trafficFloorKey + " is active");
+				cStat.status = Status.ACTIVE;					
+				fr.logRecord(DFAppRoot.FR_DF_OPERATIONAL,"PO "+PN.getPrintableKey(statReport.pnKey) + " is active" );
+
 				// setup initial baselines
 				aggregatePNStat(statReport.pnKey);
 				periodicProcessBaselines();
@@ -375,13 +387,12 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			processPNcheckAttack(statReport.pnKey, pnStatSum);	
 		}  finally {	// Persist to repo. TODO: optimize to do it periodically - according to per-PN calculations.
 			try {
+				cStat.unlock();
 				log.debug("Update counter : "+cStat.toString());
 				dfAppRoot.countersStatsRepo.setRow(cStat.getKey(), cStat.toRow());
 			} catch ( Throwable e) {
 				log.error("Failed to persist counter status for counter "+cStat.getKey());
 				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-			} finally { 		
-				cStat.unlock();
 			}
 		}
 	}
@@ -417,9 +428,9 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		Hashtable<String,Object> pnUpdateCells = new Hashtable<String,Object>();
 		try {
 			pnRow = dfAppRoot.pNsRepo.getRow(pnKey);
-		} catch (ExceptionControlApp e) {
+		} catch (ExceptionControlApp e) {						
 			log.error("Failed to get pnRow from repo for " + pnKey, e);
-			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to process statistics for PN " + pnKey);
+			fr.logRecord(DFAppRoot.FR_DF_FAILURE, "Failed to process statistics for PO " + PN.getPrintableKey(pnKey));
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 			throw e;
 		}
@@ -450,6 +461,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			List<ProtocolPort> attackedProtocolPorts = checkAggrForAttacks(pnStatSum);
 			/* Store updated status to PN repo */
 			pnUpdateCells.put(PN.ATTACK_SUSPICIONS, pnStatSum.serializeStatusData());
+			setSuspicInCounters(pnStatSum);
 
 			if(attackedProtocolPorts == null) return; 
 
@@ -483,26 +495,48 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		Iterator<Map.Entry<String,CounterStat>> iter = counterStats.entrySet().iterator();
 
 		while(iter.hasNext()) {
-			try {
-				counterStat = iter.next().getValue();
-				if ( counterStat == null ) {
-					log.error("Unexpected null counter in detector repo" );
-					fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-					continue;
-				}
+			counterStat = iter.next().getValue();
+			if ( counterStat == null ) {
+				log.error("Unexpected null counter in detector repo" );
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+				continue;
+			}
 
-				counterStat.lock();	
+			counterStat.lock();	
+			try {
 				if(counterStat.pnKey.equals(pnKey) ) {
 					for (ProtocolPort protocolPort:attackedProtocolPorts ) {
 						counterStat.setAttacked(protocolPort.protocol.getProtocolNumber(), protocolPort.port, attacked );  
 					}
 				}
-			}finally {
-				if ( counterStat != null)
-					counterStat.unlock();
+			} catch (Throwable e) {}
+			counterStat.unlock();
+		}
+	}
+
+	protected void setSuspicInCounters( CounterStat statusSum ) {
+		if ( statusSum == null || statusSum.pnKey == null ) return;
+		CounterStat counterStat = null; 
+		Iterator<Map.Entry<String,CounterStat>> iter = counterStats.entrySet().iterator();
+		String pnKey = statusSum.pnKey;
+
+		while(iter.hasNext()) {
+
+			counterStat = iter.next().getValue();
+			if ( counterStat == null ) {
+				log.error("Unexpected null counter in detector repo" );
+				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+				continue;
+			}
+			if(counterStat.pnKey.equals(pnKey) ) {
+				counterStat.lock();	
+				counterStat.copySuspicions(statusSum);
+				counterStat.unlock();
 			}
 		}
 	}
+
+
 
 	protected List<ProtocolPort> checkAggrForAttacks(PNStatSum pnStatSum ) throws ExceptionControlApp {
 
@@ -527,7 +561,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			if (nSuspict > pnSuspicionsThreshold || (nSuspict <= pnSuspicionsThreshold && pnStatSum.isAttacked(protocolPort)))
 				attackedProtocolPorts.add(protocolPort);
 		}	
-		log.debug("Detector :"+detectorInfo.label+" Attacked "+((attackedProtocolPorts!=null)?attackedProtocolPorts.size():null));
+		log.debug("Detector :"+detectorInfo.label+" Attacked "+attackedProtocolPorts.size());
 
 		return attackedProtocolPorts;
 	}
@@ -539,9 +573,10 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		for(ProtocolPort protocolPort : attackedProtocolPorts) {
 			detectionKey = Detection.generateDetectionKey(detectorInfo.label, pnKey, protocolPort);
 			detection = new Detection(detectionKey, detectorInfo.label, DetectionConfidence.VERY_HIGH, currentTime, 
-					durationOfDetection, pnKey, protocolPort);
-			fr.logRecord(DFAppRoot.FR_DF_SECURITY, "OF RateBasedDetector is adding attack detection on PN "
-					+ pnKey + ", protocolPort=" + protocolPort.toString());
+					durationOfDetection, pnKey, protocolPort); 
+			//fr.logRecord(DFAppRoot.FR_DF_SECURITY, "Rate-based detector adding attack detection on "+
+			//		detection.getPrintableDetectionTarget());
+			log.info("Rate-based detector adding attack detection on "+	detection.getPrintableDetectionTarget());
 			dfAppRootFullImpl.attackDecisionPointImpl.addDetection(detection);
 		}
 	}
@@ -552,94 +587,25 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 	 * average.
 	 * @param detectionKey
 	 * @throws ExceptionControlApp 
-	 */
+	 */	
 	@Override
-	public void notifyEndDetection(String detectionKey) {
-
-		Hashtable<String, Object> detectionRow;
+	public void notifyEndDetection(EndDetectionNotification endDetectionNotification) {
 		try {
-			detectionRow = dfAppRootFullImpl.detectionsRepo.getRow(detectionKey);
+			invokeDecoupledSerially(ACTION_NOTIFY_END_DETECTION, endDetectionNotification);
 		} catch (ExceptionControlApp e) {
-			log.error("Failed to get detectionRow from repo for " + detectionKey, e);
-			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-			return;
-		}
+			log.error("Excepted trying to invokeDecoupledSerialiy " + ACTION_NOTIFY_END_DETECTION + " " + 
+					endDetectionNotification.detection.key, e);
+		}		
+	}
 
-		String pnKey = (String) detectionRow.get(Detection.PNKEY); 
-		ProtocolPort protocolPort = new ProtocolPort((String) detectionRow.get( Detection.PROTOCOL_PORT) );
+	public void decoupledNotifyEndDetection(EndDetectionNotification endDetectionNotification) {
+
+		String pnKey = endDetectionNotification.detection.pnKey; 
+		ProtocolPort protocolPort = endDetectionNotification.detection.protocolPort;
 
 		// invalidate counters for case zero stat was not send
-		// find traffic floor from detection via attack and mitigation
-		Hashtable<String, Hashtable<String, Object>> attackTable;
-		try {
-			attackTable = dfAppRootFullImpl.attacksRepo.getTable();
-		} catch (Throwable e1) {
-			log.error("Failed to get attacksRepo table " , e1);
-			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-			return;
-		}		
-		Hashtable<String,Object> attackRow;  Attack attack = null; 
-		Iterator<Map.Entry<String,Hashtable<String,Object>>> iterAttack = attackTable.entrySet().iterator();
-		Map.Entry<String,Hashtable<String,Object>> entry;
-		String mitigationKey = null;
-
-		while(iterAttack.hasNext()) {		
-			entry = iterAttack.next();
-			attackRow = entry.getValue();
-			attack = new Attack(attackRow);
-			if(!attack.pnKey.equals(pnKey)) 
-				continue;
-
-			Set<Entry<Object, Object>> detectionsOfAttack = attack.detectionKeys.entrySet() ;
-			if ( detectionsOfAttack == null) return;
-			Iterator<Map.Entry<Object,Object>> iterDetectionsOfAttack = detectionsOfAttack.iterator();
-			while(iterDetectionsOfAttack.hasNext()) {
-				// look-up over detection_keys properties of attack
-				if ( detectionKey.equals( (String) iterDetectionsOfAttack.next().getKey()) ){
-					// found relevant attack, take the mitigation
-					mitigationKey = attack.mitigationKey;
-					break;
-				}
-			}
-
-			if ( mitigationKey != null )
-				break;
-		}
-
-		// if found mitigation - take traffic floor if any
-		String mitigationTrafficFloor = null;
-		if ( mitigationKey != null ) {
-			try {
-				Hashtable<String,Object> mitigationRow = dfAppRoot.mitigationsRepo.getRow(mitigationKey);
-				Mitigation mitigation = new Mitigation(mitigationRow);
-				if(mitigation.trafficFloorKeys != null && !mitigation.trafficFloorKeys.isEmpty())
-					mitigationTrafficFloor = mitigation.trafficFloorKeys.get(0); 
-			} catch (Throwable e) {
-				log.error("Failed to lookup mitigationTrafficFloor over mitigationsRepo for mitigationKey "+mitigationKey);
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-				return;
-			} 
-		}
-
-		/* Find counters used for mitigated traffic by mitigationKey and pnKey */
-		if ( mitigationTrafficFloor != null ) {
-			CounterStat cStat = null;
-			try {
-				String mitigationCounterStatKey = CounterStat.generateKey(mitigationTrafficFloor);
-				cStat = counterStats.get(mitigationCounterStatKey);
-				if(cStat != null) {
-					cStat.lock();
-					cStat.status = Status.INVALID;
-					cStat.updateStatsWithZero();
-					dfAppRoot.countersStatsRepo.setRow(cStat.getKey(), cStat.toRow());
-				}
-			} catch (Throwable e) {
-				String cStatInfo = (cStat == null) ? "" : cStat.getKey();
-				log.error("Failed to set invalid state to PN counter " + cStatInfo);
-				fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-			} finally {
-				if(cStat != null) cStat.unlock();
-			}
+		for ( String mitigationTrafficFloor : endDetectionNotification.trafficFloorKeys ) {
+			invalidateTrafficFloorCounters (mitigationTrafficFloor);
 		}	
 
 		List<ProtocolPort> protoPorts = new ArrayList<ProtocolPort>();
@@ -652,9 +618,52 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 			status.loadStatusData (statusOfPNSuspicions );
 			status.setAttacked( protocolPort.protocol.getProtocolNumber(), protocolPort.port, false);
 			status.setAttackSuspicions(protocolPort.protocol.getProtocolNumber(), protocolPort.port, 0);
+			setSuspicInCounters(status);
 			dfAppRootFullImpl.pNsRepo.setCell(pnKey, PN.ATTACK_SUSPICIONS, status.serializeStatusData());
 		} catch (Throwable e) {
 			log.error("Failed to update PN attack status for prtocolPort " + protocolPort.toString());
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+		}
+	}
+
+	private void invalidatePNcounters(String pnKey) throws ExceptionControlApp {
+		/* Retrieve all qualifiedCounterNames from OFC and PNs repo */	
+		Hashtable<String, Object> pnRow;
+		try {
+			pnRow = dfAppRootFullImpl.pNsRepo.getRow(pnKey);
+		} catch (Throwable e) {
+			log.error("Failed to get pnRow from pNsRepo ", e );
+			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to get pnRow from pNsRepo ", e );
+		}
+
+		Iterator<Map.Entry<String,Object>> iter = pnRow.entrySet().iterator();
+		Map.Entry<String,Object> entry; String trafficFloorKey;
+		while(iter.hasNext()) {
+			entry = iter.next();
+			if(! entry.getKey().startsWith(PN.TRAFFIC_FLOOR_KEY_PREFIX)) continue;
+			trafficFloorKey = (String) (entry.getValue());
+			invalidateTrafficFloorCounters( trafficFloorKey);
+		}
+	}
+
+	private void invalidateTrafficFloorCounters(String trafficFloorKey) {
+		CounterStat cStat = null;
+		try {
+			String mitigationCounterStatKey = CounterStat.generateKey(trafficFloorKey);
+			cStat = counterStats.get(mitigationCounterStatKey);
+			if(cStat != null) {
+				cStat.lock();
+				cStat.status = Status.INVALID;
+				try {
+					cStat.updateStatsWithZero();
+				} catch (Throwable e) {}
+				cStat.unlock();
+				dfAppRoot.countersStatsRepo.setRow(cStat.getKey(), cStat.toRow());
+			}
+		} catch (Throwable e) {
+			String cStatInfo = (cStat == null) ? "" : cStat.getKey();
+			log.error("Failed to set invalid state to PN counter " + cStatInfo);
 			fMain.getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
 		}
 	}
@@ -759,7 +768,7 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 					pnUpdateCells.put(PN.BASELINES, averageStr);
 					pnUpdateCells.put(PN.BASELINES_TIME, currentTime);
 					dfAppRoot.pNsRepo.setRow(pnKey, pnUpdateCells);					
-					fr.logRecord(DFAppRoot.FR_DF_SECURITY,"Baselines for PN " + pnKey + ": " + averageStr);
+					//fr.logRecord(DFAppRoot.FR_DF_SECURITY,"Baselines for PN " + pnKey + ": " + averageStr);
 				} catch (ExceptionControlApp e) {
 					log.error("Excepted trying to update baselines for pnRow. " + pnKey, e);
 					fMain.getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
@@ -792,6 +801,8 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		row.put(RateBasedDetectorImpl.DURATION_OF_DETECTION ,durationOfDetection);
 		row.put(RateBasedDetectorImpl.BASELINES_PROCESSING_INTERVAL ,baselinesProcessingInterval);
 		row.put(RateBasedDetectorImpl.PN_SUSPICIONS_THRESHOLD ,pnSuspicionsThreshold);
+		row.put(RateBasedDetectorImpl.BYTES_IGNORE_THRESHOLD, bytesIgnoreThreshold );
+		row.put(RateBasedDetectorImpl.PACKETS_IGNORE_THRESHOLD, packetsIgnoreThreshold );
 
 		return row;
 	}
@@ -817,16 +828,34 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		if ( obj != null ) baselinesProcessingInterval = Long.valueOf(obj.toString());
 		obj = row.get(PN_SUSPICIONS_THRESHOLD); 
 		if ( obj != null ) pnSuspicionsThreshold = Integer.valueOf(obj.toString());
+		obj = row.get(BYTES_IGNORE_THRESHOLD); 
+		if ( obj != null ) bytesIgnoreThreshold = Float.valueOf(obj.toString());
+		obj = row.get(PACKETS_IGNORE_THRESHOLD); 
+		if ( obj != null ) packetsIgnoreThreshold = Float.valueOf(obj.toString());
 	}
 
 	@Override
 	public PNStatReport getLatestPNStatReport(String pnKey) {
 
 		if(pnKey == null) return new PNStatReport();
-		
+
 		PNStatSum pnStatSum = pnStatSums.get(pnKey);
 		PNStatReport pnStatReport = new PNStatReport(pnStatSum);
 		return pnStatReport;
+	}
+
+	@Override
+	public List<PNStatReport> getLatestPNStatReports() {
+
+		List<PNStatReport> pnStatReports = new ArrayList<PNStatReport>();		
+		Iterator<Map.Entry<String,PNStatSum>> iter = pnStatSums.entrySet().iterator();
+		PNStatReport pnStatReport; PNStatSum pnStatSum;
+		while(iter.hasNext()) {
+			pnStatSum = iter.next().getValue();
+			pnStatReport = new PNStatReport(pnStatSum);
+			pnStatReports.add(pnStatReport);
+		}
+		return pnStatReports;
 	}
 
 	@Override
@@ -844,7 +873,11 @@ public class RateBasedDetectorImpl extends DFAppCoreModule implements DFDetector
 		case ACTION_REMOVE_PN:
 			decoupledRemovePN((String) param);
 			break;
+		case ACTION_NOTIFY_END_DETECTION:
+			decoupledNotifyEndDetection((EndDetectionNotification) param);
+			break;
 		default:
 		}
 	}
 }
+

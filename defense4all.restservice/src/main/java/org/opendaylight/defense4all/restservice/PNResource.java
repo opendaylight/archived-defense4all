@@ -33,6 +33,12 @@ import org.opendaylight.defense4all.framework.core.Repo;
 
 
 public class PNResource {
+	
+	public enum PNResourceStatus {
+		OK,
+		CONFLICT,
+		SERVER_ERROR
+	}
 
 	private static Log log = LogFactory.getLog(PNResource.class);
 
@@ -54,6 +60,7 @@ public class PNResource {
 			log.debug("In getPN. PN label is " + pnLabel);
 			Repo<String> pNsRepo = DFHolder.get().pNsRepo;
 			Hashtable<String,Object> pnRow = pNsRepo.getRow(pnLabel);
+			if(pnRow == null) return null;
 			return new PN(pnRow);
 		} catch (ExceptionControlApp e) {
 			log.error("Failed to retrieve pn " + pnLabel, e);
@@ -83,10 +90,15 @@ public class PNResource {
 	}
 
 	@DELETE
-	public void deletePN() {		
+	public PNResourceStatus deletePN() {
+		
 		try {
 			log.debug("DeletePN: invoked");
-			DFHolder.get().getMgmtPoint().removePN(pnLabel);
-		} catch (ExceptionControlApp e) {/* Ignore. Already logged in DFMgmtPoint. */}
+			boolean success = DFHolder.get().getMgmtPoint().removePN(pnLabel);
+			return success ? PNResourceStatus.OK : PNResourceStatus.CONFLICT;
+		} catch (ExceptionControlApp e) {
+			log.error("Failed to delete pn " + pnLabel, e);
+			return PNResourceStatus.SERVER_ERROR;		
+		}
 	}
 }

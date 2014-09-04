@@ -56,7 +56,8 @@ fi
 
 exec_jar=`ls $DEFENSE4ALL_HOME/lib/df.aggregate*jar 2>&1`
 restservice_war=`ls $DEFENSE4ALL_HOME/lib/restservice*war 2>&1`
-if [ -z "$exec_jar" -o -z "$restservice_war" ]
+webgui_war=`ls $DEFENSE4ALL_HOME/lib/webgui*war 2>&1`
+if [ -z "$exec_jar" -o -z "$restservice_war" -o -z "$webgui_war" ]
 then
    echo "Defense4all installation is not found"
    exit -1
@@ -135,6 +136,7 @@ do_start()
 	
 	su $DEFENSE4ALL_USER -c "/usr/bin/nohup $JAVA_HOME/bin/java \
                                  -DrestWarPath=$restservice_war \
+                                 -DguiWarPath=$webgui_war \
                                  -jar $exec_jar >> $OUTFILE 2>&1 & \
                                   echo \$! > $PIDFILE"
     

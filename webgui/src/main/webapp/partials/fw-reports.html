@@ -1,0 +1,93 @@
+<div class="container">
+
+    <div class="header-template">
+        <h1>Framework Reports</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+
+            <div class="well">
+
+                <div class="row">
+                        <div class="col-md-6" ng-controller="DatepickerCtrl">
+
+                            <label for="fromDate">From:</label>
+
+                            <div class="row" ng-controller="DatepickerCtrl">
+                                <div class="col-md-6">
+                                    <p class="input-group">
+                                        <input id="fromDate" type="text" class="form-control" datepicker-popup="{{format}}" ng-model="timePeriod.fromDate" is-open="opened" min-date="minDate" max-date="maxDate" datepicker-options="dateOptions" date-disabled="disabled(date, mode)" ng-required="true" close-text="Close" />
+                                          <span class="input-group-btn">
+                                            <button type="button" class="btn btn-default" ng-click="open($event)"><i class="glyphicon glyphicon-calendar"></i></button>
+                                          </span>
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6" ng-controller="DatepickerCtrl">
+
+                            <label for="toDate">To:</label>
+
+                            <div class="row" ng-controller="DatepickerCtrl">
+                                <div class="col-md-6">
+                                    <p class="input-group">
+                                        <input id="toDate" type="text" class="form-control" datepicker-popup="{{format}}" ng-model="timePeriod.toDate" is-open="opened" min-date="minDate" max-date="maxDate" datepicker-options="dateOptions" date-disabled="disabled(date, mode)" ng-required="true" close-text="Close" />
+                                          <span class="input-group-btn">
+                                            <button type="button" class="btn btn-default" ng-click="open($event)"><i class="glyphicon glyphicon-calendar"></i></button>
+                                          </span>
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                </div>
+
+                <br>
+
+                <strong>Event Types:</strong>&nbsp;
+                <label class="checkbox-inline" ng-repeat="evType in evTypes">
+                    <input
+                            type="checkbox"
+                            name="evTypesSelection[]"
+                            value="{{evType.value}}"
+                            ng-checked="evTypesSelection.indexOf(evType.value) > -1"
+                            ng-click="toggleSelection(evType)"
+                            > {{evType.display}}
+                </label>
+
+                <button class="btn btn-primary pull-right" ng-click="refresh()">Refresh</button>
+
+            </div>
+
+
+
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-md-12">
+            <table class="table table-striped table-bordered">
+                <thead>
+                <th>Time</th>
+                <th>Event Type</th>
+                <th>Data</th>
+                </thead>
+                <tr ng-repeat="record in records">
+                    <td>{{record.eventTime | date:'MM/dd/yyyy HH:mm:ss'}}</td>
+                    <td>{{record.eventType | eventTypeDisplay}}</td>
+                    <td>{{record.eventData}}</td>
+                </tr>
+            </table>
+
+            <h3 ng-show="!records.length">No events</h3>
+
+        </div>
+    </div>
+
+
+ </div>

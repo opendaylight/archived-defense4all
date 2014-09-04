@@ -28,7 +28,7 @@ import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 @Path("/")
 public class FrameworkRestService {
 
-	private static Logger log = LoggerFactory.getLogger(FrameworkRestService.class);
+	private static Logger log = LoggerFactory.getLogger("org.opendaylight.defense4all.restservice");
 
 	@Context
 	UriInfo uriInfo;
@@ -38,9 +38,18 @@ public class FrameworkRestService {
 	@GET
 	@Path("hostaddress")
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getHostAddress() {
+	public String getHostAddress(@Context HttpServletResponse servletResponse) {
 
 		log.debug("getHostaddress: invoked");
+		if ( ! FMHolder.get().isOpenForBusiness() ) {
+			try {
+				servletResponse.sendError(503, "Service is unavailable" ); 
+			} catch (Throwable e) {
+				log.error("Error in response "+e);
+			}
+			return null;
+		}
+
 		String hostaddress = FMHolder.get().getHostAddr();
 		return hostaddress;
 	}
@@ -52,6 +61,12 @@ public class FrameworkRestService {
 	public void setHostAddress(String hostaddress, @Context HttpServletResponse servletResponse) throws Exception {
 
 		log.debug("setHostAddress: invoked");
+
+		if ( ! FMHolder.get().isOpenForBusiness() ) {
+			servletResponse.sendError(503, "Service is unavailable" ); 
+			return ;
+		}
+
 		if (hostaddress == null || hostaddress.isEmpty()) {
 			log.debug("setHostaddress: hostaddress is null or empty.");
 			servletResponse.sendError(400);

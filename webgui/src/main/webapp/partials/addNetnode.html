@@ -1,0 +1,210 @@
+<div class="container">
+<div class="row">
+
+<div class="col-md-8 col-md-offset-2">
+<div class="header-template">
+<h1>Add Net Node</h1>
+
+<alert ng-repeat="alert in NNFormAlerts" type="alert.type" close="closeAlert($index)">{{alert.msg}}</alert>
+
+<form role="form" name="NetNodesForm" class="form-horizontal" valid-submit="save()" novalidate>
+
+    <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[NetNodesForm.label.$dirty && NetNodesForm.label.$invalid]">
+        <label class="col-sm-3 control-label" for="label">Name</label>
+        <div class="col-sm-9">
+            <input name="label" ng-model="node.label" ng-maxlength="64" type="text" class="form-control" id="label" placeholder="Net Element Label" required>
+            <span class="help-block" ng-show="NetNodesForm.label.$dirty && NetNodesForm.label.$error.required">Name is required.</span>
+            <span class="help-block" ng-show="NetNodesForm.label.$dirty && NetNodesForm.label.$error.maxlength">Can't be more than 64 characters long.</span>
+        </div>
+    </div>
+
+
+    <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[NetNodesForm.id.$dirty && NetNodesForm.id.$invalid]">
+        <label class="col-sm-3 control-label" for="id">ID</label>
+        <div class="col-sm-9">
+            <!-- Sagi: change start -->
+            <input name="id" ng-model="node.id" ng-maxlength="64" type="text" class="form-control" id="id" required>
+            <!-- Sagi: change ends -->
+            <span class="help-block" ng-show="NetNodesForm.id.$dirty && NetNodesForm.id.$error.required">ID is required.</span>
+            <span class="help-block" ng-show="NetNodesForm.id.$dirty && NetNodesForm.id.$error.pattern">Invalid ID Format.</span>
+            <span class="help-block" ng-show="NetNodesForm.id.$dirty && NetNodesForm.id.$error.maxlength">Can't be more than 64 characters long.</span>
+        </div>
+    </div>
+
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="type">Type</label>
+        <div class="col-sm-9">
+            <input ng-model="node.type" type="text" class="form-control" id="type" ng-disabled="true" ng-init="node.type='Openflow'">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="sdnNodeMode">SDN Node Mode</label>
+        <div class="col-sm-9">
+            <input ng-model="node.sdnNodeMode" type="text" class="form-control" id="sdnNodeMode" ng-disabled="true" ng-init="node.sdnNodeMode='sdnenablednative'">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="healthCheckFrequency">Health Check Interval</label>
+        <div class="col-sm-9">
+            <input ng-model="node.healthCheckFrequency" ng-disabled="true" type="text" class="form-control" id="healthCheckFrequency" ng-init="node.healthCheckFrequency='60'">
+        </div>
+    </div>
+
+
+
+    <div ng-controller="AddProtectedLinksModalController">
+
+        <h4>
+            Protected Links&nbsp;&nbsp;&nbsp;<button type="button" class="btn btn-primary" ng-click="open()">Add</button>
+        </h4>
+
+        <script type="text/ng-template" id="AddProtectedLinksModalContent.html">
+            <div class="modal-header">
+                <h3>Add Protected Link</h3>
+            </div>
+            <form id="ProtectedLinkForm" name="ProtectedLinkForm" role="form" class="form-horizontal" novalidate>
+                <div class="modal-body">
+
+                    <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$invalid]">
+
+                        <label class="control-label" for="incoming">Incoming Traffic Port</label>
+                        <div>
+                            <input app-type="number" app-min="0" app-max="4095" class="form-control" ng-model="linkToAdd.incoming" id="incoming" name="incoming" nomatch="outgoing" required>
+                            <span class="help-block" ng-show="ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$error.required">Incoming link is required.</span>
+                            <span class="help-block" ng-show="ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$error.number">Must be a whole positive number.</span>
+                            <span class="help-block" ng-show="ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$error.min">Minimum allowed value is 0.</span>
+                            <span class="help-block" ng-show="ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$error.max">Maximum allowed value is 4095.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[ProtectedLinkForm.outgoing.$dirty && ProtectedLinkForm.outgoing.$invalid]">
+
+                        <label class="control-label" for="outgoing">Outgoing Traffic Port</label>
+                        <div>
+                            <input app-type="number" app-min="0" app-max="4095" class="form-control" ng-model="linkToAdd.outgoing" id="outgoing" name="outgoing" required>
+                            <span class="help-block" ng-show="ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$error.required">Outgoing link is required.</span>
+                            <span class="help-block" ng-show="ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$error.number">Must be a whole positive number.</span>
+                            <span class="help-block" ng-show="ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$error.min">Minimum allowed value is 0.</span>
+                            <span class="help-block" ng-show="ProtectedLinkForm.incoming.$dirty && ProtectedLinkForm.incoming.$error.max">Maximum allowed value is 4095.</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+                    <button class="btn btn-primary" ng-disabled="ProtectedLinkForm.$invalid" ng-click="ok(linkToAdd)" type="submit">OK</button>
+                </div>
+            </form>
+        </script>
+
+
+        <table class="table table-bordered table-condensed">
+            <thead>
+            <th>Incoming Traffic Ports</th>
+            <th>Outgoing Traffic Ports</th>
+            <th></th>
+            </thead>
+            <tr ng-repeat="linkToAdd in linksToAdd">
+                <td>{{linkToAdd.incoming}}</td>
+                <td>{{linkToAdd.outgoing}}</td>
+                <td><button class="btn btn-danger" ng-click="remove(linkToAdd)">Remove</button></td>
+            </tr>
+
+        </table>
+    </div>
+
+
+
+    <div ng-controller="AddAmsConnModalController">
+
+        <h4>
+            AMS Connections &nbsp;&nbsp;&nbsp;<button type="button" class="btn btn-primary" ng-click="open()">Add</button>
+        </h4>
+
+        <script type="text/ng-template" id="AddAmsConnModalContent.html">
+            <div class="modal-header">
+                <h3>Add AMS Connection</h3>
+            </div>
+            <form id="AMSConnsForm" name="AMSConnsForm" role="form" class="form-horizontal">
+                <div class="modal-body">
+
+                    <label class="control-label" for="name">Name</label>
+                    <div>
+                        <input type="text" class="form-control" ng-model="connToAdd.name" id="name" required>
+                    </div>
+
+                    <label class="control-label" for="amsname">AMS Name</label>
+                    <div>
+                        <input type="text" class="form-control" ng-model="connToAdd.amsname" id="amsname" required>
+                    </div>
+
+                    <label class="control-label" for="nnnorthport">NetNode North Port</label>
+                    <div >
+                        <input type="text" class="form-control" ng-model="connToAdd.nnnorthport" id="nnnorthport" required>
+                    </div>
+
+                    <label class="control-label" for="nnsouthport">NetNode South Port</label>
+                    <div>
+                        <input type="text" class="form-control" ng-model="connToAdd.nnsouthport" id="nnsouthport" required>
+                    </div>
+
+                    <label class="control-label" for="amsnorthport">AMS North Port</label>
+                    <div >
+                        <input type="text" class="form-control" ng-model="connToAdd.amsnorthport" id="amsnorthport">
+                    </div>
+
+                    <label class="control-label" for="amssouthport">AMS South Port</label>
+                    <div>
+                        <input type="text" class="form-control" ng-model="connToAdd.amssouthport" id="amssouthport">
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+                    <button class="btn btn-primary" ng-disabled="AMSConnsForm.$invalid" ng-click="ok(connToAdd)" type="submit">OK</button>
+                </div>
+            </form>
+        </script>
+
+
+        <table class="table table-bordered">
+            <thead>
+            <th>Name</th>
+            <th>AMS Name</th>
+            <th>NetNode North Port</th>
+            <th>NetNode South Port</th>
+            <th>AMS North Port</th>
+            <th>AMS South Port</th>
+            <th></th>
+            </thead>
+            <tr ng-repeat="connToAdd in connsToAdd">
+                <td>{{connToAdd.name}}</td>
+                <td>{{connToAdd.amsname}}</td>
+                <td>{{connToAdd.nnnorthport}}</td>
+                <td>{{connToAdd.nnsouthport}}</td>
+                <td>{{connToAdd.amsnorthport}}</td>
+                <td>{{connToAdd.amssouthport}}</td>
+                <td><button class="btn btn-danger" ng-click="remove(connToAdd)">Remove</button></td>
+            </tr>
+
+        </table>
+    </div>
+
+    <div class="form-group pull-right">
+        <button type="button" class="btn btn-warning" ng-click="cancel()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+</form>
+
+</div>
+</div> <!-- col -->
+</div> <!-- row -->
+</div> <!-- container -->
+
+
+

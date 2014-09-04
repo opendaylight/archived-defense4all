@@ -18,7 +18,6 @@ import java.util.Map.Entry;
 import org.opendaylight.defense4all.framework.core.AppRoot;
 import org.opendaylight.defense4all.framework.core.EM;
 import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
-import org.opendaylight.defense4all.framework.core.ExceptionEntityExists;
 import org.opendaylight.defense4all.framework.core.FrameworkMain;
 import org.opendaylight.defense4all.framework.core.Repo;
 import org.opendaylight.defense4all.framework.core.RepoCD;
@@ -92,13 +91,7 @@ public class UsageExamples {
 		Repo<Integer> repo = null;
 		try {
 			repo =  fMain.getRepoFactory().getOrCreateRepo("MajorRepo", "MinorRepo", appRoot.iSerializer, true, cds);
-		} catch (IllegalArgumentException e) {
-			System.out.println(e); return;
-		} catch (ExceptionEntityExists e) {
-			System.out.println(e); return;
-		} catch (ExceptionControlApp e) {
-			System.out.println(e); return;
-		}
+		} catch (Throwable e) {System.out.println(e); return;}
 
 		cd = new RepoCD("cFly1", appRoot.sSer, null);
 		repo.addColumnDescription(cd);
