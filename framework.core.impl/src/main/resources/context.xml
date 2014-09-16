@@ -17,8 +17,8 @@
 		<property name="stateClassPaths" value="org.opendaylight.defense4all.framework.core.impl" />
 		<property name="port" value="8086" />
 		<!-- next value is for eclipse running. should be different for single jar -->
-		<property name="restWarPath" value="../../../restservice/target/restservice-1.0.12.war" />
-		<property name="guiWarPath" value="../../../webgui/target/webgui-1.0.12.war" />
+		<property name="restWarPath" value="../../../restservice/target/restservice-1.0.14-SNAPSHOT.war" />
+		<property name="guiWarPath" value="../../../webgui/target/webgui-1.0.14-SNAPSHOT.war" />
 		<property name="restPath" value="/" />
 		<property name="guiPath" value="/controlapps" />
 		<property name="appRoot" ref="appRoot" /> 	<!--	The actual integrated application -->

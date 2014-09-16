@@ -14,7 +14,7 @@
   <parent>
     <groupId>org.opendaylight.defense4all</groupId>
     <artifactId>dfapp</artifactId>
-    <version>1.0.12</version>
+    <version>1.0.14-SNAPSHOT</version>
     <relativePath>../dfapp/pom.xml</relativePath>
   </parent>
   
@@ -22,14 +22,14 @@
   	<dependency>
   		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>defense4all.core</artifactId>
-  		<version>1.0.12</version>
+  		<version>1.0.14-SNAPSHOT</version>
   	</dependency>
   	<!--
   	 -->
       <dependency>
   		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>defense4all.odl</artifactId>
-  		<version>1.0.12</version>
+  		<version>1.0.14-SNAPSHOT</version>
   		<scope>runtime</scope>  		
   	</dependency>
       <!-- -->
@@ -45,13 +45,13 @@
  	<dependency>
   		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>defenseflow.dp</artifactId>
-  		<version>1.0.12</version>
+  		<version>1.0.14-SNAPSHOT</version>
   		<scope>runtime</scope>  		
   	</dependency>
   	<dependency>
   		<groupId>org.opendaylight.defense4all</groupId>
   		<artifactId>defense4all.mitigationdriver.local</artifactId>
-  		<version>1.0.12</version>
+  		<version>1.0.14-SNAPSHOT</version>
   	</dependency>
 
     <dependency>

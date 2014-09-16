@@ -1,7 +1,7 @@
 {
     "name": "defenseflow-webui",
-    "description": "DefenseFlow front-end application used for user friendly UI experience",
-    "version": "1.0.12",
+    "description": "Defense4All front-end application used for user friendly UI experience",
+    "version": "1.0.14",
     "author": "Radware, Inc.",
     "devDependencies": {
         "grunt": "~0.4.1",
