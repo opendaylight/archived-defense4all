@@ -61,6 +61,7 @@
                         <th>Port</th>
                         <th>Admin User</th>
                         <th>Statistics Polling Interval</th>
+                        <th></th>
                         </thead>
 
                         <tr ng-repeat="ofc in ofcs">
@@ -69,7 +70,7 @@
                             <td>{{ofc.port}}</td>
                             <td>{{ofc.username}}</td>
                             <td>{{ofc.ofcStatsCollectionInterval}}</td>
-
+                            <td> <button class="btn btn-danger" ng-click="deleteSdn(ofc.hostname, $event)">Delete</button> </td>
                         </tr>
 
                     </table>
@@ -152,11 +153,18 @@
                                 <tr ng-repeat="link in node.portsLinks">
                                     <td>{{link.northPort}}</td>
                                     <td>{{link.southPort}}</td>
+                                    <td><img class="linkstatus" ng-src="img/{{linkStatus(link, node.ports)}}.png"></td>
                                 </tr>
                             </table>
                         </td>
-                        <td>{{numberOfAmss(node.amsConnectionsStr)}}
-                            <img ng-src="img/{{amssStatus(node.amsConnectionsStr)}}.png">
+                        <td>
+                            <!--{{numberOfAmss(node.amsConnectionsStr)}}-->
+                            <table class="table table-bordered table-condensed">
+                                <th>Status</th>
+                                <th>Details</th>
+                                <tr>
+                                    <td><img class="linkstatus" ng-src="img/{{amssStatus(node.amsConnectionsStr)}}.png"></td>
+                                    <td>
                             <div ng-controller="AmsConnModalController">
                                 <script type="text/ng-template" id="amsConnModalContent.html">
                                     <div class="modal-header">
@@ -180,8 +188,10 @@
                                                 <td>{{amsConn.amsname}}</td>
                                                 <td>{{amsConn.nnnorthport}}</td>
                                                 <td>{{amsConn.nnsouthport}}</td>
-                                                <td>{{amsConn.amsnorthport}}</td>
-                                                <td>{{amsConn.amssouthport}}</td>
+                                                <td ng-show="amsConn.brand == 'Radware DefensePro'">{{amsConn.amsnorthport}}</td>
+                                                <td ng-show="amsConn.brand == 'Radware DefensePro'">{{amsConn.amssouthport}}</td>
+                                                <td ng-show="amsConn.brand == 'Other'"></td>
+                                                <td ng-show="amsConn.brand == 'Other'"></td>
                                                 <td>{{amsConn.status}}</td>
                                             </tr>
 
@@ -196,6 +206,8 @@
                                 <button ng-show="numberOfAmss(node.amsConnectionsStr)>0" class="btn btn-default btn-sm" ng-click="open(node.amsConnectionsStr)">View</button>
 
                             </div>
+                           </td>
+                         </tr></table>
 
                         </td>
                         <td> <button class="btn btn-danger" ng-click="deleteNetNode(node)">Delete</button> </td>

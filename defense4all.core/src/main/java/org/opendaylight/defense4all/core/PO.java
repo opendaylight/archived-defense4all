@@ -205,4 +205,10 @@ public class PO {
 		}		
 		return posRepoCDs;
 	}
+
+    public boolean isValid(){
+        return dstAddr != null &&
+                dstAddrPrefixLen > -1 &&
+                dstAddrPrefixLen < 33 ;
+    }
 }

@@ -70,9 +70,11 @@
 
 
                 <div class="col-sm-2" ng-class="{true: 'has-error',false: 'is-required'}[addPoForm.dstAddrPrefixLen.$dirty && addPoForm.dstAddrPrefixLen.$invalid]">
-                    <input name="dstAddrPrefixLen" ng-change="prefixChange(po)" ng-model="po.dstAddrPrefixLen" ng-maxlength="2" type="text" class="form-control" id="dstAddrPrefixLen" placeholder="32" required>
+                    <input name="dstAddrPrefixLen" ng-change="prefixChange(po)" ng-model="po.dstAddrPrefixLen" ng-maxlength="2" app-type="number" app-min="0" app-max="32" class="form-control" id="dstAddrPrefixLen" placeholder="32" required>
                     <span class="help-block" ng-show="addPoForm.dstAddrPrefixLen.$dirty && addPoForm.dstAddrPrefixLen.$error.required">Prefix length is required.</span>
-
+                    <span class="help-block" ng-show="addPoForm.dstAddrPrefixLen.$dirty && addPoForm.dstAddrPrefixLen.$error.number">Must be a whole positive number.</span>
+                    <span class="help-block" ng-show="addPoForm.dstAddrPrefixLen.$dirty && addPoForm.dstAddrPrefixLen.$error.min">Minimum allowed value is 0.</span>
+                    <span class="help-block" ng-show="addPoForm.dstAddrPrefixLen.$dirty && addPoForm.dstAddrPrefixLen.$error.max">Maximum allowed value is 32.</span>
                 </div>
             </div>
 

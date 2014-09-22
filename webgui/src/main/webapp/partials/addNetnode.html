@@ -122,7 +122,7 @@
     <div ng-controller="AddAmsConnModalController">
 
         <h4>
-            AMS Connections &nbsp;&nbsp;&nbsp;<button type="button" class="btn btn-primary" ng-click="open()">Add</button>
+            AMS Connection &nbsp;&nbsp;&nbsp;<button ng-show="connsToAdd.length == 0" type="button" class="btn btn-primary" ng-click="open()">Add</button>
         </h4>
 
         <script type="text/ng-template" id="AddAmsConnModalContent.html">
@@ -132,14 +132,15 @@
             <form id="AMSConnsForm" name="AMSConnsForm" role="form" class="form-horizontal">
                 <div class="modal-body">
 
-                    <label class="control-label" for="name">Name</label>
-                    <div>
-                        <input type="text" class="form-control" ng-model="connToAdd.name" id="name" required>
-                    </div>
+                    <!--<label class="control-label" for="name">Name</label>-->
+                    <!--<div>-->
+                        <!--<input type="text" class="form-control" ng-model="connToAdd.name" id="name" required>-->
+                    <!--</div>-->
 
                     <label class="control-label" for="amsname">AMS Name</label>
                     <div>
-                        <input type="text" class="form-control" ng-model="connToAdd.amsname" id="amsname" required>
+                        <select ng-model="connToAdd.amsname" ng-change="changeAMSName()" class="form-control" id="amsname" ng-options="ams.label as ams.label for ams in amss | filter:{ status : '!REMOVED' }">
+                        </select>
                     </div>
 
                     <label class="control-label" for="nnnorthport">NetNode North Port</label>
@@ -152,13 +153,13 @@
                         <input type="text" class="form-control" ng-model="connToAdd.nnsouthport" id="nnsouthport" required>
                     </div>
 
-                    <label class="control-label" for="amsnorthport">AMS North Port</label>
-                    <div >
+                    <label ng-show="connToAdd.brand == 'Radware DefensePro'" class="control-label" for="amsnorthport">AMS North Port</label>
+                    <div ng-show="connToAdd.brand == 'Radware DefensePro'">
                         <input type="text" class="form-control" ng-model="connToAdd.amsnorthport" id="amsnorthport">
                     </div>
 
-                    <label class="control-label" for="amssouthport">AMS South Port</label>
-                    <div>
+                    <label ng-show="connToAdd.brand == 'Radware DefensePro'" class="control-label" for="amssouthport">AMS South Port</label>
+                    <div ng-show="connToAdd.brand == 'Radware DefensePro'">
                         <input type="text" class="form-control" ng-model="connToAdd.amssouthport" id="amssouthport">
                     </div>
 
@@ -187,8 +188,10 @@
                 <td>{{connToAdd.amsname}}</td>
                 <td>{{connToAdd.nnnorthport}}</td>
                 <td>{{connToAdd.nnsouthport}}</td>
-                <td>{{connToAdd.amsnorthport}}</td>
-                <td>{{connToAdd.amssouthport}}</td>
+                <td ng-show="connToAdd.brand == 'Radware DefensePro'">{{connToAdd.amsnorthport}}</td>
+                <td ng-show="connToAdd.brand != 'Radware DefensePro'"></td>
+                <td ng-show="connToAdd.brand == 'Radware DefensePro'">{{connToAdd.amssouthport}}</td>
+                <td ng-show="connToAdd.brand != 'Radware DefensePro'"></td>
                 <td><button class="btn btn-danger" ng-click="remove(connToAdd)">Remove</button></td>
             </tr>
 

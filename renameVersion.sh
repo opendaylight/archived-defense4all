@@ -1,6 +1,6 @@
 #!/bin/sh
 
-version_from="1\.0\.12"
+version_from="1\.0\.14"
 version_to="1\.0\.14-SNAPSHOT"
 
 

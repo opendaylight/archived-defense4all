@@ -10,35 +10,7 @@
 
 package org.opendaylight.defense4all.restservice;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletResponse;
-import javax.transaction.NotSupportedException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.UriInfo;
-
-import org.opendaylight.defense4all.core.AMS;
-import org.opendaylight.defense4all.core.Attack;
-import org.opendaylight.defense4all.core.DFHolder;
-import org.opendaylight.defense4all.core.Mitigation;
-import org.opendaylight.defense4all.core.NetNode;
-import org.opendaylight.defense4all.core.OFC;
-import org.opendaylight.defense4all.core.PN;
-import org.opendaylight.defense4all.core.PO;
+import org.opendaylight.defense4all.core.*;
 import org.opendaylight.defense4all.core.interactionstructures.PNStatReport;
 import org.opendaylight.defense4all.framework.core.FMHolder;
 import org.opendaylight.defense4all.framework.core.Repo;
@@ -47,6 +19,16 @@ import org.opendaylight.defense4all.restservice.NetNodeResource.NetNodeResourceS
 import org.opendaylight.defense4all.restservice.PNResource.PNResourceStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.transaction.NotSupportedException;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
+import javax.ws.rs.core.UriInfo;
+import java.io.IOException;
+import java.util.*;
 
 @Path("/df")
 public class Defense4allRestService {
@@ -146,6 +128,10 @@ public class Defense4allRestService {
 				log.debug("addPO: already contains " + po.label);
 				servletResponse.sendError(400, "addPO: already contains " + po.label);
 			} else {
+                if (!po.isValid()) {
+                    log.debug("addPO: invalid PO: " + po);
+                    servletResponse.sendError(400, "addPO: invalid PO: " + po);
+                }
 				log.debug("addPO: adding " + po.label);
 				DFHolder.get().posRepo.setRow(po.label, po.toRow());
 			}
@@ -539,7 +525,12 @@ public class Defense4allRestService {
 				DFHolder.get().getMgmtPoint().addOFC(ofc);
 			}
 		} catch (Throwable e) {
-			log.error("Failed to add OFC " + ofc.hostname);
+            try {
+                DFHolder.get().getMgmtPoint().removeOFC(ofc.getHostname());
+            } catch (Exception e2) {
+                log.warn("caught an exception when trying to remove OFC leftovers after add OFC failed", e2);
+            }
+            log.error("Failed to add OFC " + ofc.hostname);
 			try {
 				servletResponse.sendError(500, "Failed to add OFC " + ofc.hostname);
 			} catch (IOException e1) {

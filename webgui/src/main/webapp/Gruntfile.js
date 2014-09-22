@@ -9,7 +9,7 @@ module.exports = function (grunt) {
             main: {
                 expand: true,
                 cwd: './',
-                src: ['**', 'js/**', '!lib/**', '!**/*.css', '!Gruntfile.js', '!package.json', '!bower_components'],
+                src: ['**', 'js/**', '!lib/**', '!**/*.css', '!Gruntfile.js', '!package.json', '!bower_components', '!bower.sh', '!grunt.sh', '!bower.json', '!node', '!node_modules'],
                 dest: 'dist/'
             },
             shims: {

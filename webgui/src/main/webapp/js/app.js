@@ -1,6 +1,6 @@
 'use strict';
 
-//var REST_SERVER_IP = location.hostname ;// '10.206.167.39';
+//var REST_SERVER_IP = location.hostname ;
 var REST_SERVER_IP = '10.206.167.39';
 
 var REST_SERVER = '//' + REST_SERVER_IP + ':8086';
@@ -39,7 +39,7 @@ d4allApp.config(function($routeProvider, $locationProvider){
             controller: 'ReportsController',
             reportData: {
                 reportType:'DF',
-                reportTitle:'DefenseFlow Reports'
+                reportTitle:'Defense4All Reports'
             }
         }).
         when("/addPo", {templateUrl : "partials/addPo.html", controller: 'PoController'}).
@@ -50,7 +50,7 @@ d4allApp.config(['$httpProvider', function($httpProvider) {
     delete $httpProvider.defaults.headers.common['X-Requested-With'];
 }
 ]);
-d4allApp.controller('FWConfigController', function FWConfigController($scope, $resource,$timeout,$modal) {
+d4allApp.controller('FWConfigController', function FWConfigController($scope, $resource,$timeout,$modal,AMSService,$q) {
 
     $scope.pollingInterval = POLLING_TIMEOUT/1000;
 
@@ -81,21 +81,26 @@ d4allApp.controller('FWConfigController', function FWConfigController($scope, $r
     }
     ofcsPoller();
 
-    var amss = $resource(REST_SERVER + "/rest/app/df/amss/:label",
-        {label:'@label'},{get:{method:'GET', isArray:true}});
+    var amss = [];
 
     var amssPoller = function () {
 
         var numberOfActiveAmss = 0;
-        amss.get(function(amssResult){
+
+        var defer = $q.defer();
+
+        defer.promise.then(function(amssResult){
             $scope.amss = amssResult;
             for (var i = 0; i < amssResult.length; i++) {
-                if (amssResult[i].status === "ACTIVE") {
+                if (amssResult[i].status === "ACTIVE" || amssResult[i].status === "UNKNOWN") {
                     numberOfActiveAmss++
                 };
             }
             $scope.numberOfActiveAmss = numberOfActiveAmss;
+
         });
+
+        AMSService.getAmss(defer);
 
         $timeout(amssPoller,POLLING_TIMEOUT);
     }
@@ -123,28 +128,28 @@ d4allApp.controller('FWConfigController', function FWConfigController($scope, $r
         }
     };
 
-/*
- $scope.trafficPortLabels = function trafficPortLabels(ports) {
- var portsStr = "";
- angular.forEach(ports,function(v,k){
- if (ports[k].up){
- portsStr += ports[k].number + " [UP]\n";
- }else {
- portsStr += ports[k].number + " [DOWN]\n";
- }
- });
+    /*
+     $scope.trafficPortLabels = function trafficPortLabels(ports) {
+     var portsStr = "";
+     angular.forEach(ports,function(v,k){
+     if (ports[k].up){
+     portsStr += ports[k].number + " [UP]\n";
+     }else {
+     portsStr += ports[k].number + " [DOWN]\n";
+     }
+     });
 
- return portsStr;
- }
+     return portsStr;
+     }
 
- $scope.protectedLinkLabels = function protectedLinkLabels(portsLinks) {
- var portsStr = "";
- angular.forEach(portsLinks,function(v,k){
- portsStr += "["+ portsLinks[k].northPort + "->"+ portsLinks[k].southPort + "]\n";
- });
- return portsStr;
- }
- */
+     $scope.protectedLinkLabels = function protectedLinkLabels(portsLinks) {
+     var portsStr = "";
+     angular.forEach(portsLinks,function(v,k){
+     portsStr += "["+ portsLinks[k].northPort + "->"+ portsLinks[k].southPort + "]\n";
+     });
+     return portsStr;
+     }
+     */
     $scope.amssStatus = function (delimitedString) {
 
         if (delimitedString == "") {
@@ -169,6 +174,30 @@ d4allApp.controller('FWConfigController', function FWConfigController($scope, $r
             return "down"
         } else if (numberOfDown == 0) {
             return "up"
+        } else {
+            return "warning"
+        }
+
+    }
+
+    $scope.linkStatus = function (link,ports) {
+
+        var southPort,northPort;
+
+        for(var port in ports){
+            if (link.southPort == ports[port].number) {
+                southPort = ports[port];
+            } else if (link.northPort == ports[port].number){
+                northPort = ports[port];
+            }
+        }
+
+        if (southPort && northPort){
+            if (southPort.up && northPort.up) {
+                return "up"
+            } else {
+                return "down"
+            }
         } else {
             return "warning"
         }
@@ -200,13 +229,7 @@ d4allApp.controller('FWConfigController', function FWConfigController($scope, $r
         if ($scope.deleteAMSOK) {
 
             console.log('deleteAMS:' + label);
-            amss.delete({label:label}, function() {
-                console.log('success');
-                //refresh scope
-                $scope.amss = amss.get();
-            }, function(err) {
-                console.log('error:' + err.statusText);
-            });
+            AMSService.deleteAms(label);
         }
 
     };
@@ -528,11 +551,37 @@ d4allApp.factory("linksToAddService", function(){
 
 });
 
+d4allApp.factory("AMSService", function($resource){
+
+    var amsResource = $resource(REST_SERVER + "/rest/app/df/amss/:label",
+        {label:'@label'},{get:{method:'GET', isArray:true}});
+
+    return {
+        getAmss: function(callback) {
+            amsResource.get(function(amsResult){
+                callback.resolve(amsResult);
+            });
+        },
+        deleteAms:  function(label) {
+            amsResource.delete({label:label}, function() {
+                console.log('success');
+                //refresh scope
+                //$scope.amss = amss.get();
+            }, function(err) {
+                console.log('error:' + err.statusText);
+            });
+        }
+    }
+
+});
+
+
 
 /******   [---- VIEW -----] AMSConnection MODAL ***********/
 
 
 d4allApp.controller('AmsConnModalController', function AmsConnModalController($scope, $modal, $log) {
+
 
     $scope.open = function (amsConnectionsStr) {
 
@@ -547,7 +596,13 @@ d4allApp.controller('AmsConnModalController', function AmsConnModalController($s
 
             $log.debug(amsConnString);
 
-            var amsConn = {name:amsConnString[0], amsname:amsConnString[1], nnnorthport:amsConnString[2], nnsouthport:amsConnString[3], amsnorthport:amsConnString[4], amssouthport:amsConnString[5], status:amsConnString[6] };
+            var amsConn = {};
+            if (amsConnString[4] < 0 && amsConnString[5] < 0){
+                amsConn = {name:amsConnString[0], amsname:amsConnString[1], nnnorthport:amsConnString[2], nnsouthport:amsConnString[3], amsnorthport:amsConnString[4], amssouthport:amsConnString[5], status:amsConnString[6], brand:'Other' };
+            }else{
+                amsConn = {name:amsConnString[0], amsname:amsConnString[1], nnnorthport:amsConnString[2], nnsouthport:amsConnString[3], amsnorthport:amsConnString[4], amssouthport:amsConnString[5], status:amsConnString[6], brand:'Radware DefensePro' };
+            }
+
             //var amsConn = {name:amsConnString[0], amsname:amsConnString[1], nnnorthport:amsConnString[2], nnsouthport:amsConnString[3], amsnorthport:amsConnString[4], amssouthport:amsConnString[5] };
 
             amsConns.push(amsConn);
@@ -588,7 +643,7 @@ var ModalInstanceCtrl = function ($scope, $modalInstance, amsConns) {
 /******    [--- ADD ----] AMSConnections MODAL ***********/
 
 
-d4allApp.controller('AddAmsConnModalController', function AddAmsConnModalController($scope, $modal, $log, connsToAddService) {
+d4allApp.controller('AddAmsConnModalController', function AddAmsConnModalController($scope, $modal, $log, $resource, connsToAddService) {
 
     $scope.connsToAdd = [];
 
@@ -638,9 +693,43 @@ d4allApp.controller('AddAmsConnModalController', function AddAmsConnModalControl
 // Please note that $modalInstance represents a modal window (instance) dependency.
 // It is not the same as the $modal service used above.
 
-var AddAmsConnModalInstanceController = function ($scope, $modalInstance, $log, connsToAdd) {
+var AddAmsConnModalInstanceController = function ($scope, $modalInstance, $log, $q, connsToAdd, AMSService) {
 
     $scope.connsToAdd = connsToAdd;
+
+    $scope.amss = [];
+
+    //this will happen once we return from getting the amss (async)
+    var defer = $q.defer();
+    defer.promise.then(function(val){
+        $scope.amss = val;
+        //Set the first option as the default
+        //$scope.ams = $scope.amss[0].value;
+        $scope.connToAdd.name = $scope.connToAdd.amsname = $scope.amss[0].label;
+        $scope.connToAdd.brand = $scope.amss[0].brand;
+        if ($scope.connToAdd.brand == 'Other'){
+            $scope.connToAdd.amsnorthport = -1;
+            $scope.connToAdd.amssouthport = -2;
+        }
+    });
+
+    AMSService.getAmss(defer);
+
+    //$scope.connToAdd = {"amsnorthport" : 1, "amssouthport" : 2};
+    $scope.connToAdd = {};
+
+    $scope.changeAMSName = function(){
+        $scope.connToAdd.name = $scope.connToAdd.amsname;
+        for (var i=0; i<$scope.amss.length; i++) {
+            if ($scope.amss[i].label == $scope.connToAdd.amsname) {
+                $scope.connToAdd.brand = $scope.amss[i].brand;
+            }
+            if ( $scope.connToAdd.brand == 'Other'){
+                $scope.connToAdd.amsnorthport= -1;
+                $scope.connToAdd.amssouthport= -2;
+            }
+        }
+    };
 
     $scope.ok = function (connToAdd) {
 
@@ -818,13 +907,19 @@ d4allApp.controller('DFConfigController', function FWConfigController($scope, $r
 
 
     $scope.deletePO = function (name) {
-        pos.delete({label: name}, function () {
-            console.log('success');
-            //refresh scope
-            $scope.pos = pos.get();
-        }, function (err) {
-            console.log('error: ' + err.statusText);
-        });
+
+        $scope.deletePOOK = confirm('Are you absolutely sure you want to delete PO: ' + name + ' ?');
+
+        if ($scope.deletePOOK) {
+
+            pos.delete({label: name}, function () {
+                console.log('success');
+                //refresh scope
+                $scope.pos = pos.get();
+            }, function (err) {
+                console.log('error: ' + err.statusText);
+            });
+        }
 
     };
 
@@ -859,12 +954,15 @@ d4allApp.controller('DFConfigController', function FWConfigController($scope, $r
     }
 
     $scope.removePolicy = function (po) {
-        $log.debug('Remove Policy called: ' + po.label + '__default');
-        pns.delete({label: po.label + '__default'}, function () {
-            $scope.DFConfigAlerts.push({type: 'success', msg: 'Removed default policy from ' + po.label + '.'});
-        }, function (err) {
-            $scope.DFConfigAlerts.push({type: 'danger', msg: err.statusText});
-        });
+        $scope.deletePOPolicy = confirm('Are you absolutely sure you want to delete a PO: ' + po.label + ' Policy ?');
+        if ($scope.deletePOPolicy) {
+            $log.debug('Remove Policy called: ' + po.label + '__default');
+            pns.delete({label: po.label + '__default'}, function () {
+                $scope.DFConfigAlerts.push({type: 'success', msg: 'Removed default policy from ' + po.label + '.'});
+            }, function (err) {
+                $scope.DFConfigAlerts.push({type: 'danger', msg: err.statusText});
+            });
+        }
 
     }
 
@@ -890,7 +988,21 @@ d4allApp.controller('PoController', function PoController($scope, $location, $re
 
     var pos = $resource(REST_SERVER + '/rest/app/df/pos');
 
+    //define specific resource for GET only, the one above is used for POST in creating POs
+    //used in testing if PO name already exists
+    var getpos = $resource(REST_SERVER + "/rest/app/df/pos/:label",
+        {label:'@label'},{get:{method:'GET', isArray:true}});
+    $scope.allPos = getpos.get();
+
     $scope.save = function(poToAdd) {
+
+        //First check that the a PO with this name doesn't exist already
+        for (var i=0; i < $scope.allPos.length; i++){
+            if ($scope.allPos[i].label == poToAdd.label) {
+                alert(poToAdd.label + ' already exists. Please try a different name');
+                return;
+            }
+        }
 
         $log.debug('Going to save PO');
 
@@ -1112,7 +1224,7 @@ d4allApp.controller("MenuController", function MenuController($scope) {
             ]
         },
         {
-            title: "DefenseFlow",
+            title: "Defense4All",
             submenus: [
                 {
                     title: "Setup",

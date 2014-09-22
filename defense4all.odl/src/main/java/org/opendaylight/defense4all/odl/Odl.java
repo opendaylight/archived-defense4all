@@ -173,7 +173,9 @@ public class Odl {
 		if (hostname == null || hostname.isEmpty())
 			hostname = odlOfc.ipAddrString;
 
-		connector = connectors.get(hostname);	
+		connector = connectors.get(hostname);
+        connector = null;//TODO: this is since we support only one controller now.
+        // using the cached connectors will cause a problem on removing (need to remove from the connectors map.
 
 		if (connector == null) {
 
@@ -406,12 +408,13 @@ public class Odl {
 			} catch (Throwable e2) {
 				log.error("Failed to cleanup (rollback) partially set base trafic floor flow entries for "+netNode.label,e2);
 				FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
-			}
-			String msg = "Failed to addNetNode - could not install some of base traffic floor flow entries"+netNode.label;
-			log.error(msg, e);
-			fMain.getFR().logRecord(DFAppRoot.FR_OFC_FAILURE, msg);
-			FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
-			throw new ExceptionControlApp(msg, e);
+			} finally {
+                String msg = "Failed to addNetNode - could not install some of base traffic floor flow entries"+netNode.label;
+                log.error(msg, e);
+                fMain.getFR().logRecord(DFAppRoot.FR_OFC_FAILURE, msg);
+                FMHolder.get().getHealthTracker().reportHealthIssue(HealthTracker.MODERATE_HEALTH_ISSUE);
+                throw new ExceptionControlApp(msg, e);
+            }
 		}
 	}
 

@@ -93,6 +93,8 @@
     <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-xml:8.0.4.v20111024" level="project" />
     <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-servlet:8.0.4.v20111024" level="project" />
     <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-security:8.0.4.v20111024" level="project" />
+    <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-servlets:8.0.4.v20111024" level="project" />
+    <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-client:8.0.4.v20111024" level="project" />
   </component>
 </module>
 

@@ -242,7 +242,17 @@ public class DFAppRootFullImpl extends DFAppRoot {
 			if ( ! bestEffort) throw new ExceptionControlApp(msg);
 		}
 		try {
-			amsRep.init();
+            //load ams from DB in case it exists, and decide if using DPRep or DefaultAmsRep
+            AMS ams = retrieveActiveAms();
+            if (ams != null) {
+                if (ams.getBrand().contains("DefensePro")) {
+                    setAmsRepByType("DP");//constant from spring map at defense4all_context
+                } else {
+                    setAmsRepByType(ams.getBrand());
+                }
+            }
+
+            amsRep.init();
             for (AMSRep amsRepItem : amsRepMap.values()) {
                 amsRepItem.init();
             }
@@ -297,7 +307,26 @@ public class DFAppRootFullImpl extends DFAppRoot {
 
 	}
 
-	/**
+    private AMS retrieveActiveAms() throws ExceptionControlApp {
+        AMS activeAms = null;
+        boolean foundActiveAms = false;
+        List<String> AmsKeys = amsRepo.getKeys();
+        for (String amsKey : AmsKeys) {
+            AMS ams = new AMS(amsRepo.getRow(amsKey));
+            if (AMS.Status.ACTIVE.equals(ams.getStatus())) {
+                if (foundActiveAms) {
+                    log.error("found more than one active AMS, supports 1 only!!! the other is " + ams);
+                } else {
+                    foundActiveAms = true;
+                    log.debug("found active AMS in DB: " +ams);
+                    activeAms = ams;
+                }
+            }
+        }
+        return activeAms;
+    }
+
+    /**
 	 * Cleans up all modules before shutdown - top-down .
 	 * @param param_name param description
 	 * @return return description

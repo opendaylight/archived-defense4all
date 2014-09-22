@@ -609,9 +609,17 @@ public class DPConfigMgr extends DFAppModule {
 		connector.deletePolicy(networkName);
 		connector.deleteBdosProfile(networkName + BDOS_PROFILE_NAME_SUFFIX);
 		boolean dnsEnabled = false;
-		if(dnsEnabled){
-			connector.deleteDnsProfile(networkName + DNS_PROFILE_NAME_SUFFIX);
-		}
+        try {
+            connector.deleteDnsProfile(networkName + DNS_PROFILE_NAME_SUFFIX);
+        } catch (RuntimeException e) {
+            if(dnsEnabled) {
+                log.warn("failed to delete DNS profile");
+                throw e;
+            } else {
+                log.debug("failed to delete DNS profile, not error or warning, since DNS is disabled");
+            }
+        }
+
 		connector.deleteOosProfile(networkName + OOS_PROFILE_NAME_SUFFIX); 
 	}
 

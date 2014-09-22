@@ -31,7 +31,7 @@
             <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.port.$dirty && addSDNForm.port.$invalid]">
                 <label class="col-sm-4 control-label" for="port">Port</label>
                 <div class="col-sm-8">
-                    <input name="port" ng-model="ofc.port" ng-maxlength="64" type="number" min="0" class="form-control" id="port" placeholder="8443" required>
+                    <input name="port" ng-model="ofc.port" ng-maxlength="64" type="number" min="0" class="form-control" id="port" placeholder="8080" required>
                     <span class="help-block" ng-show="addSDNForm.port.$dirty && addSDNForm.port.$error.required">Port is required.</span>
                     <span class="help-block" ng-show="addSDNForm.port.$dirty && addSDNForm.port.$error.maxlength">Can't be more than 64 characters long.</span>
                 </div>
@@ -40,10 +40,10 @@
             <div class="form-group" ng-class="{true: 'has-error',false: 'is-required'}[addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$invalid]">
                 <label class="col-sm-4 control-label" for="port">Statistics Polling Interval</label>
                 <div class="col-sm-8">
-                    <input name="ofcStatsCollectionInterval" ng-model="ofc.ofcStatsCollectionInterval" ng-maxlength="64" type="number" min="60" class="form-control" id="ofcStatsCollectionInterval" placeholder="120" ng-init="ofc.ofcStatsCollectionInterval=120" required>
+                    <input name="ofcStatsCollectionInterval" ng-model="ofc.ofcStatsCollectionInterval" ng-maxlength="64" type="number" min="1" class="form-control" id="ofcStatsCollectionInterval" placeholder="120" ng-init="ofc.ofcStatsCollectionInterval=120" required>
                     <span class="help-block" ng-show="addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$error.required">Statistics Polling Interval is required.</span>
                     <span class="help-block" ng-show="addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$error.maxlength">Can't be more than 64 characters long.</span>
-                    <span class="help-block" ng-show="addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$error.min">Minimum value is 60.</span>
+                    <span class="help-block" ng-show="addSDNForm.ofcStatsCollectionInterval.$dirty && addSDNForm.ofcStatsCollectionInterval.$error.min">Minimum value is 1.</span>
                 </div>
             </div>
 

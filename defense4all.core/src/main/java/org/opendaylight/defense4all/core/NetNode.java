@@ -452,10 +452,10 @@ public class NetNode {
 
 		if(label == null || label.isEmpty()) throw new Exception("Invalid netnode label.");
 
-		Iterator<Map.Entry<String,AMSConnection>> iter1 = amsConnections.entrySet().iterator();
-		while(iter1.hasNext()) {
-			iter1.next().getValue().validate();
-		}
+//		Iterator<Map.Entry<String,AMSConnection>> iter1 = amsConnections.entrySet().iterator();
+//		while(iter1.hasNext()) {
+//			iter1.next().getValue().validate();
+//		}
 
 		Iterator<Map.Entry<String,TrafficPort>> iter2 = trafficPorts.entrySet().iterator();
 		while(iter2.hasNext()) {

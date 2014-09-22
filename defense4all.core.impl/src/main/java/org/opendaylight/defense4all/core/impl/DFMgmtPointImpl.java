@@ -376,7 +376,7 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 
 		try {
 			ofc.validate();
-		} catch (Exception e1) {throw new IllegalArgumentException(e1);}	
+		} catch (Exception e1) {throw new IllegalArgumentException(e1);}
 
 		List<String> keys;
 
@@ -406,11 +406,15 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 			addOFC(ofc.hostname); // Notify relevant DF modules. 
 		} catch (Throwable e) {
 			log.error("Failed to add OFC "+ofc.hostname, e);
-			throw new ExceptionControlApp("Failed to add OFC "+ofc.hostname, e);
+            try {
+                dfAppRootFullImpl.oFCsRepo.deleteRow(ofc.hostname); // Rollback
+            } finally {
+                throw new ExceptionControlApp("Failed to add OFC " + ofc.hostname, e);
+            }
 		}
 	}
 
-	/**
+    /**
 	 * Add OFC that has already been recorded in ofcs repo. Add according to its purpose - collection or dvsn 
 	 * (the same OFC can be set for both). Ignore if already set (currently we accept only one).
 	 * @param param_name param description
@@ -438,8 +442,12 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 				dfAppRootFullImpl.statsCollectorImpl.startCollection(interval);
 			} catch (Throwable e1) {
 				log.error("Failed to add OFC to StatsCollectionRep. ofcKey : "+ ofcKey,e1);
-				concatException = new ExceptionControlApp ("Failed to add OFC to StatsCollectionRep. ofcKey : "+ ofcKey,concatException);
-				isError = true;
+                try {
+                    dfAppRootFullImpl.getStatsCollectionRep().removeOFC(ofcKey);//Rollback
+                } finally {
+                    concatException = new ExceptionControlApp("Failed to add OFC to StatsCollectionRep. ofcKey : " + ofcKey, concatException);
+                    isError = true;
+                }
 			}
 		}
 		if(forDvsn) {
@@ -447,7 +455,11 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 				dfAppRootFullImpl.getDvsnRep().addOFC(ofcKey);
 			} catch (Throwable e2) {
 				log.error("Failed to add OFC to DvsnRep. ofcKey : "+ ofcKey,e2);
-				concatException = new ExceptionControlApp ("Failed to add OFC to DvsnRep. ofcKey : "+ ofcKey,concatException);	
+                try{
+                    dfAppRootFullImpl.getDvsnRep().removeOFC(ofcKey);//rollback
+                } finally {
+                    concatException = new ExceptionControlApp("Failed to add OFC to DvsnRep. ofcKey : " + ofcKey, concatException);
+                }
 			}
 		}
 		if (isError ) throw concatException;
@@ -499,8 +511,14 @@ public class DFMgmtPointImpl extends DFAppCoreModule implements DFMgmtPoint {
 				concatException = new ExceptionControlApp ("Failed to remove OFC from DvsnRep. ofcKey : "+ ofcKey,concatException);		
 			}
 		}
-		if (isError ) throw concatException;
-	}
+        if (!isError ) {
+            dfAppRootFullImpl.oFCsRepo.deleteRow(ofcKey);
+        } else {
+            throw concatException;
+        }
+
+
+    }
 
 	/**
 	 * Add netNode. Notify statsCollectionRep and DvsnRep.
