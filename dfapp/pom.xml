@@ -5,7 +5,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>dfapp</artifactId>
-	<version>1.0.14-SNAPSHOT</version>
+	<version>1.0.14-Helium</version>
 	<packaging>pom</packaging>
 	<name>dfapp</name>
 	<url>http://maven.apache.org</url>

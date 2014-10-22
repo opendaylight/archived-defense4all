@@ -4,7 +4,7 @@
 
 	<groupId>org.opendaylight.defense4all</groupId>
 	<artifactId>df.aggregate</artifactId>
-	<version>1.0.14-SNAPSHOT</version>
+	<version>1.0.14-Helium</version>
 	<packaging>pom</packaging>
 	<name>df</name>
 	<url>http://maven.apache.org</url>
@@ -17,17 +17,17 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>framework.aggregate</artifactId>
-			<version>1.0.14-SNAPSHOT</version>
+			<version>1.0.14-Helium</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.aggregate</artifactId>
-			<version>1.0.14-SNAPSHOT</version>
+			<version>1.0.14-Helium</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>restservice</artifactId>
-			<version>1.0.14-SNAPSHOT</version>
+			<version>1.0.14-Helium</version>
 			<type>war</type>
 		</dependency>
 	</dependencies>
@@ -99,13 +99,13 @@
 									<groupname>defense4all</groupname>
 									<sources>
 										<source>
-											<location>../dfapp.aggregate/target/df.aggregate-1.0.14-SNAPSHOT.jar</location>
+											<location>../dfapp.aggregate/target/df.aggregate-1.0.14-Helium.jar</location>
 										</source>
 										<source>
-											<location>../restservice/target/restservice-1.0.14-SNAPSHOT.war</location>
+											<location>../restservice/target/restservice-1.0.14-Helium.war</location>
 										</source>
 										<source>
-											<location>../webgui/target/webgui-1.0.14-SNAPSHOT.war</location>
+											<location>../webgui/target/webgui-1.0.14-Helium.war</location>
 										</source>
 									</sources>
 								</mapping>
@@ -189,10 +189,10 @@
 									<groupname>defense4all</groupname>
 									<sources>
 										<source>
-											<location>../defense4all.cli/target/defense4all.cli-1.0.14-SNAPSHOT.jar</location>
+											<location>../defense4all.cli/target/defense4all.cli-1.0.14-Helium.jar</location>
 										</source>
 										<source>
-											<location>../framework.cli/target/framework.cli-1.0.14-SNAPSHOT.jar</location>
+											<location>../framework.cli/target/framework.cli-1.0.14-Helium.jar</location>
 										</source>
 									</sources>
 								</mapping>
@@ -249,7 +249,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../dfapp.aggregate/target/df.aggregate-1.0.14-SNAPSHOT.jar</src>
+									<src>../dfapp.aggregate/target/df.aggregate-1.0.14-Helium.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -260,7 +260,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../restservice/target/restservice-1.0.14-SNAPSHOT.war</src>
+									<src>../restservice/target/restservice-1.0.14-Helium.war</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -271,7 +271,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../webgui/target/webgui-1.0.14-SNAPSHOT.war</src>
+									<src>../webgui/target/webgui-1.0.14-Helium.war</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -332,7 +332,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../defense4all.cli/target/defense4all.cli-1.0.14-SNAPSHOT.jar</src>
+									<src>../defense4all.cli/target/defense4all.cli-1.0.14-Helium.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -343,7 +343,7 @@
 									</mapper>
 								</data>
 								<data>
-									<src>../framework.cli/target/framework.cli-1.0.14-SNAPSHOT.jar</src>
+									<src>../framework.cli/target/framework.cli-1.0.14-Helium.jar</src>
 									<type>file</type>
 									<mapper>
 										<type>perm</type>
@@ -383,7 +383,7 @@
 						<configuration>
 							<artifacts>
 								<artifact>
-									<!-- <artifactId> defense4all-cli_1.0.14-SNAPSHOT </artifactId> -->
+									<!-- <artifactId> defense4all-cli_1.0.14-Helium </artifactId> -->
 									<file>../dfapp.aggregate/target/defense4all-cli_1.0.14.deb</file>
 									<type>deb</type>
 									<classifier>
