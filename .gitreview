@@ -1,0 +1,5 @@
+[gerrit]
+host=git.opendaylight.org
+port=29418
+project=defense4all.git
+defaultbranch=stable/helium
