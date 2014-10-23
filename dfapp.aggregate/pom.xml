@@ -78,7 +78,7 @@
 							<copyright>2014, Radware Ltd.</copyright>
 							<distribution>OpenDaylight</distribution>
 							<group>Application/Communications</group>
-							<version>1.0.14</version>
+							<version>1.0.15</version>
 							<release>1</release>
 							<requires>
 								<require>cassandra20 &gt;= 2.0</require>
@@ -169,7 +169,7 @@
 							<copyright>2014, Radware Ltd.</copyright>
 							<distribution>OpenDaylight</distribution>
 							<group>Application/Communications</group>
-							<version>1.0.14</version>
+							<version>1.0.15</version>
 							<release>1</release>
 							<requires>
 								<require>java &gt;= 1.6</require>
@@ -231,7 +231,7 @@
 						</goals>
 						<configuration>
 							<!--<deb>[[buildDir]]/defense4all_[[version]].[[extension]]</deb>-->
-						<deb>[[buildDir]]/defense4all_1.0.14.[[extension]]</deb>
+						<deb>[[buildDir]]/defense4all_1.0.15.[[extension]]</deb>
 							<controlDir>${project.basedir}/../dfapp.aggregate/src/deb/defense4all.control</controlDir>
 							<dataSet>
 								<data>
@@ -315,7 +315,7 @@
 						</goals>
 						<configuration>
 							<!--<deb>[[buildDir]]/defense4all-cli_[[version]].[[extension]]</deb>-->
-							<deb>[[buildDir]]/defense4all-cli_1.0.14.[[extension]]</deb>
+							<deb>[[buildDir]]/defense4all-cli_1.0.15.[[extension]]</deb>
 							<controlDir>${project.basedir}/../dfapp.aggregate/src/deb/defense4all-cli.control</controlDir>
 							<dataSet>
 								<data>
@@ -384,14 +384,14 @@
 							<artifacts>
 								<artifact>
 									<!-- <artifactId> defense4all-cli_1.0.15-SNAPSHOT </artifactId> -->
-									<file>../dfapp.aggregate/target/defense4all-cli_1.0.14.deb</file>
+									<file>../dfapp.aggregate/target/defense4all-cli_1.0.15.deb</file>
 									<type>deb</type>
 									<classifier>
 										defense4all-cli
 									</classifier>
 								</artifact>
 								<artifact>
-									<file>../dfapp.aggregate/target/defense4all_1.0.14.deb</file>
+									<file>../dfapp.aggregate/target/defense4all_1.0.15.deb</file>
 									<type>deb</type>
 									<classifier>
 										defense4all
