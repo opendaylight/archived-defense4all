@@ -9,11 +9,12 @@
 
 package org.opendaylight.defense4all.framework.restservice;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import org.opendaylight.defense4all.framework.core.EventRecordData;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.FR;
+import org.opendaylight.defense4all.framework.core.FR.FilterRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
@@ -26,12 +27,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.opendaylight.defense4all.framework.core.EventRecordData;
-import org.opendaylight.defense4all.framework.core.FMHolder;
-import org.opendaylight.defense4all.framework.core.FR.FilterRecord;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 @Path("/fr")
 public class FlightRecorderRestService {
@@ -126,7 +126,35 @@ public class FlightRecorderRestService {
 			return null;
 		}	
 		return events;
-	}	
+	}
+
+	@GET
+	@Path("outputFilePrefix")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String geOutputFilePrefix(@Context HttpServletResponse servletResponse) throws IOException {
+
+		if ( ! FMHolder.get().isOpenForBusiness() ) {
+			servletResponse.sendError(503, "Service is unavailable" );
+			return null;
+		}
+
+		FR fr =FMHolder.get().getFR();
+		return fr.getOutputFilePrefix();
+	}
+
+	@GET
+	@Path("outputFileSuffix")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String geOutputFileSuffix(@Context HttpServletResponse servletResponse) throws IOException {
+
+		if ( ! FMHolder.get().isOpenForBusiness() ) {
+			servletResponse.sendError(503, "Service is unavailable" );
+			return null;
+		}
+
+		FR fr = FMHolder.get().getFR();
+		return fr.getOutputFileSuffix();
+	}
 
 	@POST
 	@Path("dump")
@@ -168,7 +196,7 @@ public class FlightRecorderRestService {
 			log.error("Failed to parse input parameters " + pe.getLocalizedMessage());
 			servletResponse.sendError(400);
 			return null;
-		}   
+		}
 
 		try {
 			if ( fromDate != null && toDate != null )

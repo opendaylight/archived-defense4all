@@ -9,6 +9,19 @@
 
 package org.opendaylight.defense4all.framework.core.impl;
 
+import me.prettyprint.cassandra.serializers.DateSerializer;
+import me.prettyprint.cassandra.serializers.StringSerializer;
+import org.opendaylight.defense4all.framework.core.EventRecordData;
+import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
+import org.opendaylight.defense4all.framework.core.FMHolder;
+import org.opendaylight.defense4all.framework.core.FR;
+import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
+import org.opendaylight.defense4all.framework.core.HealthTracker;
+import org.opendaylight.defense4all.framework.core.Repo;
+import org.opendaylight.defense4all.framework.core.RepoCD;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -21,20 +34,6 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-
-import me.prettyprint.cassandra.serializers.DateSerializer;
-import me.prettyprint.cassandra.serializers.StringSerializer;
-
-import org.opendaylight.defense4all.framework.core.EventRecordData;
-import org.opendaylight.defense4all.framework.core.ExceptionControlApp;
-import org.opendaylight.defense4all.framework.core.FMHolder;
-import org.opendaylight.defense4all.framework.core.HealthTracker;
-import org.opendaylight.defense4all.framework.core.Repo;
-import org.opendaylight.defense4all.framework.core.RepoCD;
-import org.opendaylight.defense4all.framework.core.FR; 
-import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author konstantinp
@@ -50,7 +49,7 @@ public class FRImpl implements FR {
 	private static String FILTER_DELIMETER = ",";
 
 	// repos attributes
-	public enum RepoMinor {	
+	public enum RepoMinor {
 		INVALID,
 		EVENTS,
 		TIME_SLICES
@@ -82,30 +81,30 @@ public class FRImpl implements FR {
 		private static List<RepoCD> getEventRecordRCDs() {
 			if(mEventsArchiveCDs == null) {
 				RepoCD rcd;
-				mEventsArchiveCDs = new ArrayList<RepoCD>();			
+				mEventsArchiveCDs = new ArrayList<RepoCD>();
 				rcd = new RepoCD(TIME_COUNTER,  StringSerializer.get(), null);	mEventsArchiveCDs.add(rcd);
 				rcd = new RepoCD(EVENT_TIME,  DateSerializer.get(), null);		mEventsArchiveCDs.add(rcd);
 				rcd = new RepoCD(EVENT_TYPE,  StringSerializer.get(), null);	mEventsArchiveCDs.add(rcd);
 				rcd = new RepoCD(EVENT_DATA,  StringSerializer.get(), null);	mEventsArchiveCDs.add(rcd);
-			}		
+			}
 			return mEventsArchiveCDs;
 		}
 
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 			sb.append(" Key: ");   sb.append(timeCounter);
-			sb.append(" Event: "); sb.append(eventType);sb.append(":"); 
+			sb.append(" Event: "); sb.append(eventType);sb.append(":");
 			sb.append(eventTime); sb.append(":");
 			sb.append(eventData);
 			return sb.toString();
 		}
 
-		public Hashtable<String, Object> toRow() { 
+		public Hashtable<String, Object> toRow() {
 			Hashtable<String, Object> row = new Hashtable<String, Object>();
-			row.put(TIME_COUNTER,timeCounter ); 
-			row.put(EVENT_TIME,eventTime ); 
-			row.put(EVENT_TYPE,eventType ); 
-			row.put(EVENT_DATA,eventData ); 
+			row.put(TIME_COUNTER,timeCounter );
+			row.put(EVENT_TIME,eventTime );
+			row.put(EVENT_TYPE,eventType );
+			row.put(EVENT_DATA,eventData );
 			return row;
 		}
 
@@ -116,11 +115,11 @@ public class FRImpl implements FR {
 			this.eventData = (String) row.get(EVENT_DATA);
 		}
 
-		public boolean match( FilterRecord filterRecord ) {	
+		public boolean match( FilterRecord filterRecord ) {
 			if (filterRecord == null)
 				return true;
 			return filterRecord.match(this);
-		}		
+		}
 	}
 
 	public static class  FilterRecordImpl implements FilterRecord {
@@ -131,8 +130,8 @@ public class FRImpl implements FR {
 		private FilterRecordImpl() {};
 
 		// Match event record type with the id from repo filters list
-		public boolean match( EventRecord eventRecord ) {	
-			if ( eventRecord == null ) 
+		public boolean match( EventRecord eventRecord ) {
+			if ( eventRecord == null )
 				return false;
 			EventRecordImpl eventImpl = (EventRecordImpl)eventRecord;
 			int matchId = filtersList.indexOf(eventImpl.eventType);
@@ -141,7 +140,7 @@ public class FRImpl implements FR {
 			return filterMap.contains(matchId);
 		}
 
-		// token string - find each of the strings in the Repo metadata filters string and store id in the filter 
+		// token string - find each of the strings in the Repo metadata filters string and store id in the filter
 		// match list
 		public static FilterRecord create ( String filterStr) {
 
@@ -170,6 +169,8 @@ public class FRImpl implements FR {
 
 	protected int flightRecorderSliceDays;
 	protected RepoFactoryImpl repoFactoryImpl;
+	protected String outputFilePrefix;
+	protected String outputFileSuffix;
 
 	static Logger log = LoggerFactory.getLogger(FRImpl.class);
 
@@ -177,13 +178,15 @@ public class FRImpl implements FR {
 	public Repo<String> eventsArchiveRepo = null;
 	protected static ArrayList<RepoCD> mEventsArchiveCDs = null;
 
-	/* List of all possible strings to be used for filtering events in the repo for search optimization position 
+	/* List of all possible strings to be used for filtering events in the repo for search optimization position
 	 * of the event string in the filtersList is used as data in the event slice repo */
 	private static List<String> filtersList = new ArrayList<String>();
 
 	/** Setters for Spring */
 	public void setRepoFactoryImpl(RepoFactoryImpl repoFactoryImpl) {this.repoFactoryImpl = repoFactoryImpl;}
 	public void setFlightRecorderSliceDays  ( int slice ) { this.flightRecorderSliceDays = slice;}
+    public void setOutputFilePrefix ( String prefix) { this.outputFilePrefix = prefix;}
+    public void setOutputFileSuffix  ( String suffix) { this.outputFileSuffix= suffix;}
 
 	public FRImpl() {}
 
@@ -195,9 +198,9 @@ public class FRImpl implements FR {
 		/* Init flight recorder repos */
 		String repoGlobal = FrameworkMainImpl.RepoMajor.FWORK_FLIGHT_RECORDER.name();
 		try {
-			eventsArchiveRepo = repoFactoryImpl.getOrCreateRepo(repoGlobal, RepoMinor.EVENTS.name(), 
+			eventsArchiveRepo = repoFactoryImpl.getOrCreateRepo(repoGlobal, RepoMinor.EVENTS.name(),
 					StringSerializer.get() , true, EventRecordImpl.getEventRecordRCDs());
-			timeSliceRepo =	repoFactoryImpl.getOrCreateRepo(repoGlobal, RepoMinor.TIME_SLICES.name(),  
+			timeSliceRepo =	repoFactoryImpl.getOrCreateRepo(repoGlobal, RepoMinor.TIME_SLICES.name(),
 					StringSerializer.get() , true,null);
 		} catch ( Exception e) {
 			log.error("Failed to initialize Flight Recorder " + e.getLocalizedMessage());
@@ -218,7 +221,7 @@ public class FRImpl implements FR {
 		} catch (ExceptionControlApp e) {/* Ignore - no recovery is feasible. */}
 	}
 
-	// load possible filters from  metadata DB cell  
+	// load possible filters from  metadata DB cell
 	private void loadFiltersList() throws ExceptionControlApp {
 
 		boolean filterKeyCellExists = timeSliceRepo.hasCell(FILTERS_KEY, FILTERS_CELL);
@@ -239,7 +242,7 @@ public class FRImpl implements FR {
 		} catch (ExceptionControlApp e) {
 			log.error("Badly formatted filters cell.");
 			resetFiltersList();// reset invalid string
-		} 
+		}
 		// TODO: Periodic cleanup - recreate filtersList in repo.
 	}
 
@@ -255,7 +258,7 @@ public class FRImpl implements FR {
 		}
 	}
 
-	// Concatenate all filters string and store in the metadata DB cell 
+	// Concatenate all filters string and store in the metadata DB cell
 	private void saveFiltersList() {
 
 		if (  filtersList == null || filtersList.isEmpty()) return;
@@ -264,10 +267,10 @@ public class FRImpl implements FR {
 		for ( String filter:filtersList) {
 			sb.append(filter); sb.append(FILTER_DELIMETER);
 		}
-		sb.setLength(sb.length() - FILTER_DELIMETER.length());		
+		sb.setLength(sb.length() - FILTER_DELIMETER.length());
 		try {
 			timeSliceRepo.setCell(FILTERS_KEY, FILTERS_CELL, sb.toString() );
-		} catch (ExceptionControlApp e) {} 
+		} catch (ExceptionControlApp e) {}
 	}
 
 	// Find/add filter string in list of possible filters
@@ -324,17 +327,43 @@ public class FRImpl implements FR {
 
 	private void addToSlice (EventRecordImpl event ) throws ExceptionControlApp {
 
-		long sliceNumber = event.eventTime.getTime() / slicePeriod;		
-		String sliceKey = String.valueOf(sliceNumber); 		// check if slice exists already		
-		timeSliceRepo.setCell(SLICES_KEYS, sliceKey, "" );  // add slice to metadata if not exist		
+		long sliceNumber = event.eventTime.getTime() / slicePeriod;
+		String sliceKey = String.valueOf(sliceNumber); 		// check if slice exists already
+		timeSliceRepo.setCell(SLICES_KEYS, sliceKey, "" );  // add slice to metadata if not exist
 		int filterId = generateMatchId(event.eventType);
-		timeSliceRepo.setCell(sliceKey, event.getKey(), filterId);	// add event to slice record if not exist	
+		timeSliceRepo.setCell(sliceKey, event.getKey(), filterId);	// add event to slice record if not exist
+	}
+
+	@Override
+	public String getOutputFileSuffix() {
+		return this.outputFileSuffix;
+	}
+
+	@Override
+	public String getOutputFilePrefix() {
+		return this.outputFilePrefix;
+	}
+
+	private String getFileFullPath(String infixName) throws ExceptionControlApp {
+		try {
+			if (!infixName.matches("^[a-zA-Z0-9_-]*$"))
+			{
+				throw new Exception("invalid file name " + infixName);
+			}
+			String fullPath = this.outputFilePrefix + infixName + this.outputFileSuffix;
+			return fullPath;
+		}
+		catch (Exception e) {
+			log.error("Failed to dump Flight Recorder events " +e.getLocalizedMessage());
+			repoFactoryImpl.fMainImpl.healthTrackerImpl.reportHealthIssue(HealthTracker.MINOR_HEALTH_ISSUE);
+			throw new ExceptionControlApp("Failed to dump to file  "+infixName+" ", e);
+		}
 	}
 
 	/**
 	 * @param fileName
 	 * dump content of records to file
-	 * @throws ExceptionControlApp 
+	 * @throws ExceptionControlApp
 	 */
 	@Override
 	public void dump(String fileName) throws ExceptionControlApp {
@@ -346,8 +375,9 @@ public class FRImpl implements FR {
 
 		BufferedWriter bw = null;
 		try {
+			fileName = getFileFullPath(fileName);
 			File file = new File(fileName);
-			if(!file.exists()) 
+			if(!file.exists())
 				file.createNewFile(); 	// if file doesnt exists, create it
 			File absPath = file.getAbsoluteFile();
 			FileWriter fwriter = new FileWriter(absPath);
@@ -392,7 +422,7 @@ public class FRImpl implements FR {
 	 * @param fromDate filter records from date
 	 * @param toDate filter records from date
 	 * @param maxNum max records to dump
-	 * @throws ExceptionControlApp 
+	 * @throws ExceptionControlApp
 	 */
 	@Override
 	public void dump(String fileName, Date fromDate, Date toDate, int maxNum) throws ExceptionControlApp {
@@ -403,8 +433,9 @@ public class FRImpl implements FR {
 	public void dump(String fileName, Date fromDate, Date toDate, int maxNum, FilterRecord filter) throws ExceptionControlApp {
 		BufferedWriter bw = null;
 		try {
+			fileName = getFileFullPath(fileName);
 			File file = new File(fileName);
-			if(!file.exists()) 
+			if(!file.exists())
 				file.createNewFile(); 	// if file doesnt exists, create it
 			File absPath = file.getAbsoluteFile();
 			FileWriter fwriter = new FileWriter(absPath);
@@ -438,7 +469,7 @@ public class FRImpl implements FR {
 	/**
 	 * @param number  max records to return
 	 * @return list of latest records in the repo
-	 * @throws ExceptionControlApp 
+	 * @throws ExceptionControlApp
 	 */
 	@Override
 	public List<EventRecordData> getLatestEvents(int number ) throws ExceptionControlApp {
@@ -458,8 +489,8 @@ public class FRImpl implements FR {
 		ListIterator<String> eventSlicesKeysIter = eventSlicesKeys.listIterator(eventSlicesKeys.size());
 		while ( eventSlicesKeysIter.hasPrevious()) {
 
-			String eventSliceKey = eventSlicesKeysIter.previous(); // get lates event slice			
-			if ( eventSliceKey.equals(SLICES_KEYS)) continue; // if iterator points to metadata string - skip it				
+			String eventSliceKey = eventSlicesKeysIter.previous(); // get lates event slice
+			if ( eventSliceKey.equals(SLICES_KEYS)) continue; // if iterator points to metadata string - skip it
 
 			List<Integer> filters = (filter != null ) ? ((FilterRecordImpl)filter).filterMap : null;
 			List<String> eventKeys = timeSliceRepo.getOrderedColumns(eventSliceKey,maxNum,true, filters);
@@ -481,7 +512,7 @@ public class FRImpl implements FR {
 				result.add(event);
 			}
 			if ( result.size() >= maxNum )	break;
-		}	
+		}
 		return result;
 	}
 
@@ -507,9 +538,9 @@ public class FRImpl implements FR {
 		long  sliceFrom = fromDate.getTime() / slicePeriod ;
 		long    sliceTo = toDate.getTime() / slicePeriod ;
 
-		Iterator<String> eventSlicesKeysIter = allSlicesKeys.iterator(); 
+		Iterator<String> eventSlicesKeysIter = allSlicesKeys.iterator();
 		String stringFrom = String.valueOf(fromDate.getTime());
-		boolean onInterval = false; boolean afterInterval = false; 
+		boolean onInterval = false; boolean afterInterval = false;
 		if ( maxNum == 0 )
 			maxNum = Integer.MAX_VALUE;
 		while ( eventSlicesKeysIter.hasNext()) {
@@ -527,7 +558,7 @@ public class FRImpl implements FR {
 			for ( String eventKey:eventKeys ) {
 
 				if ( !onInterval && eventKey.compareTo(stringFrom) >= 0 ) // check if we are on interval point already
-					onInterval = true;				
+					onInterval = true;
 				if ( onInterval != true ) // continue to next if we are not on interval still
 					continue;
 
@@ -542,7 +573,7 @@ public class FRImpl implements FR {
 				}
 				// check if event is not past the interval already
 				if ( event.eventTime.getTime() <= toDate.getTime() && result.size() < maxNum ) {
-					if ( ! event.match(filter)) 
+					if ( ! event.match(filter))
 						continue;
 					result.add(event);
 				} else {
@@ -558,7 +589,7 @@ public class FRImpl implements FR {
 	}
 
 	/**
-	 * @param days cleanup older records 
+	 * @param days cleanup older records
 	 */
 	@Override
 	public void reset ( int days ) {
@@ -581,7 +612,7 @@ public class FRImpl implements FR {
 			if ( eventKeys == null )
 				continue;
 			boolean failedToDeleteAnEvent = false;
-			for ( String eventKey:eventKeys ) {				
+			for ( String eventKey:eventKeys ) {
 				try {
 					eventsArchiveRepo.deleteRow(eventKey);
 				} catch (ExceptionControlApp e) {
@@ -641,7 +672,7 @@ public class FRImpl implements FR {
 
 			DateFormat df = new SimpleDateFormat("MM/dd/yy hh:mm:ss");
 			Date from = df.parse("10/10/13 11:25:32");
-			Date to = df.parse("10/20/13 14:53:56");		
+			Date to = df.parse("10/20/13 14:53:56");
 
 			dump("/tmp/event_dump");
 			dump("/tmp/event_dump_1", from, to, 20, createFilter("ALARM,EVENT") );

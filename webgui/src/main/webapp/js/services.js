@@ -31,7 +31,27 @@ d4allApp.service('FlightRecorderService', ['$http' , '$log', '$filter', function
         return $http({
             method: 'GET',
             url: REST_SERVER + '/rest/general/fr/latest?maxNum=' + numberOfRecords +
-                '&filter=' + strFilter
+            '&filter=' + strFilter
+        });
+
+    };
+
+
+    this.outputFilePrefix = function() {
+
+        return $http({
+            method: 'GET',
+            url: REST_SERVER + '/rest/general/fr/outputFilePrefix'
+        });
+
+    };
+
+
+    this.outputFileSuffix = function() {
+
+        return $http({
+            method: 'GET',
+            url: REST_SERVER + '/rest/general/fr/outputFileSuffix'
         });
 
     };

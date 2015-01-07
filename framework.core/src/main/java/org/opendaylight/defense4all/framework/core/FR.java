@@ -9,10 +9,10 @@
 
 package org.opendaylight.defense4all.framework.core;
 
+import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
+
 import java.util.Date;
 import java.util.List;
-
-import org.opendaylight.defense4all.framework.core.FrameworkMain.ResetLevel;
 
 public interface FR {
 	
@@ -37,8 +37,11 @@ public interface FR {
 	 * @param eventData
 	 */
 	public void logRecord (String eventType, String eventData);
-	public void logRecord (EventRecord event);	
-	
+	public void logRecord (EventRecord event);
+
+	public String getOutputFilePrefix();
+	public String getOutputFileSuffix();
+
 	/**
 	 * @param fileName
 	 * dump content of records to file

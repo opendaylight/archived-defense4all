@@ -51,7 +51,9 @@
 	
 	<bean id="flightRecorderImpl" class="org.opendaylight.defense4all.framework.core.impl.FRImpl">
 		<property name="repoFactoryImpl" ref="repoFactoryImpl" />
-		<property name="flightRecorderSliceDays" value="1" />	
+		<property name="flightRecorderSliceDays" value="1" />
+		<property name="outputFilePrefix" value="/var/log/defense4all/query_" />
+		<property name="outputFileSuffix" value=".txt" />
 	</bean>
 	
 	<bean id="healthTrackerImpl" class="org.opendaylight.defense4all.framework.core.impl.HealthTrackerImpl">

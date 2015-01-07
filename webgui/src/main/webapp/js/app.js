@@ -1063,6 +1063,11 @@ d4allApp.controller('ReportsController', function ReportsController($scope, $rou
         numberOfDays : ''
     }
 
+    var outputFilePrefix = '';
+    var outputFileSuffix = '';
+
+    $scope.outputFilePrefix = outputFilePrefix;
+    $scope.outputFileSuffix = outputFileSuffix;
     $scope.timePeriod = timePeriod;
     $scope.reportParams = reportParams;
 
@@ -1134,6 +1139,16 @@ d4allApp.controller('ReportsController', function ReportsController($scope, $rou
             if ($scope.records.length > 9999) {
                 ReportAlerts.push({type: 'danger', msg: 'There are more than 10,000 rows in the result. Please refine your query to see all records.'});
             }
+        });
+
+        FlightRecorderService.outputFilePrefix().then(function(dataResponse) {
+            $log.debug(dataResponse);
+            $scope.outputFilePrefix = dataResponse.data;
+        });
+
+        FlightRecorderService.outputFileSuffix().then(function(dataResponse) {
+            $log.debug(dataResponse);
+            $scope.outputFileSuffix = dataResponse.data;
         });
 
     }
