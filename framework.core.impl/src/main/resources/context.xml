@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"	
+<beans xmlns="http://www.springframework.org/schema/beans"
 	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	   xsi:schemaLocation="http://www.springframework.org/schema/beans
 	   classpath:spring-beans-3.0.xsd">
-	
+
 	<import resource="classpath*:defense4all_context.xml"/>
-	
+
 	<!-- Framework main -->
 	<bean id="frameworkMain" class="org.opendaylight.defense4all.framework.core.impl.FrameworkMainImpl" >
 		<constructor-arg index="0"> <null/> </constructor-arg> <!-- name="configProperties" -->
@@ -26,9 +26,9 @@
 		<property name="healthTrackerImpl" ref="healthTrackerImpl" />
 		<property name="demoRun" value="0" />  <!--	1==true; 0==false -->
 	</bean>
-	
+
 	<!-- Framework core modules  -->
-	
+
 	<bean id="repoFactoryImpl" class="org.opendaylight.defense4all.framework.core.impl.RepoFactoryImpl">
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="clusterName" value="df_cluster" /> 	<!-- Set in /etc/cassandra/yaml -->
@@ -36,27 +36,29 @@
 		<property name="cassandraServerPort" value="9160" />
 		<property name="ctrlAppsKSReplLevel" value="1" />
 	</bean>
-	
+
 	<bean id="clusterMgrImpl" class="org.opendaylight.defense4all.framework.core.impl.ClusterMgrImpl">
 		<property name="frameworkMain" ref="frameworkMain" />
 	</bean>
-	
+
 	<bean id="peerCommunicatorImpl" class="org.opendaylight.defense4all.framework.core.impl.PeerCommunicatorImpl">
 		<property name="frameworkMain" ref="frameworkMain" />
 	</bean>
-	
+
 	<bean id="frameworkMgmtPointImpl" class="org.opendaylight.defense4all.framework.core.impl.FrameworkMgmtPointImpl">
 		<property name="frameworkMain" ref="frameworkMain" />
 	</bean>
-	
+
 	<bean id="flightRecorderImpl" class="org.opendaylight.defense4all.framework.core.impl.FRImpl">
 		<property name="repoFactoryImpl" ref="repoFactoryImpl" />
-		<property name="flightRecorderSliceDays" value="1" />	
+		<property name="flightRecorderSliceDays" value="1" />
+		<property name="outputFilePrefix" value="/var/log/defense4all/query_" />
+		<property name="outputFileSuffix" value=".txt" />
 	</bean>
-	
+
 	<bean id="healthTrackerImpl" class="org.opendaylight.defense4all.framework.core.impl.HealthTrackerImpl">
 		<property name="frameworkMain" ref="frameworkMain" />
 		<property name="minimalHealthThreshold" value="50" />
 	</bean>
-	
+
 </beans>

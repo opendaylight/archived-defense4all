@@ -88,13 +88,15 @@
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-3">
                                 <button class="btn btn-primary" ng-click="refresh()">Run Query</button>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-9">
                                 &nbsp;<button class="btn btn-primary" ng-click="dump()">Export Query to File</button>
                                 <label>Filename:</label>
+                                <label>{{outputFilePrefix}}</label>
                                 <input type="text" ng-model="reportParams.fileName">
+                                <label>{{outputFileSuffix}}</label>
                             </div>
                         </div>
 
