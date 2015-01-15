@@ -14,7 +14,7 @@
 	<parent>
 		<groupId>org.opendaylight.defense4all</groupId>
 		<artifactId>dfapp</artifactId>
-		<version>1.0.15-Helium-SR1</version>
+		<version>1.0.15-Helium-SR1.1</version>
 		<relativePath>../dfapp/pom.xml</relativePath>
 	</parent>
 
@@ -22,28 +22,28 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.core</artifactId>
-			<version>1.0.15-Helium-SR1</version>
+			<version>1.0.15-Helium-SR1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.core.impl</artifactId>
-			<version>1.0.15-Helium-SR1</version>
+			<version>1.0.15-Helium-SR1.1</version>
 		</dependency>
 <!-- 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.odl</artifactId>
-			<version>1.0.15-Helium-SR1</version>
+			<version>1.0.15-Helium-SR1.1</version>
 		</dependency>
 -->
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defenseflow.dp</artifactId>
-			<version>1.0.15-Helium-SR1</version>
+			<version>1.0.15-Helium-SR1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.mitigationdriver.local</artifactId>
-			<version>1.0.15-Helium-SR1</version>
+			<version>1.0.15-Helium-SR1.1</version>
 		</dependency>
 	</dependencies>
 	<build>
