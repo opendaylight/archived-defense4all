@@ -14,7 +14,7 @@
 	<parent>
 		<groupId>org.opendaylight.defense4all</groupId>
 		<artifactId>dfapp</artifactId>
-		<version>1.0.17-SNAPSHOT</version>
+		<version>1.0.17-Helium-SR3</version>
 		<relativePath>../dfapp/pom.xml</relativePath>
 	</parent>
 
@@ -22,7 +22,7 @@
 		<dependency>
 			<groupId>org.opendaylight.defense4all</groupId>
 			<artifactId>defense4all.core</artifactId>
-			<version>1.0.17-SNAPSHOT</version>
+			<version>1.0.17-Helium-SR3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
