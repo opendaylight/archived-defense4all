@@ -7,7 +7,7 @@
   <parent>
     <groupId>org.opendaylight.defense4all</groupId>
     <artifactId>defense4all.common</artifactId>
-    <version>0.1.3-Helium-SR3</version>
+    <version>0.1.4-SNAPSHOT</version>
     <relativePath>../commons</relativePath>
   </parent>
 
@@ -16,7 +16,7 @@
   <groupId>org.opendaylight.defense4all</groupId>
   
   <artifactId>defense4all.odl.integrationtest</artifactId>
-  <version>0.0.4-Helium-SR3</version>
+  <version>0.0.5-SNAPSHOT</version>
  <!-- <packaging>jar</packaging> or pom? or? or not-->
    
   <properties>   
@@ -32,7 +32,7 @@
   <!-- 	<dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>protocol_plugins.stub</artifactId>
-      <version>0.4.3-Helium-SR3</version>
+      <version>0.4.4-SNAPSHOT</version>
     </dependency> -->
      <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -55,103 +55,103 @@
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>clustering.services</artifactId>
-      <version>0.5.4-Helium-SR3</version>
+      <version>0.5.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>clustering.stub</artifactId>
-      <version>0.4.5-Helium-SR3</version>
+      <version>0.4.6-SNAPSHOT</version>
     </dependency>
 
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>configuration</artifactId>
-      <version>0.4.6-Helium-SR3</version>
+      <version>0.4.7-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>configuration.implementation</artifactId>
-      <version>0.4.6-Helium-SR3</version>
+      <version>0.4.7-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>connectionmanager</artifactId>
-      <version>0.1.5-Helium-SR3</version>
+      <version>0.1.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>connectionmanager.implementation</artifactId>
-      <version>0.1.5-Helium-SR3</version>      
+      <version>0.1.6-SNAPSHOT</version>      
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>containermanager</artifactId>
-      <version>0.5.5-Helium-SR3</version>
+      <version>0.5.6-SNAPSHOT</version>
     </dependency>
  <!--    <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>containermanager.it.implementation</artifactId>
-      <version>0.5.5-Helium-SR3</version>      
+      <version>0.5.6-SNAPSHOT</version>      
     </dependency> -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>forwardingrulesmanager</artifactId>
-      <version>0.6.3-Helium-SR3</version>
+      <version>0.6.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>hosttracker</artifactId>
-      <version>0.5.5-Helium-SR3</version>
+      <version>0.5.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>protocol_plugins.stub</artifactId>
-      <version>0.4.5-Helium-SR3</version>
+      <version>0.4.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
-      <version>0.8.4-Helium-SR3</version>
+      <version>0.8.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal.connection</artifactId>
-      <version>0.1.5-Helium-SR3</version>
+      <version>0.1.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal.connection.implementation</artifactId>
-      <version>0.1.5-Helium-SR3</version>
+      <version>0.1.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal.implementation</artifactId>
-      <version>0.4.5-Helium-SR3</version>
+      <version>0.4.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>statisticsmanager</artifactId>
-      <version>0.5.4-Helium-SR3</version>
+      <version>0.5.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>statisticsmanager.implementation</artifactId>
-      <version>0.4.5-Helium-SR3</version>
+      <version>0.4.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>switchmanager</artifactId>
-      <version>0.7.4-Helium-SR3</version>
+      <version>0.7.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>switchmanager.implementation</artifactId>
-      <version>0.4.5-Helium-SR3</version>
+      <version>0.4.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>topologymanager</artifactId>
-      <version>0.4.5-Helium-SR3</version>
+      <version>0.4.6-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
